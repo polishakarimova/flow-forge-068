@@ -14,11 +14,11 @@ export function getBadgeStyle(color: BadgeColor): React.CSSProperties {
         color: "white",
         boxShadow: "0 2px 8px rgba(232, 182, 109, 0.3)",
       };
-    case "peach":
+    case "lilac":
       return {
-        background: "linear-gradient(135deg, #E8A87C, #D4936A)",
+        background: "linear-gradient(135deg, #A78BFA, #8B5CF6)",
         color: "white",
-        boxShadow: "0 2px 8px rgba(232, 168, 124, 0.3)",
+        boxShadow: "0 2px 8px rgba(167, 139, 250, 0.3)",
       };
     case "lilac":
       return {
