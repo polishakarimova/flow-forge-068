@@ -219,19 +219,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
           </div>
           <div
             className="inline-flex items-center px-3 py-1.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.05em] transition-transform duration-200 hover:scale-105"
-            style={
-              funnel.badgeColor === "violet"
-                ? {
-                    background: "linear-gradient(135deg, #8B5CF6, #7C3AED)",
-                    color: "white",
-                    boxShadow: "0 2px 12px rgba(139, 92, 246, 0.4)",
-                  }
-                : {
-                    background: "linear-gradient(135deg, #D4A056, #C08B3F)",
-                    color: "white",
-                    boxShadow: "0 2px 12px rgba(212, 160, 86, 0.4)",
-                  }
-            }
+            style={getBadgeStyle(funnel.badgeColor)}
           >
             {funnel.keyword}
           </div>
