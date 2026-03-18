@@ -1,4 +1,4 @@
-import { X, ExternalLink, GitBranch } from "lucide-react";
+import { ExternalLink, GitBranch } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { FunnelProduct } from "@/lib/funnelData";
 import { funnelsData } from "@/lib/funnelData";
@@ -26,7 +26,6 @@ export function ProductDrawer({ product, open, onOpenChange }: ProductDrawerProp
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-[360px] sm:w-[420px] p-0 border-l border-border">
         <div className="flex flex-col h-full">
-          {/* Header */}
           <SheetHeader className="px-6 pt-6 pb-4 border-b border-border">
             <div className="flex items-start justify-between">
               <div className="space-y-1.5 pr-4">
@@ -40,9 +39,7 @@ export function ProductDrawer({ product, open, onOpenChange }: ProductDrawerProp
             </div>
           </SheetHeader>
 
-          {/* Body */}
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-            {/* Type */}
             <div>
               <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                 Тип
@@ -50,15 +47,6 @@ export function ProductDrawer({ product, open, onOpenChange }: ProductDrawerProp
               <p className="mt-1 text-[13px] text-foreground">{product.type}</p>
             </div>
 
-            {/* Price */}
-            <div>
-              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                Цена
-              </label>
-              <p className="mt-1 text-[16px] font-bold text-primary">{product.price}</p>
-            </div>
-
-            {/* Description */}
             {product.description && (
               <div>
                 <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
@@ -70,7 +58,6 @@ export function ProductDrawer({ product, open, onOpenChange }: ProductDrawerProp
               </div>
             )}
 
-            {/* Offer URL */}
             {product.offerUrl && (
               <div>
                 <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
@@ -88,7 +75,6 @@ export function ProductDrawer({ product, open, onOpenChange }: ProductDrawerProp
               </div>
             )}
 
-            {/* Used in funnels */}
             {usedInFunnels.length > 0 && (
               <div>
                 <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
@@ -102,11 +88,12 @@ export function ProductDrawer({ product, open, onOpenChange }: ProductDrawerProp
                     >
                       <GitBranch className="w-3.5 h-3.5 text-muted-foreground" />
                       <span
-                        className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
+                        className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase text-white"
+                        style={
                           f.badgeColor === "violet"
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-[hsl(var(--amber))] text-[hsl(var(--amber-foreground))]"
-                        }`}
+                            ? { background: "linear-gradient(135deg, #8B5CF6, #7C3AED)" }
+                            : { background: "linear-gradient(135deg, #D4A056, #C08B3F)" }
+                        }
                       >
                         {f.keyword}
                       </span>
@@ -120,7 +107,6 @@ export function ProductDrawer({ product, open, onOpenChange }: ProductDrawerProp
             )}
           </div>
 
-          {/* Footer */}
           <div className="px-6 py-4 border-t border-border">
             <button className="w-full px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary/90 transition-colors">
               Открыть в Продуктах

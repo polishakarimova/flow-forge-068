@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus, Send, FileText, Gift, DollarSign, Crown } from "lucide-react";
-import type { Funnel, ContentStatus, FunnelProduct, ContentItem, ConversionData } from "@/lib/funnelData";
+import type { Funnel, ContentStatus, FunnelProduct, ContentItem } from "@/lib/funnelData";
 import { productsCatalog } from "@/lib/funnelData";
 import { ProductDrawer } from "@/components/ProductDrawer";
 import { ContentDrawer } from "@/components/ContentDrawer";
@@ -22,17 +22,11 @@ const statusLabel: Record<ContentStatus, string> = {
   draft: "Черновик",
 };
 
-const tierShort: Record<string, string> = {
-  "lead-magnet": "ЛМ",
-  "mid-ticket": "СЧ",
-  "flagship": "ФГ",
+const tierLabel: Record<string, string> = {
+  "lead-magnet": "Лид-магнит",
+  "mid-ticket": "Средний чек",
+  "flagship": "Флагман",
 };
-
-function getConversionColor(rate: number): string {
-  if (rate >= 10) return "#10b981"; // green
-  if (rate >= 5) return "#f59e0b"; // amber
-  return "#ef4444"; // red
-}
 
 const NodeCard = ({
   children,
@@ -66,34 +60,21 @@ const NodeCard = ({
 );
 
 const SvgConnector = ({
-  conversion,
   delay = 0,
 }: {
-  conversion?: ConversionData;
   delay?: number;
 }) => {
-  const color = conversion ? getConversionColor(conversion.rate) : "#D1D5DB";
-  const hasData = !!conversion;
-
   return (
     <div
       className="flex flex-col items-center justify-center shrink-0 px-1 group/connector"
       style={{ animation: `fadeSlideIn 0.3s ease-out ${delay}ms both` }}
     >
-      {hasData && (
-        <span
-          className="text-[10px] font-semibold mb-1 transition-colors duration-200"
-          style={{ color }}
-        >
-          {conversion.label}
-        </span>
-      )}
       <svg width="40" height="16" viewBox="0 0 40 16" className="transition-all duration-200">
         <line
           x1="0" y1="8" x2="30" y2="8"
-          stroke={color}
+          stroke="#C4B5FD"
           strokeWidth="1.5"
-          className="transition-all duration-200 group-hover/connector:[stroke-width:2.5] group-hover/connector:[stroke:hsl(var(--primary))]"
+          className="transition-all duration-200 group-hover/connector:[stroke-width:2.5]"
           strokeDasharray="40"
           strokeDashoffset="40"
           style={{
@@ -102,8 +83,8 @@ const SvgConnector = ({
         />
         <polygon
           points="28,4 36,8 28,12"
-          fill={color}
-          className="transition-all duration-200 group-hover/connector:[fill:hsl(var(--primary))]"
+          fill="#C4B5FD"
+          className="transition-all duration-200"
           style={{
             opacity: 0,
             animation: `fadeIn 0.3s ease-out ${delay + 500}ms forwards`,
@@ -134,9 +115,8 @@ const PlaceholderCard = ({
             transition-all duration-200 cursor-pointer"
           style={{ animation: `fadeSlideIn 0.4s ease-out ${delay}ms both` }}
         >
-          <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
-            <Plus className="w-4 h-4" />
-            <span>{label}</span>
+          <div className="flex items-center gap-0 text-[12px] text-muted-foreground">
+            <span>+{label}</span>
           </div>
         </div>
       </PopoverTrigger>
@@ -168,10 +148,6 @@ const PlaceholderCard = ({
 export function FunnelMap({ funnel }: { funnel: Funnel }) {
   const [drawerProduct, setDrawerProduct] = useState<FunnelProduct | null>(null);
   const [drawerContent, setDrawerContent] = useState<ContentItem | null>(null);
-
-  const conversions = funnel.conversions || [];
-  const getConversion = (from: string, to: string) =>
-    conversions.find((c) => c.from === from && c.to === to);
 
   return (
     <div className="py-5 px-4 md:px-6 border-t border-border bg-muted/30">
@@ -228,9 +204,9 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
           </div>
         </NodeCard>
 
-        <SvgConnector conversion={getConversion("content", "cta")} delay={100} />
+        <SvgConnector delay={100} />
 
-        {/* === CTA Node === */}
+        {/* === CTA Node — keyword badge only === */}
         <NodeCard delay={200}>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -241,27 +217,26 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
             </span>
           </div>
           <div
-            className="inline-flex items-center px-3 py-1.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.05em] mb-2 transition-transform duration-200 hover:scale-105"
+            className="inline-flex items-center px-3 py-1.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.05em] transition-transform duration-200 hover:scale-105"
             style={
               funnel.badgeColor === "violet"
                 ? {
-                    background: "linear-gradient(135deg, #7C3AED, #6D28D9)",
+                    background: "linear-gradient(135deg, #8B5CF6, #7C3AED)",
                     color: "white",
-                    boxShadow: "0 2px 12px rgba(124, 58, 237, 0.4)",
+                    boxShadow: "0 2px 12px rgba(139, 92, 246, 0.4)",
                   }
                 : {
-                    background: "linear-gradient(135deg, #F59E0B, #D97706)",
+                    background: "linear-gradient(135deg, #D4A056, #C08B3F)",
                     color: "white",
-                    boxShadow: "0 2px 12px rgba(245, 158, 11, 0.4)",
+                    boxShadow: "0 2px 12px rgba(212, 160, 86, 0.4)",
                   }
             }
           >
             {funnel.keyword}
           </div>
-          <p className="text-[12px] text-muted-foreground">{funnel.cta}</p>
         </NodeCard>
 
-        <SvgConnector conversion={getConversion("cta", "lead-magnet")} delay={300} />
+        <SvgConnector delay={300} />
 
         {/* === Lead Magnet Node === */}
         {funnel.leadMagnet ? (
@@ -274,16 +249,13 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
                 Лид-магнит
               </span>
             </div>
-            <p className="text-[13px] text-foreground/80 mb-1.5">{funnel.leadMagnet.name}</p>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-600 text-[11px] font-semibold">
-              Бесплатно
-            </span>
+            <p className="text-[11px] text-[#9CA3AF]">{funnel.leadMagnet.name}</p>
           </NodeCard>
         ) : (
-          <PlaceholderCard label="+ ЛМ" tier="lead-magnet" delay={400} />
+          <PlaceholderCard label="Лид-магнит" tier="lead-magnet" delay={400} />
         )}
 
-        <SvgConnector conversion={getConversion("lead-magnet", "mid-ticket")} delay={500} />
+        <SvgConnector delay={500} />
 
         {/* === Mid-Ticket Node === */}
         {funnel.midTicket ? (
@@ -296,14 +268,13 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
                 Средний чек
               </span>
             </div>
-            <p className="text-[13px] text-foreground/80 mb-1.5">{funnel.midTicket.name}</p>
-            <span className="text-[14px] font-bold text-primary">{funnel.midTicket.price}</span>
+            <p className="text-[11px] text-[#9CA3AF]">{funnel.midTicket.name}</p>
           </NodeCard>
         ) : (
-          <PlaceholderCard label="+ СЧ" tier="mid-ticket" delay={600} />
+          <PlaceholderCard label="Средний чек" tier="mid-ticket" delay={600} />
         )}
 
-        <SvgConnector conversion={getConversion("mid-ticket", "flagship")} delay={700} />
+        <SvgConnector delay={700} />
 
         {/* === Flagship Node === */}
         {funnel.flagship ? (
@@ -316,20 +287,10 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
                 Флагман
               </span>
             </div>
-            <p className="text-[13px] font-medium text-foreground mb-1">
-              {funnel.flagship.name}
-            </p>
-            <div className="flex items-center gap-2">
-              <span className="text-[14px] font-bold text-primary">
-                {funnel.flagship.price}
-              </span>
-              <span className="text-[10px] text-muted-foreground font-medium px-2 py-0.5 rounded-md bg-muted">
-                {funnel.flagship.type}
-              </span>
-            </div>
+            <p className="text-[11px] text-[#9CA3AF]">{funnel.flagship.name}</p>
           </NodeCard>
         ) : (
-          <PlaceholderCard label="+ ФГ" tier="flagship" delay={800} />
+          <PlaceholderCard label="Флагман" tier="flagship" delay={800} />
         )}
       </div>
 

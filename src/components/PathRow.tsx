@@ -2,9 +2,6 @@ import { useState } from "react";
 import {
   ChevronDown,
   MoreHorizontal,
-  FileText,
-  Users,
-  ShoppingCart,
   Pause,
   Play,
   Copy,
@@ -28,22 +25,44 @@ interface PathRowProps {
   onToggleActive?: (id: string) => void;
 }
 
+function truncate(str: string, len: number) {
+  return str.length > len ? str.slice(0, len) + "..." : str;
+}
+
+function buildPathString(funnel: Funnel) {
+  const steps: { short: string; name?: string }[] = [];
+
+  if (funnel.leadMagnet) {
+    steps.push({ short: "ЛМ", name: funnel.leadMagnet.name });
+  }
+  if (funnel.midTicket) {
+    steps.push({ short: "СЧ", name: funnel.midTicket.name });
+  }
+  if (funnel.flagship) {
+    steps.push({ short: "ФГ", name: funnel.flagship.name });
+  }
+
+  // Fallback: use productType short if no products attached
+  if (steps.length === 0) {
+    const short = productTypeShort[funnel.productType] || funnel.productType;
+    steps.push({ short });
+  }
+
+  return steps;
+}
+
 export function PathRow({ funnel, defaultExpanded = false, onToggleActive }: PathRowProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const inactive = !funnel.active;
-
-  const publishedCount = funnel.contentItems.filter((c) => c.status === "published").length;
-  const totalCount = funnel.contentItems.length;
-  const shortType = productTypeShort[funnel.productType] || funnel.productType;
+  const pathSteps = buildPathString(funnel);
 
   return (
     <div
       className={`card-elevated mb-3 overflow-hidden transition-all duration-200 ${
         inactive ? "opacity-50 grayscale" : ""
       } ${expanded ? "border-l-[3px] border-l-primary" : ""}`}
-      style={!inactive ? { } : {}}
     >
-      {/* Main row */}
+      {/* Main row — entire area clickable */}
       <div
         className={`flex items-center gap-3 px-4 py-3.5 md:px-5 cursor-pointer group transition-colors duration-200 ${
           inactive
@@ -109,14 +128,14 @@ export function PathRow({ funnel, defaultExpanded = false, onToggleActive }: Pat
             !inactive
               ? funnel.badgeColor === "violet"
                 ? {
-                    background: "linear-gradient(135deg, #7C3AED, #6D28D9)",
+                    background: "linear-gradient(135deg, #8B5CF6, #7C3AED)",
                     color: "white",
-                    boxShadow: "0 2px 8px rgba(124, 58, 237, 0.3)",
+                    boxShadow: "0 2px 8px rgba(139, 92, 246, 0.3)",
                   }
                 : {
-                    background: "linear-gradient(135deg, #F59E0B, #D97706)",
+                    background: "linear-gradient(135deg, #D4A056, #C08B3F)",
                     color: "white",
-                    boxShadow: "0 2px 8px rgba(245, 158, 11, 0.3)",
+                    boxShadow: "0 2px 8px rgba(212, 160, 86, 0.3)",
                   }
               : undefined
           }
@@ -124,32 +143,19 @@ export function PathRow({ funnel, defaultExpanded = false, onToggleActive }: Pat
           {funnel.keyword}
         </span>
 
-        {/* Type + Product */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold text-muted-foreground bg-muted uppercase tracking-wider">
-              {shortType}
+        {/* Path: ЛМ "PDF-раз..." → СЧ → ФГ */}
+        <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
+          {pathSteps.map((step, i) => (
+            <span key={i} className="flex items-center gap-1 shrink-0">
+              {i > 0 && <span className="text-[11px] text-muted-foreground mx-0.5">→</span>}
+              <span className="text-[11px] font-medium text-muted-foreground">{step.short}</span>
+              {i === 0 && step.name && (
+                <span className="text-[11px] text-[#9CA3AF] truncate max-w-[80px]">
+                  "{truncate(step.name, 7)}"
+                </span>
+              )}
             </span>
-            <span className="text-[13px] text-foreground/80 truncate">
-              {funnel.product}
-            </span>
-          </div>
-        </div>
-
-        {/* Metrics */}
-        <div className="hidden md:flex items-center gap-4 shrink-0">
-          <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground" title="Контент">
-            <FileText className="w-3.5 h-3.5" />
-            <span className="font-medium">{publishedCount}/{totalCount}</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground" title="Заявки">
-            <Users className="w-3.5 h-3.5" />
-            <span className="font-medium">{funnel.leads}</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground" title="Продажи">
-            <ShoppingCart className="w-3.5 h-3.5" />
-            <span className="font-medium">{funnel.sales}</span>
-          </div>
+          ))}
         </div>
 
         {/* Expand chevron */}
@@ -158,22 +164,6 @@ export function PathRow({ funnel, defaultExpanded = false, onToggleActive }: Pat
             expanded ? "rotate-180" : ""
           }`}
         />
-      </div>
-
-      {/* Mobile metrics */}
-      <div className="flex md:hidden items-center gap-4 px-4 pb-3 pl-[52px]">
-        <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-          <FileText className="w-3 h-3" />
-          <span>{publishedCount}/{totalCount}</span>
-        </div>
-        <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-          <Users className="w-3 h-3" />
-          <span>{funnel.leads}</span>
-        </div>
-        <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-          <ShoppingCart className="w-3 h-3" />
-          <span>{funnel.sales}</span>
-        </div>
       </div>
 
       {/* Expanded mini-map */}

@@ -1,4 +1,4 @@
-import { ExternalLink, Eye, MessageSquare, Users, ShoppingCart } from "lucide-react";
+import { Eye, MessageSquare, Users, ShoppingCart } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { ContentItem, Funnel } from "@/lib/funnelData";
 
@@ -61,16 +61,15 @@ export function ContentDrawer({ content, funnel, open, onOpenChange }: ContentDr
               <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">CTA / Кодовое слово</label>
               <div className="mt-1.5 flex items-center gap-2">
                 <span
-                  className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase"
+                  className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase text-white"
                   style={
                     funnel.badgeColor === "violet"
-                      ? { background: "linear-gradient(135deg, #7C3AED, #6D28D9)", color: "white" }
-                      : { background: "linear-gradient(135deg, #F59E0B, #D97706)", color: "white" }
+                      ? { background: "linear-gradient(135deg, #8B5CF6, #7C3AED)" }
+                      : { background: "linear-gradient(135deg, #D4A056, #C08B3F)" }
                   }
                 >
                   {funnel.keyword}
                 </span>
-                <span className="text-[12px] text-muted-foreground">{funnel.cta}</span>
               </div>
             </div>
 
