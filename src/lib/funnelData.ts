@@ -269,7 +269,7 @@ export const funnelsData: Funnel[] = [
     badgeColor: "lilac",
     product: "Мини-курс по автоворонкам",
     productType: "Лид-магнит",
-    active: false,
+    active: true,
     contentCount: 1,
     leads: 0,
     sales: 0,
