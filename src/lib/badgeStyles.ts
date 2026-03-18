@@ -39,7 +39,6 @@ export function getBadgeStyle(color: BadgeColor): React.CSSProperties {
 export const badgeColorLabel: Record<BadgeColor, string> = {
   violet: "",
   amber: "",
-  honey: "Вариант А: Мёд",
-  peach: "Вариант Б: Персик",
-  lilac: "Вариант В: Сирень",
+  honey: "",
+  lilac: "",
 };

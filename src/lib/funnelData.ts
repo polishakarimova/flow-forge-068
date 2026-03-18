@@ -266,7 +266,7 @@ export const funnelsData: Funnel[] = [
   {
     id: "6",
     keyword: "ВОРОНКА",
-    badgeColor: "lilac",
+    badgeColor: "honey",
     product: "Мини-курс по автоворонкам",
     productType: "Лид-магнит",
     active: true,
