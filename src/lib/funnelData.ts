@@ -1,5 +1,5 @@
 export type ContentStatus = "published" | "ready" | "draft";
-export type BadgeColor = "violet" | "amber" | "honey" | "peach" | "lilac";
+export type BadgeColor = "violet" | "amber" | "honey" | "lilac";
 export type ProductTier = "lead-magnet" | "mid-ticket" | "flagship";
 
 export interface ContentItem {
@@ -226,7 +226,7 @@ export const funnelsData: Funnel[] = [
   {
     id: "4",
     keyword: "СИСТЕМА",
-    badgeColor: "peach",
+    badgeColor: "lilac",
     product: "AI-команда под ключ",
     productType: "Трипваер",
     active: true,
@@ -266,7 +266,7 @@ export const funnelsData: Funnel[] = [
   {
     id: "6",
     keyword: "ВОРОНКА",
-    badgeColor: "lilac",
+    badgeColor: "honey",
     product: "Мини-курс по автоворонкам",
     productType: "Лид-магнит",
     active: true,

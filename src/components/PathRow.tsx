@@ -18,7 +18,7 @@ import {
 import { FunnelMap } from "@/components/FunnelMap";
 import type { Funnel } from "@/lib/funnelData";
 import { productTypeShort } from "@/lib/funnelData";
-import { getBadgeStyle, badgeColorLabel } from "@/lib/badgeStyles";
+import { getBadgeStyle } from "@/lib/badgeStyles";
 
 interface PathRowProps {
   funnel: Funnel;
@@ -26,8 +26,12 @@ interface PathRowProps {
   onToggleActive?: (id: string) => void;
 }
 
+function truncateKeyword(str: string, maxLen = 6) {
+  return str.length > maxLen ? str.slice(0, maxLen) + "…" : str;
+}
+
 function truncate(str: string, len: number) {
-  return str.length > len ? str.slice(0, len) + "..." : str;
+  return str.length > len ? str.slice(0, len) + "…" : str;
 }
 
 function buildPathString(funnel: Funnel) {
@@ -55,7 +59,6 @@ export function PathRow({ funnel, defaultExpanded = false, onToggleActive }: Pat
   const [expanded, setExpanded] = useState(defaultExpanded);
   const inactive = !funnel.active;
   const pathSteps = buildPathString(funnel);
-  const variantLabel = badgeColorLabel[funnel.badgeColor];
 
   return (
     <div
@@ -63,18 +66,9 @@ export function PathRow({ funnel, defaultExpanded = false, onToggleActive }: Pat
         inactive ? "opacity-50 grayscale" : ""
       } ${expanded ? "border-l-[3px] border-l-primary" : ""}`}
     >
-      {/* Variant label for color comparison */}
-      {variantLabel && (
-        <div className="px-4 pt-2 pb-0 md:px-5">
-          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-            {variantLabel}
-          </span>
-        </div>
-      )}
-
       {/* Main row */}
       <div
-        className={`flex items-center gap-3 px-4 py-3.5 md:px-5 cursor-pointer group transition-colors duration-200 ${
+        className={`flex items-center gap-2 px-3 py-3 md:px-5 md:gap-3 cursor-pointer group transition-colors duration-200 ${
           inactive
             ? "hover:bg-muted/40"
             : "hover:bg-[hsl(var(--primary)/0.04)]"
@@ -86,7 +80,7 @@ export function PathRow({ funnel, defaultExpanded = false, onToggleActive }: Pat
           <DropdownMenuTrigger asChild>
             <button
               onClick={(e) => e.stopPropagation()}
-              className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors shrink-0"
+              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-muted transition-colors shrink-0"
             >
               <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
             </button>
@@ -119,7 +113,7 @@ export function PathRow({ funnel, defaultExpanded = false, onToggleActive }: Pat
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Status dot: green pulsing (active) or red static (inactive) */}
+        {/* Status dot */}
         {funnel.active ? (
           <span className="relative shrink-0 w-2 h-2">
             <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
@@ -129,27 +123,26 @@ export function PathRow({ funnel, defaultExpanded = false, onToggleActive }: Pat
           <span className="shrink-0 w-2 h-2 rounded-full bg-red-400" />
         )}
 
-        {/* Keyword badge with gradient */}
+        {/* Keyword badge */}
         <span
-          className={`shrink-0 inline-flex items-center px-3 py-1.5 rounded-xl text-[12px] font-bold uppercase tracking-[0.05em] ${
+          className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase tracking-[0.05em] ${
             inactive ? "bg-muted text-muted-foreground" : ""
           }`}
           style={!inactive ? getBadgeStyle(funnel.badgeColor) : undefined}
         >
-          {funnel.keyword}
+          {truncateKeyword(funnel.keyword)}
         </span>
 
-        {/* Path: ЛМ "PDF-раз..." → СЧ → ФГ */}
-        <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">
+        {/* Path steps as mini badges, no arrows */}
+        <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
           {pathSteps.map((step, i) => (
-            <span key={i} className="flex items-center gap-1.5 shrink-0">
-              {i > 0 && <span className="text-[11px] text-muted-foreground mx-0.5">→</span>}
+            <span key={i} className="flex items-center gap-1 shrink-0">
               <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-[0.05em] bg-foreground/[0.06] text-muted-foreground">
                 {step.short}
               </span>
               {i === 0 && step.name && (
-                <span className="text-[11px] text-[#9CA3AF] truncate max-w-[80px]">
-                  "{truncate(step.name, 7)}"
+                <span className="text-[10px] text-muted-foreground/60 truncate max-w-[60px]">
+                  "{truncate(step.name, 6)}"
                 </span>
               )}
             </span>
