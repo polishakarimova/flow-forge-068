@@ -67,7 +67,7 @@ const SvgConnector = ({
 }) => {
   return (
     <div
-      className="flex flex-col items-center justify-center shrink-0 px-1 group/connector"
+      className="flex flex-col items-center justify-center shrink-0 px-1 group/connector mt-4"
       style={{ animation: `fadeSlideIn 0.3s ease-out ${delay}ms both` }}
     >
       <svg width="40" height="16" viewBox="0 0 40 16" className="transition-all duration-200">
