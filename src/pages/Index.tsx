@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { MobileNav } from "@/components/MobileNav";
 import { PathRow } from "@/components/PathRow";
 import { funnelsData, type Funnel } from "@/lib/funnelData";
 
@@ -30,7 +31,10 @@ const Index = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
+        {/* Desktop sidebar */}
+        <div className="hidden md:block">
+          <AppSidebar />
+        </div>
 
         <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
@@ -38,7 +42,7 @@ const Index = () => {
             <div className="max-w-5xl mx-auto px-4 md:px-6">
               <div className="flex items-center justify-between h-14 md:h-16">
                 <div className="flex items-center gap-3">
-                  <SidebarTrigger className="md:hidden" />
+                  <SidebarTrigger className="hidden md:flex" />
                   <div className="flex items-baseline gap-2">
                     <h1 className="text-[15px] md:text-base font-semibold text-foreground tracking-tight">
                       Paths
@@ -75,7 +79,7 @@ const Index = () => {
           </header>
 
           {/* Content */}
-          <main className="flex-1 max-w-5xl w-full mx-auto py-5 md:py-6 px-4 md:px-6">
+          <main className="flex-1 max-w-5xl w-full mx-auto py-5 md:py-6 px-4 md:px-6 pb-20 md:pb-6">
             {/* Active funnels */}
             <div>
               {activeFunnels.map((funnel) => (
@@ -112,6 +116,9 @@ const Index = () => {
             )}
           </main>
         </div>
+
+        {/* Mobile bottom nav */}
+        <MobileNav />
       </div>
     </SidebarProvider>
   );

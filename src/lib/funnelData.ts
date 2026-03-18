@@ -1,5 +1,6 @@
 export type ContentStatus = "published" | "ready" | "draft";
 export type BadgeColor = "violet" | "amber";
+export type ProductTier = "lead-magnet" | "mid-ticket" | "flagship";
 
 export interface ContentItem {
   id: string;
@@ -9,16 +10,15 @@ export interface ContentItem {
   status: ContentStatus;
 }
 
-export interface FunnelStep {
-  id: string;
-  title: string;
-  type: string;
-}
-
 export interface FunnelProduct {
+  id: string;
   name: string;
   price: string;
   type: string;
+  tier: ProductTier;
+  description?: string;
+  offerUrl?: string;
+  funnelIds?: string[]; // which funnels use this product
 }
 
 export interface Funnel {
@@ -31,14 +31,102 @@ export interface Funnel {
   contentCount: number;
   leads: number;
   sales: number;
-  // Expanded data
   contentItems: ContentItem[];
   cta: string;
-  deliveryType: string;
-  deliveryTitle: string;
-  steps: FunnelStep[];
-  finalProduct?: FunnelProduct;
+  leadMagnet?: FunnelProduct;
+  midTicket?: FunnelProduct;
+  flagship?: FunnelProduct;
 }
+
+// Shared product catalog
+export const productsCatalog: FunnelProduct[] = [
+  {
+    id: "p1",
+    name: "PDF-разбор кейса на 1.4 млн",
+    price: "Бесплатно",
+    type: "PDF",
+    tier: "lead-magnet",
+    description: "Подробный разбор реального кейса: как клиент заработал 1.4 млн через контент-воронку. Включает пошаговый план и шаблоны.",
+    offerUrl: "https://example.com/case-pdf",
+    funnelIds: ["1"],
+  },
+  {
+    id: "p2",
+    name: "Мини-разбор вашей ситуации",
+    price: "5 000 ₽",
+    type: "Консультация",
+    tier: "mid-ticket",
+    description: "30-минутная персональная консультация с разбором вашей текущей воронки продаж и рекомендациями по улучшению.",
+    offerUrl: "https://example.com/mini-consult",
+    funnelIds: ["1"],
+  },
+  {
+    id: "p3",
+    name: "Наставничество: Система продаж через контент",
+    price: "150 000 ₽",
+    type: "Наставничество",
+    tier: "flagship",
+    description: "12-недельная программа наставничества. Построим вашу систему продаж через контент с нуля до первых результатов.",
+    offerUrl: "https://example.com/mentorship",
+    funnelIds: ["1"],
+  },
+  {
+    id: "p4",
+    name: "Видео-туториал по примерке причёсок",
+    price: "Бесплатно",
+    type: "Видео",
+    tier: "lead-magnet",
+    description: "Пошаговый видео-гайд как примерить любую причёску с помощью AI.",
+    funnelIds: ["2"],
+  },
+  {
+    id: "p5",
+    name: "Персональный стилист",
+    price: "25 000 ₽",
+    type: "Консультация",
+    tier: "flagship",
+    description: "Индивидуальная работа со стилистом: подбор образа, гардероб, причёска.",
+    offerUrl: "https://example.com/stylist",
+    funnelIds: ["2"],
+  },
+  {
+    id: "p6",
+    name: "Пошаговая инструкция по переносу канала",
+    price: "Бесплатно",
+    type: "PDF",
+    tier: "lead-magnet",
+    description: "Детальная инструкция по переносу Telegram-канала в MAX без потери подписчиков.",
+    funnelIds: ["3"],
+  },
+  {
+    id: "p7",
+    name: "AI-команда: 5 ботов для эксперта",
+    price: "Бесплатно",
+    type: "Мини-курс",
+    tier: "lead-magnet",
+    description: "Бесплатный мини-курс по настройке 5 AI-ботов для автоматизации экспертного бизнеса.",
+    funnelIds: ["4"],
+  },
+  {
+    id: "p8",
+    name: "Настройка AI-ассистента",
+    price: "15 000 ₽",
+    type: "Воркшоп",
+    tier: "mid-ticket",
+    description: "Практический воркшоп: настроим вашего AI-ассистента за 3 часа.",
+    funnelIds: ["4"],
+  },
+  {
+    id: "p9",
+    name: "AI-команда под ключ",
+    price: "49 000 ₽",
+    type: "Услуга",
+    tier: "flagship",
+    description: "Полная настройка AI-команды из 5+ ботов для вашего бизнеса.",
+    offerUrl: "https://example.com/ai-team",
+    funnelIds: ["4"],
+  },
+];
 
 export const funnelsData: Funnel[] = [
   {
@@ -58,16 +146,9 @@ export const funnelsData: Funnel[] = [
       { id: "c4", platform: "Blog", format: "Статья", title: "Подробный разбор кейса", status: "draft" },
     ],
     cta: "Напиши КЕЙС в директ",
-    deliveryType: "PDF",
-    deliveryTitle: "PDF-разбор кейса на 1.4 млн",
-    steps: [
-      { id: "s1", title: "Мини-разбор вашей ситуации", type: "Консультация" },
-    ],
-    finalProduct: {
-      name: "Система продаж через контент",
-      price: "150 000 ₽",
-      type: "Наставничество",
-    },
+    leadMagnet: productsCatalog.find((p) => p.id === "p1"),
+    midTicket: productsCatalog.find((p) => p.id === "p2"),
+    flagship: productsCatalog.find((p) => p.id === "p3"),
   },
   {
     id: "2",
@@ -84,14 +165,8 @@ export const funnelsData: Funnel[] = [
       { id: "c6", platform: "Instagram", format: "Stories", title: "Stories: опрос по стилю", status: "published" },
     ],
     cta: "Напиши ОБРАЗ в директ",
-    deliveryType: "Видео",
-    deliveryTitle: "Видео-туториал по примерке причёсок",
-    steps: [],
-    finalProduct: {
-      name: "Персональный стилист",
-      price: "25 000 ₽",
-      type: "Консультация",
-    },
+    leadMagnet: productsCatalog.find((p) => p.id === "p4"),
+    flagship: productsCatalog.find((p) => p.id === "p5"),
   },
   {
     id: "3",
@@ -109,9 +184,7 @@ export const funnelsData: Funnel[] = [
       { id: "c9", platform: "Instagram", format: "Reels", title: "Reels: сравнение платформ", status: "draft" },
     ],
     cta: "Напиши МАКС в директ",
-    deliveryType: "PDF",
-    deliveryTitle: "Пошаговая инструкция по переносу канала",
-    steps: [],
+    leadMagnet: productsCatalog.find((p) => p.id === "p6"),
   },
   {
     id: "4",
@@ -127,16 +200,9 @@ export const funnelsData: Funnel[] = [
       { id: "c10", platform: "Instagram", format: "Reels", title: "Reels: как Claude пишет за тебя", status: "published" },
     ],
     cta: "Напиши СИСТЕМА в директ",
-    deliveryType: "Мини-курс",
-    deliveryTitle: "AI-команда: 5 ботов для эксперта",
-    steps: [
-      { id: "s2", title: "Настройка AI-ассистента", type: "Воркшоп" },
-    ],
-    finalProduct: {
-      name: "AI-команда под ключ",
-      price: "49 000 ₽",
-      type: "Услуга",
-    },
+    leadMagnet: productsCatalog.find((p) => p.id === "p7"),
+    midTicket: productsCatalog.find((p) => p.id === "p8"),
+    flagship: productsCatalog.find((p) => p.id === "p9"),
   },
   {
     id: "5",
@@ -152,9 +218,6 @@ export const funnelsData: Funnel[] = [
       { id: "c11", platform: "Instagram", format: "Stories", title: "Stories: тизер", status: "draft" },
     ],
     cta: "Напиши ЗАПУСК в директ",
-    deliveryType: "Чек-лист",
-    deliveryTitle: "Чек-лист запуска продукта",
-    steps: [],
   },
   {
     id: "6",
@@ -170,8 +233,5 @@ export const funnelsData: Funnel[] = [
       { id: "c12", platform: "Instagram", format: "Reels", title: "Reels: что такое воронка", status: "draft" },
     ],
     cta: "Напиши ВОРОНКА в директ",
-    deliveryType: "Мини-курс",
-    deliveryTitle: "Мини-курс по автоворонкам",
-    steps: [],
   },
 ];

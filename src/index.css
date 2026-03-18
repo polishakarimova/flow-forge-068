@@ -98,4 +98,8 @@
   .violet-surface {
     background: hsl(var(--violet-soft));
   }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
