@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronRight, Plus, MoreHorizontal, ArrowUpRight } from "lucide-react";
+import { Plus, ArrowUpRight, Zap, Eye, FileText, MessageCircle } from "lucide-react";
 
 interface ContentUnit {
   id: string;
@@ -86,19 +86,28 @@ const funnelsData: Funnel[] = [
   },
 ];
 
+const typeIcon = (type: string) => {
+  switch (type) {
+    case "reels": return <Zap className="w-3.5 h-3.5" />;
+    case "stories": return <Eye className="w-3.5 h-3.5" />;
+    case "post": return <FileText className="w-3.5 h-3.5" />;
+    default: return <MessageCircle className="w-3.5 h-3.5" />;
+  }
+};
+
 type FilterType = "all" | "keyword" | "type" | "product";
 
 const PathRow = ({ funnel }: { funnel: Funnel }) => {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className={`${!funnel.active ? "opacity-40 grayscale" : ""}`}>
+    <div className={`card-elevated mb-3 overflow-hidden ${!funnel.active ? "opacity-40" : ""}`}>
       {/* Main row */}
-      <div className="group flex items-center h-14 md:h-16 px-4 md:px-6 relative">
+      <div className="group flex items-center h-14 md:h-16 px-4 md:px-5">
         {/* Trigger button */}
         <button
           onClick={() => setExpanded(!expanded)}
-          className="relative z-10 flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full border border-border bg-secondary/50 hover:bg-secondary transition-colors shrink-0"
+          className="relative z-10 flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-xl violet-surface hover:bg-primary/10 transition-colors shrink-0"
           aria-label="Раскрыть воронку"
         >
           <div className="flex gap-[3px]">
@@ -108,21 +117,21 @@ const PathRow = ({ funnel }: { funnel: Funnel }) => {
           </div>
         </button>
 
-        {/* Circuit line */}
-        <div className="circuit-line flex-1 mx-3 md:mx-5" />
+        {/* Line */}
+        <div className="circuit-line flex-1 mx-3 md:mx-4" />
 
-        {/* Keyword badge */}
-        <span className="relative z-10 shrink-0 inline-flex items-center px-3 py-1 rounded-md bg-primary text-primary-foreground text-[11px] font-semibold uppercase tracking-wider">
+        {/* Keyword badge — amber */}
+        <span className="relative z-10 shrink-0 inline-flex items-center px-3 py-1 rounded-lg bg-[hsl(var(--amber))] text-[hsl(var(--amber-foreground))] text-[11px] font-semibold uppercase tracking-wider">
           {funnel.keyword}
         </span>
 
-        {/* Circuit line */}
-        <div className="circuit-line flex-1 mx-3 md:mx-5 hidden md:block" />
+        {/* Line */}
+        <div className="circuit-line flex-1 mx-3 md:mx-4 hidden md:block" />
 
         {/* Product */}
         <div className="hidden md:flex items-center gap-2 shrink-0 max-w-[340px]">
           <span className="text-[13px] text-foreground/80 truncate">
-            <span className="text-muted-foreground text-[11px] mr-2">{funnel.productType}:</span>
+            <span className="text-muted-foreground text-[11px] mr-2 font-medium">{funnel.productType}</span>
             {funnel.product}
           </span>
           <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -130,9 +139,9 @@ const PathRow = ({ funnel }: { funnel: Funnel }) => {
       </div>
 
       {/* Mobile product line */}
-      <div className="flex md:hidden items-center gap-2 px-4 pb-2 -mt-1 pl-[60px]">
+      <div className="flex md:hidden items-center gap-2 px-4 pb-3 -mt-1 pl-[60px]">
         <span className="text-[12px] text-foreground/60 truncate">
-          <span className="text-muted-foreground text-[10px] mr-1.5">{funnel.productType}:</span>
+          <span className="text-muted-foreground text-[10px] mr-1.5 font-medium">{funnel.productType}</span>
           {funnel.product}
         </span>
         <ArrowUpRight className="w-3 h-3 text-muted-foreground shrink-0" />
@@ -140,9 +149,9 @@ const PathRow = ({ funnel }: { funnel: Funnel }) => {
 
       {/* Expanded children */}
       {expanded && (
-        <div className="relative ml-[18px] md:ml-[24px] pl-6 md:pl-8 pb-3">
-          {/* Vertical connector line */}
-          <div className="absolute left-[18px] md:left-[24px] top-0 bottom-3 circuit-line-vertical" />
+        <div className="relative ml-[18px] md:ml-[22px] pl-6 md:pl-8 pb-3 border-t border-border">
+          {/* Vertical connector */}
+          <div className="absolute left-[18px] md:left-[22px] top-0 bottom-3 circuit-line-vertical" />
 
           {funnel.children.map((child, i) => (
             <div
@@ -151,24 +160,25 @@ const PathRow = ({ funnel }: { funnel: Funnel }) => {
               style={{ animationDelay: `${i * 50}ms`, animationFillMode: "both" }}
             >
               {/* Node dot */}
-              <div className="w-2 h-2 rounded-full bg-primary/60 shrink-0 -ml-[7px] md:-ml-[7px] mr-3 md:mr-4 relative z-10" />
+              <div className="w-2.5 h-2.5 rounded-full bg-primary/40 shrink-0 -ml-[8px] mr-3 md:mr-4 relative z-10 border-2 border-background" />
 
               {/* Horizontal line */}
-              <div className="circuit-line w-6 md:w-10 shrink-0" />
+              <div className="circuit-line w-5 md:w-8 shrink-0" />
 
               {/* Content type badge */}
-              <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded bg-secondary text-secondary-foreground text-[10px] font-medium uppercase tracking-wide mx-2 md:mx-3">
+              <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg violet-surface text-primary text-[10px] font-medium uppercase tracking-wide mx-2 md:mx-3">
+                {typeIcon(child.type)}
                 {child.type}
               </span>
 
               {/* Title */}
-              <span className="text-[12px] md:text-[13px] text-foreground/60 truncate">
+              <span className="text-[12px] md:text-[13px] text-muted-foreground truncate">
                 {child.title}
               </span>
 
               {/* Metric */}
               {child.metric && (
-                <span className="ml-auto font-mono text-[11px] text-primary/70 shrink-0 pl-3">
+                <span className="ml-auto text-[11px] font-semibold text-primary shrink-0 pl-3">
                   {child.metric}
                 </span>
               )}
@@ -208,21 +218,21 @@ const Index = () => {
               </span>
             </div>
 
-            <button className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-foreground text-background text-[13px] font-medium hover:bg-foreground/90 transition-colors">
+            <button className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary/90 transition-colors shadow-sm">
               <Plus className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">New Path</span>
             </button>
           </div>
 
           {/* Filters */}
-          <div className="flex items-center gap-1 pb-3 overflow-x-auto scrollbar-none -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="flex items-center gap-1.5 pb-3 overflow-x-auto scrollbar-none -mx-4 px-4 md:mx-0 md:px-0">
             {filters.map((f) => (
               <button
                 key={f.key}
                 onClick={() => setActiveFilter(f.key)}
-                className={`shrink-0 px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors ${
+                className={`shrink-0 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
                   activeFilter === f.key
-                    ? "bg-secondary text-foreground"
+                    ? "violet-surface text-primary"
                     : "text-muted-foreground hover:text-foreground/70"
                 }`}
               >
@@ -234,19 +244,23 @@ const Index = () => {
       </header>
 
       {/* Content */}
-      <main className="max-w-4xl mx-auto py-4 md:py-6">
+      <main className="max-w-4xl mx-auto py-5 md:py-6 px-4 md:px-6">
         {/* Active funnels */}
-        <div className="space-y-1">
+        <div>
           {activeFunnels.map((funnel) => (
             <PathRow key={funnel.id} funnel={funnel} />
           ))}
         </div>
 
-        {/* Divider */}
-        <div className="my-6 md:my-8 mx-4 md:mx-6 circuit-line" />
+        {/* Divider label */}
+        <div className="flex items-center gap-3 my-5 md:my-6">
+          <div className="circuit-line flex-1" />
+          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Неактивные</span>
+          <div className="circuit-line flex-1" />
+        </div>
 
         {/* Inactive funnels */}
-        <div className="space-y-1">
+        <div>
           {inactiveFunnels.map((funnel) => (
             <PathRow key={funnel.id} funnel={funnel} />
           ))}
