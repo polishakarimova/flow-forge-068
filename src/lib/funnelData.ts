@@ -1,5 +1,5 @@
 export type ContentStatus = "published" | "ready" | "draft";
-export type BadgeColor = "violet" | "amber";
+export type BadgeColor = "violet" | "amber" | "honey" | "peach" | "lilac";
 export type ProductTier = "lead-magnet" | "mid-ticket" | "flagship";
 
 export interface ContentItem {
