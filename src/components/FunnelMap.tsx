@@ -4,6 +4,7 @@ import type { Funnel, ContentStatus, FunnelProduct, ContentItem } from "@/lib/fu
 import { productsCatalog } from "@/lib/funnelData";
 import { ProductDrawer } from "@/components/ProductDrawer";
 import { ContentDrawer } from "@/components/ContentDrawer";
+import { getBadgeStyle } from "@/lib/badgeStyles";
 import {
   Popover,
   PopoverContent,
