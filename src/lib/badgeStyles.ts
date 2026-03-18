@@ -20,12 +20,6 @@ export function getBadgeStyle(color: BadgeColor): React.CSSProperties {
         color: "white",
         boxShadow: "0 2px 8px rgba(167, 139, 250, 0.3)",
       };
-    case "lilac":
-      return {
-        background: "linear-gradient(135deg, #A78BFA, #8B5CF6)",
-        color: "white",
-        boxShadow: "0 2px 8px rgba(167, 139, 250, 0.3)",
-      };
     case "amber":
     default:
       return {
@@ -35,10 +29,3 @@ export function getBadgeStyle(color: BadgeColor): React.CSSProperties {
       };
   }
 }
-
-export const badgeColorLabel: Record<BadgeColor, string> = {
-  violet: "",
-  amber: "",
-  honey: "",
-  lilac: "",
-};
