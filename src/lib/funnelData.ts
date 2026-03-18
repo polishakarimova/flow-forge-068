@@ -180,7 +180,7 @@ export const funnelsData: Funnel[] = [
   {
     id: "2",
     keyword: "ОБРАЗ",
-    badgeColor: "amber",
+    badgeColor: "honey",
     product: "Туториал как примерить любую причёску",
     productType: "Лид-магнит",
     active: true,
