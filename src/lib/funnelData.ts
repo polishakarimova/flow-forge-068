@@ -8,6 +8,10 @@ export interface ContentItem {
   format: string;
   title: string;
   status: ContentStatus;
+  views?: number;
+  messages?: number;
+  leads?: number;
+  sales?: number;
 }
 
 export interface FunnelProduct {
@@ -18,7 +22,14 @@ export interface FunnelProduct {
   tier: ProductTier;
   description?: string;
   offerUrl?: string;
-  funnelIds?: string[]; // which funnels use this product
+  funnelIds?: string[];
+}
+
+export interface ConversionData {
+  from: string;
+  to: string;
+  rate: number; // percentage 0-100
+  label: string; // e.g. "20%"
 }
 
 export interface Funnel {
@@ -31,12 +42,21 @@ export interface Funnel {
   contentCount: number;
   leads: number;
   sales: number;
+  hasNewActivity?: boolean; // pulsing dot
   contentItems: ContentItem[];
   cta: string;
   leadMagnet?: FunnelProduct;
   midTicket?: FunnelProduct;
   flagship?: FunnelProduct;
+  conversions?: ConversionData[];
 }
+
+export const productTypeShort: Record<string, string> = {
+  "Лид-магнит": "ЛМ",
+  "Трипваер": "ТВ",
+  "Средний чек": "СЧ",
+  "Флагман": "ФГ",
+};
 
 // Shared product catalog
 export const productsCatalog: FunnelProduct[] = [
@@ -139,9 +159,10 @@ export const funnelsData: Funnel[] = [
     contentCount: 4,
     leads: 12,
     sales: 3,
+    hasNewActivity: true,
     contentItems: [
-      { id: "c1", platform: "Telegram", format: "Пост", title: "TG-пост про кейс", status: "published" },
-      { id: "c2", platform: "Instagram", format: "Stories", title: "Stories: до/после", status: "published" },
+      { id: "c1", platform: "Telegram", format: "Пост", title: "TG-пост про кейс", status: "published", views: 1200, messages: 45, leads: 8, sales: 2 },
+      { id: "c2", platform: "Instagram", format: "Stories", title: "Stories: до/после", status: "published", views: 3400, messages: 120, leads: 3, sales: 1 },
       { id: "c3", platform: "Instagram", format: "Reels", title: "Reels: результат клиента", status: "ready" },
       { id: "c4", platform: "Blog", format: "Статья", title: "Подробный разбор кейса", status: "draft" },
     ],
@@ -149,6 +170,12 @@ export const funnelsData: Funnel[] = [
     leadMagnet: productsCatalog.find((p) => p.id === "p1"),
     midTicket: productsCatalog.find((p) => p.id === "p2"),
     flagship: productsCatalog.find((p) => p.id === "p3"),
+    conversions: [
+      { from: "content", to: "cta", rate: 15, label: "15%" },
+      { from: "cta", to: "lead-magnet", rate: 45, label: "45%" },
+      { from: "lead-magnet", to: "mid-ticket", rate: 8, label: "8%" },
+      { from: "mid-ticket", to: "flagship", rate: 3, label: "3%" },
+    ],
   },
   {
     id: "2",
@@ -160,13 +187,19 @@ export const funnelsData: Funnel[] = [
     contentCount: 2,
     leads: 8,
     sales: 1,
+    hasNewActivity: true,
     contentItems: [
-      { id: "c5", platform: "Instagram", format: "Reels", title: "Reels: трансформация образа", status: "published" },
-      { id: "c6", platform: "Instagram", format: "Stories", title: "Stories: опрос по стилю", status: "published" },
+      { id: "c5", platform: "Instagram", format: "Reels", title: "Reels: трансформация образа", status: "published", views: 5200, messages: 80, leads: 6, sales: 1 },
+      { id: "c6", platform: "Instagram", format: "Stories", title: "Stories: опрос по стилю", status: "published", views: 1800, messages: 30, leads: 2 },
     ],
     cta: "Напиши ОБРАЗ в директ",
     leadMagnet: productsCatalog.find((p) => p.id === "p4"),
     flagship: productsCatalog.find((p) => p.id === "p5"),
+    conversions: [
+      { from: "content", to: "cta", rate: 12, label: "12%" },
+      { from: "cta", to: "lead-magnet", rate: 35, label: "35%" },
+      { from: "lead-magnet", to: "flagship", rate: 5, label: "5%" },
+    ],
   },
   {
     id: "3",
@@ -179,12 +212,16 @@ export const funnelsData: Funnel[] = [
     leads: 5,
     sales: 0,
     contentItems: [
-      { id: "c7", platform: "Telegram", format: "Пост", title: "Пост: почему MAX", status: "published" },
+      { id: "c7", platform: "Telegram", format: "Пост", title: "Пост: почему MAX", status: "published", views: 800, messages: 15, leads: 3 },
       { id: "c8", platform: "Instagram", format: "Stories", title: "Stories: пошаговый гайд", status: "ready" },
       { id: "c9", platform: "Instagram", format: "Reels", title: "Reels: сравнение платформ", status: "draft" },
     ],
     cta: "Напиши МАКС в директ",
     leadMagnet: productsCatalog.find((p) => p.id === "p6"),
+    conversions: [
+      { from: "content", to: "cta", rate: 7, label: "7%" },
+      { from: "cta", to: "lead-magnet", rate: 25, label: "25%" },
+    ],
   },
   {
     id: "4",
@@ -196,13 +233,20 @@ export const funnelsData: Funnel[] = [
     contentCount: 1,
     leads: 15,
     sales: 5,
+    hasNewActivity: true,
     contentItems: [
-      { id: "c10", platform: "Instagram", format: "Reels", title: "Reels: как Claude пишет за тебя", status: "published" },
+      { id: "c10", platform: "Instagram", format: "Reels", title: "Reels: как Claude пишет за тебя", status: "published", views: 8900, messages: 210, leads: 15, sales: 5 },
     ],
     cta: "Напиши СИСТЕМА в директ",
     leadMagnet: productsCatalog.find((p) => p.id === "p7"),
     midTicket: productsCatalog.find((p) => p.id === "p8"),
     flagship: productsCatalog.find((p) => p.id === "p9"),
+    conversions: [
+      { from: "content", to: "cta", rate: 22, label: "22%" },
+      { from: "cta", to: "lead-magnet", rate: 55, label: "55%" },
+      { from: "lead-magnet", to: "mid-ticket", rate: 12, label: "12%" },
+      { from: "mid-ticket", to: "flagship", rate: 6, label: "6%" },
+    ],
   },
   {
     id: "5",
