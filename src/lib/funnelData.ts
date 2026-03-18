@@ -226,7 +226,7 @@ export const funnelsData: Funnel[] = [
   {
     id: "4",
     keyword: "СИСТЕМА",
-    badgeColor: "amber",
+    badgeColor: "peach",
     product: "AI-команда под ключ",
     productType: "Трипваер",
     active: true,
