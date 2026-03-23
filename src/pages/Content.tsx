@@ -292,7 +292,7 @@ const Content = () => {
                     <div key={topic.id} className="mb-3">
                       <div
                         onClick={() => setEditingIdea(topic)}
-                        className="card-elevated flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-200 border-l-[3px] border-l-amber-400"
+                        className="card-elevated flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-200 border-l-[3px] border-l-amber-400 hover:bg-[hsl(var(--primary)/0.04)]"
                       >
                         <span className="text-[11px] bg-amber-200 px-2 py-0.5 rounded-lg font-bold text-amber-800">
                           💡

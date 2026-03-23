@@ -13,7 +13,7 @@ export function ContentCard({ item, topicTitle, showTopic, onOpen }: ContentCard
 
   return (
     <div
-      className="card-elevated flex items-center gap-2 px-3 py-1.5 cursor-pointer transition-all duration-200"
+      className="card-elevated flex items-center gap-2 px-3 py-1.5 cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)]"
       onClick={() => onOpen(item)}
     >
       {/* Status dot — all pulse equally */}
