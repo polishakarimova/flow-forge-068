@@ -5,6 +5,105 @@ import { MobileNav } from "@/components/MobileNav";
 import { type BadgeColor } from "@/lib/funnelData";
 import { useDataStore } from "@/lib/dataStore";
 
+/* ── inline SVG icons (Lucide-style, stroke, 14×14) ─── */
+
+const ICON_COLOR = "#6366f1";
+
+function SvgIconFileText({ x, y }: { x: number; y: number }) {
+  return (
+    <g transform={`translate(${x}, ${y})`} fill="none" stroke={ICON_COLOR} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 1h6l4 4v8a1 1 0 01-1 1H3a1 1 0 01-1-1V2a1 1 0 011-1z" />
+      <path d="M9 1v4h4" />
+      <line x1="5" y1="7" x2="9" y2="7" />
+      <line x1="5" y1="10" x2="9" y2="10" />
+    </g>
+  );
+}
+
+function SvgIconKey({ x, y }: { x: number; y: number }) {
+  return (
+    <g transform={`translate(${x}, ${y})`} fill="none" stroke={ICON_COLOR} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8" cy="5" r="3" />
+      <line x1="8" y1="8" x2="8" y2="14" />
+      <line x1="6" y1="11" x2="10" y2="11" />
+    </g>
+  );
+}
+
+function SvgIconMagnet({ x, y }: { x: number; y: number }) {
+  return (
+    <g transform={`translate(${x}, ${y})`} fill="none" stroke={ICON_COLOR} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 1v5a4 4 0 008 0V1" />
+      <line x1="2" y1="1" x2="6" y2="1" />
+      <line x1="10" y1="1" x2="14" y2="1" />
+    </g>
+  );
+}
+
+function SvgIconCoin({ x, y }: { x: number; y: number }) {
+  return (
+    <g transform={`translate(${x}, ${y})`} fill="none" stroke={ICON_COLOR} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="7" cy="7" r="6" />
+      <path d="M5 5.5C5.3 4.6 6 4 7 4s2 .8 2 1.8c0 1.4-2 1.4-2 2.7" />
+      <circle cx="7" cy="10.5" r="0.3" fill={ICON_COLOR} />
+    </g>
+  );
+}
+
+function SvgIconZap({ x, y }: { x: number; y: number }) {
+  return (
+    <g transform={`translate(${x}, ${y})`} fill="none" stroke={ICON_COLOR} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="9,1 3,8 7,8 5,14 11,7 7,7" />
+    </g>
+  );
+}
+
+function SvgIconDiamond({ x, y }: { x: number; y: number }) {
+  return (
+    <g transform={`translate(${x}, ${y})`} fill="none" stroke={ICON_COLOR} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="7,1 13,6 7,13 1,6" />
+      <line x1="1" y1="6" x2="13" y2="6" />
+      <line x1="5" y1="1" x2="3" y2="6" />
+      <line x1="9" y1="1" x2="11" y2="6" />
+      <line x1="7" y1="6" x2="7" y2="13" />
+    </g>
+  );
+}
+
+function SvgIconRocket({ x, y }: { x: number; y: number }) {
+  return (
+    <g transform={`translate(${x}, ${y})`} fill="none" stroke={ICON_COLOR} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 13s-2-1-3-3c0 0-1-2 1-6 1-2 3-3 3-3s2 1 3 3c2 4 1 6 1 6-1 2-3 3-3 3z" />
+      <circle cx="7" cy="6" r="1.5" />
+      <path d="M4 10l-2 3" />
+      <path d="M10 10l2 3" />
+    </g>
+  );
+}
+
+function SvgIconTarget({ x, y }: { x: number; y: number }) {
+  return (
+    <g transform={`translate(${x}, ${y})`} fill="none" stroke={ICON_COLOR} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="7" cy="7" r="6" />
+      <circle cx="7" cy="7" r="3.5" />
+      <circle cx="7" cy="7" r="1" fill={ICON_COLOR} />
+    </g>
+  );
+}
+
+const TIER_SVG_ICON: Record<string, (props: { x: number; y: number }) => JSX.Element> = {
+  "lead-magnet": SvgIconMagnet,
+  "mid-ticket": SvgIconDiamond,
+  flagship: SvgIconRocket,
+};
+
+const COL_SVG_ICON: ((props: { x: number; y: number }) => JSX.Element)[] = [
+  SvgIconFileText,
+  SvgIconKey,
+  SvgIconMagnet,
+  SvgIconCoin,
+];
+
 /* ── colour helpers ─────────────────────────────────── */
 
 const BADGE_HEX: Record<BadgeColor, string> = {
@@ -19,12 +118,6 @@ const PLATFORM_COLOR: Record<string, string> = {
   Instagram: "#E1306C",
   Blog: "#34A853",
   YouTube: "#FF0000",
-};
-
-const TIER_ICON: Record<string, string> = {
-  "lead-magnet": "🧲",
-  "mid-ticket": "💎",
-  flagship: "🚀",
 };
 
 const TIER_LABEL: Record<string, string> = {
@@ -50,7 +143,6 @@ interface MapNode {
   w: number;
   h: number;
   color: string;
-  icon?: string;
   tier?: string;
   tierLabel?: string;
 }
@@ -66,10 +158,10 @@ interface MapEdge {
 const COL_X = { content: 60, keyword: 380, leadmagnet: 650, product: 960 };
 
 const COL_HEADERS = [
-  { x: 60, label: "КОНТЕНТ", icon: "📝", w: 240 },
-  { x: 380, label: "КОДОВОЕ СЛОВО", icon: "🔑", w: 160 },
-  { x: 650, label: "ЛИД-МАГНИТ", icon: "🧲", w: 220 },
-  { x: 960, label: "ПРОДУКТ", icon: "💰", w: 230 },
+  { x: 60, label: "КОНТЕНТ", w: 240 },
+  { x: 380, label: "КОДОВОЕ СЛОВО", w: 160 },
+  { x: 650, label: "ЛИД-МАГНИТ", w: 220 },
+  { x: 960, label: "ПРОДУКТ", w: 230 },
 ];
 
 /* ── build graph from funnelsList ───────────────────── */
@@ -183,7 +275,6 @@ function buildGraph(funnelsList: typeof import("@/lib/funnelData").funnelsData) 
       w: 230,
       h: 52,
       color: TIER_COLOR[product.tier] || "#6366f1",
-      icon: TIER_ICON[product.tier] || "💰",
       tier: product.tier,
       tierLabel: TIER_LABEL[product.tier] || product.type,
     });
@@ -289,13 +380,15 @@ function LeadMagnetNode({ node }: { node: MapNode }) {
 
 function ProductNode({ node }: { node: MapNode }) {
   const label = node.label.length > 24 ? node.label.slice(0, 24) + "…" : node.label;
+  const TierIcon = node.tier ? TIER_SVG_ICON[node.tier] : null;
   return (
     <g>
       <rect x={0} y={0} width={node.w} height={node.h} rx={10} fill="hsl(var(--card))" stroke={node.color} strokeWidth={2} />
-      <text x={14} y={16} fontSize={9} fontWeight={700} fill={node.color} fontFamily="Inter, system-ui, sans-serif" letterSpacing="0.04em">
-        {node.icon} {node.tierLabel}
+      {TierIcon && <TierIcon x={10} y={5} />}
+      <text x={28} y={16} fontSize={9} fontWeight={700} fill={node.color} fontFamily="Inter, system-ui, sans-serif" letterSpacing="0.04em">
+        {node.tierLabel}
       </text>
-      <text x={14} y={36} fontSize={12} fontWeight={600} fill="hsl(var(--foreground))" fontFamily="Inter, system-ui, sans-serif">
+      <text x={14} y={38} fontSize={12} fontWeight={600} fill="hsl(var(--foreground))" fontFamily="Inter, system-ui, sans-serif">
         {label}
       </text>
     </g>
@@ -560,22 +653,26 @@ const FunnelMapPage = () => {
           >
             <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
               {/* Column headers */}
-              {COL_HEADERS.map((h) => (
-                <g key={h.label}>
-                  <text
-                    x={h.x + 10}
-                    y={36}
-                    fontSize={10}
-                    fontWeight={800}
-                    fill="hsl(var(--muted-foreground))"
-                    letterSpacing="0.08em"
-                    fontFamily="Inter, system-ui, sans-serif"
-                  >
-                    {h.icon} {h.label}
-                  </text>
-                  <line x1={h.x} y1={52} x2={h.x + h.w} y2={52} stroke="hsl(var(--border))" strokeWidth={1} />
-                </g>
-              ))}
+              {COL_HEADERS.map((h, i) => {
+                const Icon = COL_SVG_ICON[i];
+                return (
+                  <g key={h.label}>
+                    {Icon && <Icon x={h.x + 8} y={22} />}
+                    <text
+                      x={h.x + 26}
+                      y={36}
+                      fontSize={10}
+                      fontWeight={800}
+                      fill="hsl(var(--muted-foreground))"
+                      letterSpacing="0.08em"
+                      fontFamily="Inter, system-ui, sans-serif"
+                    >
+                      {h.label}
+                    </text>
+                    <line x1={h.x} y1={52} x2={h.x + h.w} y2={52} stroke="hsl(var(--border))" strokeWidth={1} />
+                  </g>
+                );
+              })}
 
               {/* Edges */}
               {edges.map((e, i) => {
