@@ -34,7 +34,7 @@ export function ContentDropdown({ value, onChange, options, placeholder, width =
     <div ref={ref} className="relative" style={{ width }}>
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl border border-border bg-card text-[13px] font-medium cursor-pointer transition-all duration-200 hover:border-primary/40 hover:shadow-sm ${
+        className={`w-full flex items-center justify-between gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-card text-[12px] font-medium cursor-pointer transition-all duration-200 hover:border-primary/40 hover:shadow-sm ${
           selected ? "text-foreground" : "text-muted-foreground"
         }`}
       >
