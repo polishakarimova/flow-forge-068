@@ -151,52 +151,49 @@ const Content = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background font-['DM_Sans',system-ui,sans-serif]">
+      <div className="min-h-screen flex w-full bg-background">
         <div className="hidden md:block">
           <AppSidebar />
         </div>
 
         <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
-          <header className="sticky top-0 z-50 bg-white border-b border-border">
-            <div className="max-w-[1040px] mx-auto px-4 md:px-6">
-              <div className="flex items-center justify-between h-14">
+          <header className="sticky top-0 z-50 surface-glass border-b border-border">
+            <div className="max-w-5xl mx-auto px-4 md:px-6">
+              <div className="flex items-center justify-between h-14 md:h-16">
                 <div className="flex items-center gap-3">
                   <SidebarTrigger className="hidden md:flex" />
-                  <span className="text-[13px] font-extrabold text-foreground tracking-widest">КАРТА КОНТЕНТА</span>
+                  <div className="flex items-baseline gap-2">
+                    <h1 className="text-[15px] md:text-base font-semibold text-foreground tracking-tight">
+                      Контент
+                    </h1>
+                    <span className="text-[13px] text-muted-foreground">
+                      / {TABS.find((t) => t.key === tab)?.label} ({TABS.find((t) => t.key === tab)?.count})
+                    </span>
+                  </div>
                 </div>
                 <button
                   onClick={() => setShowCreate(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold cursor-pointer text-white border-none shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md"
-                  style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary/90 transition-colors shadow-sm"
                 >
-                  <Plus className="w-4 h-4" />
-                  Новая тема
+                  <Plus className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Новая тема</span>
                 </button>
               </div>
 
-              {/* Tabs */}
-              <div className="flex gap-1">
+              {/* Tabs as filter pills */}
+              <div className="flex items-center gap-1.5 pb-3 overflow-x-auto scrollbar-none">
                 {TABS.map((t) => (
                   <button
                     key={t.key}
                     onClick={() => setTab(t.key)}
-                    className="flex items-center gap-2 px-4 py-2.5 pb-3 text-[14px] font-semibold cursor-pointer bg-transparent border-none transition-all duration-200"
-                    style={{
-                      borderBottom: tab === t.key ? "2.5px solid #6366f1" : "2.5px solid transparent",
-                      color: tab === t.key ? "#6366f1" : "#94a3b8",
-                    }}
+                    className={`shrink-0 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
+                      tab === t.key
+                        ? "violet-surface text-primary"
+                        : "text-muted-foreground hover:text-foreground/70"
+                    }`}
                   >
-                    {t.label}
-                    <span
-                      className="text-[11px] px-2 py-0.5 rounded-lg font-bold"
-                      style={{
-                        background: tab === t.key ? "#6366f1" : "#e8ecf1",
-                        color: tab === t.key ? "#fff" : "#94a3b8",
-                      }}
-                    >
-                      {t.count}
-                    </span>
+                    {t.label} ({t.count})
                   </button>
                 ))}
               </div>
@@ -204,7 +201,7 @@ const Content = () => {
           </header>
 
           {/* Content */}
-          <main className="flex-1 max-w-[1040px] w-full mx-auto py-3 px-4 md:px-6 pb-20 md:pb-6">
+          <main className="flex-1 max-w-5xl w-full mx-auto py-5 md:py-6 px-4 md:px-6 pb-20 md:pb-6">
             {/* Topics tab */}
             {tab === "topics" && (
               <div>
@@ -261,9 +258,9 @@ const Content = () => {
                   groupedContent.map((g) => (
                     <div key={g.date}>
                       <div className="flex items-center gap-3 pt-4 pb-2">
-                        <span className="text-[13px] font-bold text-slate-500">{g.label}</span>
+                        <span className="text-[13px] font-bold text-muted-foreground">{g.label}</span>
                         <div className="flex-1 h-px bg-border" />
-                        <span className="text-[12px] text-slate-400">{g.items.length}</span>
+                        <span className="text-[12px] text-muted-foreground">{g.items.length}</span>
                       </div>
                       <div className="flex flex-col gap-1 mb-1">
                         {g.items.map((ci) => (
@@ -292,10 +289,10 @@ const Content = () => {
                   </div>
                 ) : (
                   ideas.map((topic) => (
-                    <div key={topic.id} className="mb-1">
+                    <div key={topic.id} className="mb-3">
                       <div
                         onClick={() => setEditingIdea(topic)}
-                        className="flex items-center gap-3 bg-[#fffdf5] rounded-xl px-4 py-3 cursor-pointer border border-amber-200 transition-all duration-200 hover:bg-amber-50 hover:shadow-sm"
+                        className="card-elevated flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-200 border-l-[3px] border-l-amber-400"
                       >
                         <span className="text-[11px] bg-amber-200 px-2 py-0.5 rounded-lg font-bold text-amber-800">
                           💡

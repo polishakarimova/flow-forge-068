@@ -21,7 +21,7 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave }: Conten
       className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] animate-in fade-in duration-200"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-3xl w-full max-w-[520px] max-h-[90vh] overflow-auto animate-in slide-in-from-bottom-3 duration-300" style={{ boxShadow: "0 24px 60px rgba(0,0,0,.15)" }}>
+      <div className="bg-card rounded-3xl w-full max-w-[520px] max-h-[90vh] overflow-auto animate-in slide-in-from-bottom-3 duration-300" style={{ boxShadow: "0 24px 60px rgba(0,0,0,.15)" }}>
         <div className="h-[4px] rounded-t-3xl" style={{ background: platform?.color || "#ccc" }} />
         <div className="px-7 py-6">
           {/* Header */}
@@ -35,7 +35,7 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave }: Conten
               <StatusSelect value={status} onChange={setStatus} />
               <button
                 onClick={onClose}
-                className="bg-slate-100 border-none rounded-lg w-[30px] h-[30px] cursor-pointer text-[14px] text-slate-500 flex items-center justify-center hover:bg-slate-200 transition-all duration-200"
+                className="bg-muted border-none rounded-lg w-[30px] h-[30px] cursor-pointer text-[14px] text-muted-foreground flex items-center justify-center hover:bg-muted/80 transition-all duration-200"
               >
                 ✕
               </button>
@@ -44,7 +44,7 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave }: Conten
 
           {/* Title */}
           <div className="mb-4">
-            <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Заголовок</label>
+            <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">Заголовок</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -63,7 +63,7 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave }: Conten
 
           {/* Body */}
           <div className="mb-4">
-            <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Текст контента</label>
+            <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">Текст контента</label>
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
@@ -85,13 +85,13 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave }: Conten
           {/* Dates */}
           <div className="grid grid-cols-2 gap-3 mb-5">
             <div>
-              <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Создано</label>
-              <div className="px-4 py-3 rounded-xl border-[1.5px] border-slate-100 text-[15px] text-muted-foreground bg-slate-50">
+              <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">Создано</label>
+              <div className="px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] text-muted-foreground bg-muted/50">
                 {formatDateLabel(item.createdDate) || "—"}
               </div>
             </div>
             <div>
-              <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Дата публикации</label>
+              <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">Дата публикации</label>
               <input
                 type="date"
                 value={publishDate}
