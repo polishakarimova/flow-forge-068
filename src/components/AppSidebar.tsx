@@ -18,10 +18,10 @@ import {
 } from "@/components/ui/sidebar";
 
 const navItems = [
+  { title: "Продукты", url: "/products", icon: Package },
   { title: "Контент", url: "/content", icon: FileText },
   { title: "Воронки", url: "/", icon: GitBranch },
   { title: "Карта", url: "/map", icon: Map },
-  { title: "Продукты", url: "/products", icon: Package },
 ];
 
 export function AppSidebar() {
