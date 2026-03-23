@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -6,21 +6,29 @@ import { MobileNav } from "@/components/MobileNav";
 import { PathRow } from "@/components/PathRow";
 import { funnelsData, type Funnel } from "@/lib/funnelData";
 
-type FilterType = "all" | "keyword" | "type" | "product";
-
-const filters: { key: FilterType; label: string }[] = [
-  { key: "all", label: "Все" },
-  { key: "keyword", label: "Кодовое слово" },
-  { key: "type", label: "Тип контента" },
-  { key: "product", label: "Продукт" },
-];
-
 const Index = () => {
-  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [funnels, setFunnels] = useState<Funnel[]>(funnelsData);
+  const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
 
-  const activeFunnels = funnels.filter((f) => f.active);
-  const inactiveFunnels = funnels.filter((f) => !f.active);
+  const keywords = useMemo(
+    () => [...new Set(funnels.map((f) => f.keyword))],
+    [funnels]
+  );
+
+  const products = useMemo(
+    () => [...new Set(funnels.map((f) => f.product))],
+    [funnels]
+  );
+
+  const filtered = funnels.filter((f) => {
+    if (selectedKeyword && f.keyword !== selectedKeyword) return false;
+    if (selectedProduct && f.product !== selectedProduct) return false;
+    return true;
+  });
+
+  const activeFunnels = filtered.filter((f) => f.active);
+  const inactiveFunnels = filtered.filter((f) => !f.active);
 
   const handleToggleActive = (id: string) => {
     setFunnels((prev) =>
@@ -57,18 +65,62 @@ const Index = () => {
                 </button>
               </div>
 
+              {/* Filter chips */}
               <div className="flex items-center gap-1.5 pb-3 overflow-x-auto scrollbar-none">
-                {filters.map((f) => (
+                {/* Keyword filters */}
+                <button
+                  onClick={() => setSelectedKeyword(null)}
+                  className={`shrink-0 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
+                    !selectedKeyword
+                      ? "violet-surface text-primary"
+                      : "text-muted-foreground hover:text-foreground/70"
+                  }`}
+                >
+                  Все слова
+                </button>
+                {keywords.map((kw) => (
                   <button
-                    key={f.key}
-                    onClick={() => setActiveFilter(f.key)}
+                    key={kw}
+                    onClick={() =>
+                      setSelectedKeyword(selectedKeyword === kw ? null : kw)
+                    }
                     className={`shrink-0 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
-                      activeFilter === f.key
+                      selectedKeyword === kw
                         ? "violet-surface text-primary"
                         : "text-muted-foreground hover:text-foreground/70"
                     }`}
                   >
-                    {f.label}
+                    {kw}
+                  </button>
+                ))}
+
+                {/* Divider */}
+                <div className="w-px h-4 bg-border shrink-0 mx-1" />
+
+                {/* Product filters */}
+                <button
+                  onClick={() => setSelectedProduct(null)}
+                  className={`shrink-0 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
+                    !selectedProduct
+                      ? "violet-surface text-primary"
+                      : "text-muted-foreground hover:text-foreground/70"
+                  }`}
+                >
+                  Все продукты
+                </button>
+                {products.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() =>
+                      setSelectedProduct(selectedProduct === p ? null : p)
+                    }
+                    className={`shrink-0 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-colors max-w-[180px] truncate ${
+                      selectedProduct === p
+                        ? "violet-surface text-primary"
+                        : "text-muted-foreground hover:text-foreground/70"
+                    }`}
+                  >
+                    {p}
                   </button>
                 ))}
               </div>
@@ -107,6 +159,12 @@ const Index = () => {
                   ))}
                 </div>
               </>
+            )}
+
+            {filtered.length === 0 && (
+              <div className="text-center py-16 text-muted-foreground">
+                <div className="text-[13px]">Нет воронок по выбранным фильтрам</div>
+              </div>
             )}
           </main>
         </div>
