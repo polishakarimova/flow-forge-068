@@ -160,36 +160,36 @@ const Content = () => {
           {/* Header */}
           <header className="sticky top-0 z-50 bg-white border-b border-border">
             <div className="max-w-[1040px] mx-auto px-4 md:px-6">
-              <div className="flex items-center justify-between h-12">
+              <div className="flex items-center justify-between h-14">
                 <div className="flex items-center gap-3">
                   <SidebarTrigger className="hidden md:flex" />
-                  <span className="text-xs font-extrabold text-foreground tracking-wider">КАРТА КОНТЕНТА</span>
+                  <span className="text-[13px] font-extrabold text-foreground tracking-widest">КАРТА КОНТЕНТА</span>
                 </div>
                 <button
                   onClick={() => setShowCreate(true)}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer text-white border-none shadow-sm transition-transform hover:-translate-y-px"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold cursor-pointer text-white border-none shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md"
                   style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4" />
                   Новая тема
                 </button>
               </div>
 
               {/* Tabs */}
-              <div className="flex">
+              <div className="flex gap-1">
                 {TABS.map((t) => (
                   <button
                     key={t.key}
                     onClick={() => setTab(t.key)}
-                    className="flex items-center gap-1.5 px-3.5 py-2 pb-2.5 text-xs font-semibold cursor-pointer bg-transparent border-none transition-colors"
+                    className="flex items-center gap-2 px-4 py-2.5 pb-3 text-[14px] font-semibold cursor-pointer bg-transparent border-none transition-all duration-200"
                     style={{
-                      borderBottom: tab === t.key ? "2px solid #6366f1" : "2px solid transparent",
+                      borderBottom: tab === t.key ? "2.5px solid #6366f1" : "2.5px solid transparent",
                       color: tab === t.key ? "#6366f1" : "#94a3b8",
                     }}
                   >
                     {t.label}
                     <span
-                      className="text-[10px] px-1.5 py-px rounded-lg font-bold"
+                      className="text-[11px] px-2 py-0.5 rounded-lg font-bold"
                       style={{
                         background: tab === t.key ? "#6366f1" : "#e8ecf1",
                         color: tab === t.key ? "#fff" : "#94a3b8",
@@ -227,45 +227,45 @@ const Content = () => {
             {/* Content tab */}
             {tab === "content" && (
               <div>
-                <div className="flex gap-2 mb-2.5 items-center">
+                <div className="flex gap-3 mb-4 items-center">
                   <ContentMultiDropdown
                     values={platformFilters}
                     onChange={setPlatformFilters}
                     options={platformOptions}
                     placeholder="Все площадки"
-                    width={190}
+                    width={220}
                   />
                   <ContentDropdown
                     value={statusFilter}
                     onChange={setStatusFilter}
                     options={statusOptions}
                     placeholder="Все статусы"
-                    width={160}
+                    width={180}
                   />
                   {hasFilters && (
                     <button
                       onClick={() => { setPlatformFilters([]); setStatusFilter(null); }}
-                      className="text-[10px] text-muted-foreground bg-transparent border-none cursor-pointer underline"
+                      className="text-[12px] text-muted-foreground bg-transparent border-none cursor-pointer underline hover:text-foreground transition-colors"
                     >
                       Сбросить
                     </button>
                   )}
-                  <span className="ml-auto text-[11px] text-muted-foreground">
+                  <span className="ml-auto text-[13px] text-muted-foreground">
                     {filteredContent.length} из {allContent.length}
                   </span>
                 </div>
 
                 {groupedContent.length === 0 ? (
-                  <div className="text-center py-10 text-muted-foreground text-[13px]">Ничего не найдено</div>
+                  <div className="text-center py-10 text-muted-foreground text-[14px]">Ничего не найдено</div>
                 ) : (
                   groupedContent.map((g) => (
                     <div key={g.date}>
-                      <div className="flex items-center gap-2 pt-2.5 pb-1">
-                        <span className="text-[11px] font-bold text-slate-500">{g.label}</span>
+                      <div className="flex items-center gap-3 pt-4 pb-2">
+                        <span className="text-[13px] font-bold text-slate-500">{g.label}</span>
                         <div className="flex-1 h-px bg-border" />
-                        <span className="text-[10px] text-slate-400">{g.items.length}</span>
+                        <span className="text-[12px] text-slate-400">{g.items.length}</span>
                       </div>
-                      <div className="flex flex-col gap-0.5 mb-0.5">
+                      <div className="flex flex-col gap-1 mb-1">
                         {g.items.map((ci) => (
                           <ContentCard
                             key={ci.id}
@@ -292,18 +292,18 @@ const Content = () => {
                   </div>
                 ) : (
                   ideas.map((topic) => (
-                    <div key={topic.id} className="mb-0.5">
+                    <div key={topic.id} className="mb-1">
                       <div
                         onClick={() => setEditingIdea(topic)}
-                        className="flex items-center gap-2 bg-[#fffdf5] rounded-lg px-3 py-[7px] cursor-pointer border border-amber-200 transition-all hover:bg-amber-50"
+                        className="flex items-center gap-3 bg-[#fffdf5] rounded-xl px-4 py-3 cursor-pointer border border-amber-200 transition-all duration-200 hover:bg-amber-50 hover:shadow-sm"
                       >
-                        <span className="text-[9px] bg-amber-200 px-1.5 py-px rounded-[5px] font-bold text-amber-800">
+                        <span className="text-[11px] bg-amber-200 px-2 py-0.5 rounded-lg font-bold text-amber-800">
                           💡
                         </span>
-                        <span className="text-xs font-semibold text-foreground flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
+                        <span className="text-[14px] font-semibold text-foreground flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
                           {topic.title}
                         </span>
-                        <span className="text-[10px] text-muted-foreground">→</span>
+                        <span className="text-[12px] text-muted-foreground">→</span>
                       </div>
                     </div>
                   ))
