@@ -5,12 +5,14 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { PathRow } from "@/components/PathRow";
 import { ContentDropdown } from "@/components/content/ContentDropdown";
+import { CreateFunnelModal } from "@/components/funnels/CreateFunnelModal";
 import { useDataStore } from "@/lib/dataStore";
 
 const Index = () => {
   const { funnels, toggleFunnelActive } = useDataStore();
   const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
 
   const keywordOptions = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -62,7 +64,10 @@ const Index = () => {
                   </div>
                 </div>
 
-                <button className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary/90 transition-colors shadow-sm">
+                <button
+                  onClick={() => setShowCreate(true)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary/90 transition-colors shadow-sm"
+                >
                   <Plus className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Новая воронка</span>
                 </button>
@@ -143,6 +148,7 @@ const Index = () => {
 
         <MobileNav />
       </div>
+      {showCreate && <CreateFunnelModal onClose={() => setShowCreate(false)} />}
     </SidebarProvider>
   );
 };
