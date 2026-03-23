@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PLATFORMS, STATUSES, formatDateLabel, type ContentItemData, type ContentStatusKey } from "@/lib/contentData";
+import { PLATFORMS, formatDateLabel, type ContentItemData, type ContentStatusKey } from "@/lib/contentData";
 import { StatusSelect } from "./StatusSelect";
 
 interface ContentDetailModalProps {
@@ -18,24 +18,24 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave }: Conten
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] animate-in fade-in duration-150"
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] animate-in fade-in duration-200"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-2xl w-full max-w-[500px] max-h-[90vh] overflow-auto shadow-2xl animate-in slide-in-from-bottom-2 duration-200">
-        <div className="h-[3px] rounded-t-2xl" style={{ background: platform?.color || "#ccc" }} />
-        <div className="p-[18px_22px]">
+      <div className="bg-white rounded-3xl w-full max-w-[520px] max-h-[90vh] overflow-auto animate-in slide-in-from-bottom-3 duration-300" style={{ boxShadow: "0 24px 60px rgba(0,0,0,.15)" }}>
+        <div className="h-[4px] rounded-t-3xl" style={{ background: platform?.color || "#ccc" }} />
+        <div className="px-7 py-6">
           {/* Header */}
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-[7px]">
-              <span className="text-base">{platform?.icon}</span>
-              <span className="text-[15px] font-bold" style={{ color: platform?.color }}>{platform?.label}</span>
-              {topicTitle && <span className="text-[11px] text-muted-foreground">· {topicTitle}</span>}
-            </div>
+          <div className="flex justify-between items-center mb-5">
             <div className="flex items-center gap-2">
+              <span className="text-lg">{platform?.icon}</span>
+              <span className="text-[16px] font-bold" style={{ color: platform?.color }}>{platform?.label}</span>
+              {topicTitle && <span className="text-[12px] text-muted-foreground">· {topicTitle}</span>}
+            </div>
+            <div className="flex items-center gap-2.5">
               <StatusSelect value={status} onChange={setStatus} />
               <button
                 onClick={onClose}
-                className="bg-slate-100 border-none rounded-md w-[26px] h-[26px] cursor-pointer text-[13px] text-slate-500 flex items-center justify-center hover:bg-slate-200 transition-colors"
+                className="bg-slate-100 border-none rounded-lg w-[30px] h-[30px] cursor-pointer text-[14px] text-slate-500 flex items-center justify-center hover:bg-slate-200 transition-all duration-200"
               >
                 ✕
               </button>
@@ -43,51 +43,69 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave }: Conten
           </div>
 
           {/* Title */}
-          <div className="mb-3">
-            <label className="block text-[11px] font-semibold text-slate-600 mb-[3px]">Заголовок</label>
+          <div className="mb-4">
+            <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Заголовок</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="О чём этот контент"
-              className="w-full px-3 py-2 rounded-lg border-[1.5px] border-border text-[13px] outline-none transition-colors"
-              onFocus={(e) => { (e.target as HTMLElement).style.borderColor = platform?.color || "#6366f1"; }}
-              onBlur={(e) => { (e.target as HTMLElement).style.borderColor = "hsl(var(--border))"; }}
+              className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none transition-all duration-200"
+              onFocus={(e) => {
+                (e.target as HTMLElement).style.borderColor = platform?.color || "#6366f1";
+                (e.target as HTMLElement).style.boxShadow = `0 0 0 3px ${(platform?.color || "#6366f1")}15`;
+              }}
+              onBlur={(e) => {
+                (e.target as HTMLElement).style.borderColor = "hsl(var(--border))";
+                (e.target as HTMLElement).style.boxShadow = "none";
+              }}
             />
           </div>
 
           {/* Body */}
-          <div className="mb-3">
-            <label className="block text-[11px] font-semibold text-slate-600 mb-[3px]">Текст контента</label>
+          <div className="mb-4">
+            <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Текст контента</label>
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
               placeholder="Напиши текст поста, сценарий рилса, тезисы для сторис..."
               rows={6}
-              className="w-full px-3 py-2 rounded-lg border-[1.5px] border-border text-[13px] outline-none resize-y leading-relaxed transition-colors"
+              className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none resize-y leading-relaxed transition-all duration-200"
               style={{ minHeight: 120 }}
-              onFocus={(e) => { (e.target as HTMLElement).style.borderColor = platform?.color || "#6366f1"; }}
-              onBlur={(e) => { (e.target as HTMLElement).style.borderColor = "hsl(var(--border))"; }}
+              onFocus={(e) => {
+                (e.target as HTMLElement).style.borderColor = platform?.color || "#6366f1";
+                (e.target as HTMLElement).style.boxShadow = `0 0 0 3px ${(platform?.color || "#6366f1")}15`;
+              }}
+              onBlur={(e) => {
+                (e.target as HTMLElement).style.borderColor = "hsl(var(--border))";
+                (e.target as HTMLElement).style.boxShadow = "none";
+              }}
             />
           </div>
 
           {/* Dates */}
-          <div className="grid grid-cols-2 gap-2.5 mb-4">
+          <div className="grid grid-cols-2 gap-3 mb-5">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-600 mb-[3px]">Создано</label>
-              <div className="px-3 py-2 rounded-lg border-[1.5px] border-slate-100 text-[13px] text-muted-foreground bg-slate-50">
+              <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Создано</label>
+              <div className="px-4 py-3 rounded-xl border-[1.5px] border-slate-100 text-[15px] text-muted-foreground bg-slate-50">
                 {formatDateLabel(item.createdDate) || "—"}
               </div>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-600 mb-[3px]">Дата публикации</label>
+              <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Дата публикации</label>
               <input
                 type="date"
                 value={publishDate}
                 onChange={(e) => setPublishDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border-[1.5px] border-border text-[13px] outline-none transition-colors"
+                className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none transition-all duration-200"
                 style={{ color: publishDate ? "#334155" : "#94a3b8" }}
-                onFocus={(e) => { (e.target as HTMLElement).style.borderColor = platform?.color || "#6366f1"; }}
-                onBlur={(e) => { (e.target as HTMLElement).style.borderColor = "hsl(var(--border))"; }}
+                onFocus={(e) => {
+                  (e.target as HTMLElement).style.borderColor = platform?.color || "#6366f1";
+                  (e.target as HTMLElement).style.boxShadow = `0 0 0 3px ${(platform?.color || "#6366f1")}15`;
+                }}
+                onBlur={(e) => {
+                  (e.target as HTMLElement).style.borderColor = "hsl(var(--border))";
+                  (e.target as HTMLElement).style.boxShadow = "none";
+                }}
               />
             </div>
           </div>
@@ -95,7 +113,7 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave }: Conten
           {/* Save */}
           <button
             onClick={() => { onSave({ ...item, title, body, status, publishDate }); onClose(); }}
-            className="w-full py-2.5 rounded-xl text-[13px] font-bold cursor-pointer text-white border-none transition-colors"
+            className="w-full py-3 rounded-2xl text-[15px] font-bold cursor-pointer text-white border-none transition-all duration-200 hover:shadow-lg"
             style={{ background: `linear-gradient(135deg, ${platform?.color || "#6366f1"}, ${platform?.color || "#6366f1"}dd)` }}
           >
             Сохранить

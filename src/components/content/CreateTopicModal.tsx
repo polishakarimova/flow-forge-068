@@ -31,53 +31,53 @@ export function CreateTopicModal({ onClose, onCreate }: CreateTopicModalProps) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] animate-in fade-in duration-150"
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] animate-in fade-in duration-200"
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
-      <div className="bg-white rounded-2xl w-full max-w-[480px] max-h-[88vh] overflow-auto shadow-2xl animate-in slide-in-from-bottom-2 duration-200">
-        <div className="px-[22px] pt-5">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-base font-bold text-foreground">Новая тема</h2>
+      <div className="bg-white rounded-3xl w-full max-w-[500px] max-h-[88vh] overflow-auto animate-in slide-in-from-bottom-3 duration-300" style={{ boxShadow: "0 24px 60px rgba(0,0,0,.15)" }}>
+        <div className="px-7 pt-6">
+          <div className="flex justify-between items-center mb-5">
+            <h2 className="text-lg font-bold text-foreground">Новая тема</h2>
             <button
               onClick={handleClose}
-              className="bg-slate-100 border-none rounded-md w-[26px] h-[26px] cursor-pointer text-[13px] text-slate-500 flex items-center justify-center hover:bg-slate-200 transition-colors"
+              className="bg-slate-100 border-none rounded-lg w-[30px] h-[30px] cursor-pointer text-[14px] text-slate-500 flex items-center justify-center hover:bg-slate-200 transition-all duration-200"
             >
               ✕
             </button>
           </div>
 
-          <div className="mb-3">
-            <label className="block text-[11px] font-semibold text-slate-600 mb-1">Название темы</label>
+          <div className="mb-4">
+            <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Название темы</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Например: Кейс 1,4 ляма"
-              className="w-full px-3 py-2 rounded-lg border-[1.5px] border-border text-[13px] outline-none transition-colors focus:border-primary"
+              className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
               autoFocus
             />
           </div>
 
-          <div className="mb-4">
-            <label className="block text-[11px] font-semibold text-slate-600 mb-1">Тезисный план</label>
+          <div className="mb-5">
+            <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Тезисный план</label>
             <textarea
               value={thesisPlan}
               onChange={(e) => setThesisPlan(e.target.value)}
               placeholder={"— Что было до\n— Что сделали\n— Результат"}
               rows={3}
-              className="w-full px-3 py-2 rounded-lg border-[1.5px] border-border text-[13px] outline-none resize-y leading-relaxed transition-colors focus:border-primary"
+              className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none resize-y leading-relaxed transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
             />
           </div>
 
-          <div className="mb-4">
-            <label className="block text-[11px] font-semibold text-slate-600 mb-1.5">Куда постим?</label>
-            <div className="flex flex-wrap gap-[5px]">
+          <div className="mb-5">
+            <label className="block text-[13px] font-semibold text-slate-700 mb-2">Куда постим?</label>
+            <div className="flex flex-wrap gap-2">
               {PLATFORMS.map((p) => {
                 const isSelected = selected.includes(p.id);
                 return (
                   <button
                     key={p.id}
                     onClick={() => toggle(p.id)}
-                    className="flex items-center gap-1 px-2.5 py-[5px] rounded-lg text-[11px] font-semibold cursor-pointer transition-colors"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] font-semibold cursor-pointer transition-all duration-200"
                     style={{
                       border: isSelected ? `2px solid ${p.color}` : "2px solid #e8ecf1",
                       background: isSelected ? p.color + "10" : "#fff",
@@ -94,11 +94,11 @@ export function CreateTopicModal({ onClose, onCreate }: CreateTopicModalProps) {
           </div>
         </div>
 
-        <div className="flex gap-2 px-[22px] py-3 border-t border-slate-100">
+        <div className="flex gap-3 px-7 py-4 border-t border-slate-100">
           <button
             onClick={() => handleCreate(false)}
             disabled={!hasTitle || selected.length === 0}
-            className="flex-1 py-2.5 px-3.5 rounded-xl text-xs font-bold cursor-pointer transition-colors disabled:cursor-not-allowed"
+            className="flex-1 py-3 px-4 rounded-2xl text-[14px] font-bold cursor-pointer transition-all duration-200 disabled:cursor-not-allowed"
             style={{
               background: !hasTitle || selected.length === 0 ? "#e2e8f0" : "linear-gradient(135deg,#6366f1,#8b5cf6)",
               color: !hasTitle || selected.length === 0 ? "#94a3b8" : "#fff",
@@ -110,7 +110,7 @@ export function CreateTopicModal({ onClose, onCreate }: CreateTopicModalProps) {
           <button
             onClick={() => handleCreate(true)}
             disabled={!hasTitle}
-            className="py-2.5 px-3.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap transition-colors disabled:cursor-not-allowed"
+            className="py-3 px-4 rounded-2xl text-[14px] font-semibold cursor-pointer whitespace-nowrap transition-all duration-200 disabled:cursor-not-allowed"
             style={{
               background: !hasTitle ? "#f1f5f9" : "#fef9c3",
               color: !hasTitle ? "#94a3b8" : "#92400e",
@@ -122,7 +122,7 @@ export function CreateTopicModal({ onClose, onCreate }: CreateTopicModalProps) {
         </div>
 
         {hasTitle && selected.length === 0 && (
-          <div className="px-[22px] pb-3 text-[10px] text-muted-foreground text-center">
+          <div className="px-7 pb-4 text-[11px] text-muted-foreground text-center">
             Если закроешь — тема сохранится в банк идей
           </div>
         )}
