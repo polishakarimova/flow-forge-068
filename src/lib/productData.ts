@@ -1,6 +1,7 @@
 export interface ProductType {
   id: string;
   label: string;
+  short: string;
   icon: string;
   color: string;
 }
@@ -27,12 +28,12 @@ export interface Product {
 }
 
 export const PRODUCT_TYPES: ProductType[] = [
-  { id: "lead_magnet", label: "лид-магнит", icon: "🧲", color: "#8b5cf6" },
-  { id: "tripwire", label: "трипвайер", icon: "⚡", color: "#f59e0b" },
-  { id: "mid_ticket", label: "среднечек", icon: "💎", color: "#6366f1" },
-  { id: "flagship", label: "флагман", icon: "🚀", color: "#ef4444" },
-  { id: "consultation", label: "консультация", icon: "🎯", color: "#22c55e" },
-  { id: "private", label: "личка", icon: "🔒", color: "#0ea5e9" },
+  { id: "lead_magnet", label: "лид-магнит", short: "ЛМ", icon: "🧲", color: "#8b5cf6" },
+  { id: "tripwire", label: "трипвайер", short: "ТВ", icon: "⚡", color: "#f59e0b" },
+  { id: "mid_ticket", label: "среднечек", short: "СЧ", icon: "💎", color: "#6366f1" },
+  { id: "flagship", label: "флагман", short: "ФГ", icon: "🚀", color: "#ef4444" },
+  { id: "consultation", label: "консультация", short: "КС", icon: "🎯", color: "#22c55e" },
+  { id: "private", label: "личка", short: "ЛК", icon: "🔒", color: "#0ea5e9" },
 ];
 
 export const PRODUCT_STATUSES: Record<ProductStatusKey, ProductStatusInfo> = {
