@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Plus, Trash2, AlertTriangle } from "lucide-react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { Plus, Trash2, AlertTriangle, Search, ChevronDown } from "lucide-react";
 import { useDataStore } from "@/lib/dataStore";
 import { PRODUCT_TYPES, type Product } from "@/lib/productData";
 import { PLATFORMS } from "@/lib/contentData";
@@ -12,11 +12,8 @@ interface CreateFunnelModalProps {
 const BADGE_COLORS: { value: BadgeColor; label: string; hex: string }[] = [
   { value: "violet", label: "Фиолетовый", hex: "#8B5CF6" },
   { value: "honey", label: "Золотой", hex: "#E8B66D" },
-  { value: "lilac", label: "Сиреневый", hex: "#A78BFA" },
-  { value: "amber", label: "Янтарный", hex: "#D4A056" },
 ];
 
-// Map productData typeId → product tier slots used in funnel creation steps
 const TIER_STEPS: { typeId: string; label: string; field: keyof Pick<Funnel, "leadMagnet" | "tripwire" | "midTicket" | "flagship" | "consultation"> }[] = [
   { typeId: "lead_magnet", label: "Лид-магнит", field: "leadMagnet" },
   { typeId: "tripwire", label: "Трипвайер", field: "tripwire" },
@@ -25,7 +22,6 @@ const TIER_STEPS: { typeId: string; label: string; field: keyof Pick<Funnel, "le
   { typeId: "consultation", label: "Консультация / Личка", field: "consultation" },
 ];
 
-// Map contentData platformId → funnelData platform/format
 const PLATFORM_MAP: Record<string, { platform: string; format: string }> = {
   stories: { platform: "Instagram", format: "Stories" },
   tg_post: { platform: "Telegram", format: "Пост" },
@@ -65,24 +61,141 @@ function productToFunnelProduct(p: Product): FunnelProduct {
   };
 }
 
+/* ── Reusable dropdown for keyword / product selection ── */
+
+function SelectDropdown({
+  value,
+  onChange,
+  options,
+  placeholder,
+  onDelete,
+  onAdd,
+  addPlaceholder,
+}: {
+  value: string | number | null;
+  onChange: (v: string | number | null) => void;
+  options: { value: string | number; label: string; sub?: string }[];
+  placeholder: string;
+  onDelete?: (v: string | number) => void;
+  onAdd?: (label: string) => void;
+  addPlaceholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [addValue, setAddValue] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className={`w-full flex items-center justify-between gap-1.5 px-3 py-2 rounded-xl border-[1.5px] border-border bg-card text-[13px] font-medium cursor-pointer transition-all duration-200 hover:border-primary/40 ${
+          selected ? "text-foreground" : "text-muted-foreground"
+        }`}
+      >
+        <span className="flex-1 text-left truncate">
+          {selected ? selected.label : placeholder}
+        </span>
+        <ChevronDown
+          className="w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 shrink-0"
+          style={{ transform: open ? "rotate(180deg)" : "none" }}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-card border border-border/60 rounded-2xl z-50 p-1.5 animate-in fade-in slide-in-from-top-2 duration-200 shadow-[0_12px_40px_rgba(0,0,0,.08),0_2px_8px_rgba(0,0,0,.04)] max-h-[240px] overflow-auto">
+          {/* None option */}
+          <div
+            onClick={() => { onChange(null); setOpen(false); }}
+            className={`px-3 py-2 rounded-xl text-[13px] font-medium cursor-pointer transition-all duration-150 ${
+              value === null ? "violet-surface text-primary" : "text-muted-foreground hover:bg-muted/50"
+            }`}
+          >
+            {placeholder}
+          </div>
+
+          {options.map((o) => (
+            <div
+              key={o.value}
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] cursor-pointer transition-all duration-150 ${
+                value === o.value ? "violet-surface text-primary font-semibold" : "text-foreground hover:bg-muted/50"
+              }`}
+            >
+              <span
+                className="flex-1 truncate"
+                onClick={() => { onChange(o.value); setOpen(false); }}
+              >
+                {o.label}
+                {o.sub && <span className="text-[11px] text-muted-foreground ml-1.5">{o.sub}</span>}
+              </span>
+              {onDelete && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete(o.value); }}
+                  className="p-0.5 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-colors border-none bg-transparent cursor-pointer"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          ))}
+
+          {/* Add new inline */}
+          {onAdd && (
+            <div className="flex items-center gap-1.5 px-2 pt-1.5 mt-1 border-t border-border">
+              <input
+                value={addValue}
+                onChange={(e) => setAddValue(e.target.value.toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && addValue.trim()) {
+                    onAdd(addValue.trim());
+                    setAddValue("");
+                  }
+                }}
+                placeholder={addPlaceholder || "Добавить..."}
+                className="flex-1 px-2 py-1.5 rounded-lg border border-border text-[12px] font-bold uppercase outline-none focus:border-primary transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              />
+              <button
+                onClick={() => {
+                  if (addValue.trim()) { onAdd(addValue.trim()); setAddValue(""); }
+                }}
+                disabled={!addValue.trim()}
+                className="p-1.5 rounded-lg bg-primary text-primary-foreground cursor-pointer disabled:opacity-30 border-none"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Main modal ── */
+
 export function CreateFunnelModal({ onClose }: CreateFunnelModalProps) {
   const { keywords, addKeyword, deleteKeyword, funnelsForKeyword, products, topics, addFunnel } = useDataStore();
 
-  // Form state
-  const [selectedKeyword, setSelectedKeyword] = useState("");
-  const [newKeyword, setNewKeyword] = useState("");
+  const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
   const [badgeColor, setBadgeColor] = useState<BadgeColor>("violet");
   const [selectedProducts, setSelectedProducts] = useState<Record<string, number | null>>({});
   const [selectedContentIds, setSelectedContentIds] = useState<Set<number>>(new Set());
-
-  // Delete confirmation
+  const [contentSearch, setContentSearch] = useState("");
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
-  // Products by type
   const productsByType = useMemo(() => {
     const map: Record<string, Product[]> = {};
     products.forEach((p) => {
-      // Group consultation and private together
       const key = p.typeId === "private" ? "consultation" : p.typeId;
       if (!map[key]) map[key] = [];
       map[key].push(p);
@@ -90,7 +203,6 @@ export function CreateFunnelModal({ onClose }: CreateFunnelModalProps) {
     return map;
   }, [products]);
 
-  // All content items (from non-idea topics)
   const allContent = useMemo(() => {
     const items: { id: number; platformId: string; title: string; topicTitle: string; status: string }[] = [];
     topics.forEach((t) => {
@@ -103,30 +215,42 @@ export function CreateFunnelModal({ onClose }: CreateFunnelModalProps) {
     return items;
   }, [topics]);
 
-  const handleAddKeyword = () => {
-    const kw = newKeyword.trim().toUpperCase();
-    if (!kw) return;
-    addKeyword(kw);
-    setSelectedKeyword(kw);
-    setNewKeyword("");
-  };
+  const filteredContent = useMemo(() => {
+    if (!contentSearch.trim()) return allContent;
+    const q = contentSearch.toLowerCase();
+    return allContent.filter(
+      (ci) => ci.title.toLowerCase().includes(q) || ci.topicTitle.toLowerCase().includes(q)
+    );
+  }, [allContent, contentSearch]);
 
-  const handleDeleteKeyword = (kw: string) => {
-    const related = funnelsForKeyword(kw);
+  const keywordOptions = useMemo(
+    () => keywords.map((kw) => ({ value: kw, label: kw })),
+    [keywords]
+  );
+
+  const handleDeleteKeyword = (kw: string | number) => {
+    const kwStr = String(kw);
+    const related = funnelsForKeyword(kwStr);
     if (related.length > 0) {
-      setPendingDelete(kw);
+      setPendingDelete(kwStr);
     } else {
-      deleteKeyword(kw);
-      if (selectedKeyword === kw) setSelectedKeyword("");
+      deleteKeyword(kwStr);
+      if (selectedKeyword === kwStr) setSelectedKeyword(null);
     }
   };
 
   const confirmDeleteKeyword = () => {
     if (pendingDelete) {
       deleteKeyword(pendingDelete);
-      if (selectedKeyword === pendingDelete) setSelectedKeyword("");
+      if (selectedKeyword === pendingDelete) setSelectedKeyword(null);
       setPendingDelete(null);
     }
+  };
+
+  const handleAddKeyword = (kw: string) => {
+    const upper = kw.toUpperCase();
+    addKeyword(upper);
+    setSelectedKeyword(upper);
   };
 
   const toggleContent = (id: number) => {
@@ -141,7 +265,6 @@ export function CreateFunnelModal({ onClose }: CreateFunnelModalProps) {
   const handleCreate = () => {
     if (!selectedKeyword) return;
 
-    // Build content items for the funnel
     const contentItems: ContentItem[] = [];
     selectedContentIds.forEach((id) => {
       const ci = allContent.find((c) => c.id === id);
@@ -156,7 +279,6 @@ export function CreateFunnelModal({ onClose }: CreateFunnelModalProps) {
       });
     });
 
-    // Build product selections
     const getProduct = (field: string) => {
       const pId = selectedProducts[field];
       if (!pId) return undefined;
@@ -209,59 +331,18 @@ export function CreateFunnelModal({ onClose }: CreateFunnelModalProps) {
             </button>
           </div>
 
-          {/* ─── Keyword selection ─── */}
-          <div className="mb-5">
-            <label className="block text-[13px] font-semibold text-muted-foreground mb-2">Кодовое слово</label>
-
-            {/* Existing keywords */}
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {keywords.map((kw) => {
-                const sel = selectedKeyword === kw;
-                return (
-                  <div key={kw} className="flex items-center gap-0">
-                    <button
-                      onClick={() => setSelectedKeyword(sel ? "" : kw)}
-                      className="px-3 py-1.5 rounded-l-xl text-[12px] font-bold cursor-pointer transition-all duration-200 border-none"
-                      style={{
-                        background: sel ? "hsl(var(--primary))" : "hsl(var(--muted))",
-                        color: sel ? "white" : "hsl(var(--muted-foreground))",
-                      }}
-                    >
-                      {kw}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteKeyword(kw)}
-                      className="px-1.5 py-1.5 rounded-r-xl text-[12px] cursor-pointer transition-all duration-200 border-none flex items-center"
-                      style={{
-                        background: sel ? "hsl(var(--primary) / 0.8)" : "hsl(var(--muted) / 0.8)",
-                        color: sel ? "white" : "hsl(var(--muted-foreground))",
-                      }}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Add new keyword */}
-            <div className="flex gap-2">
-              <input
-                value={newKeyword}
-                onChange={(e) => setNewKeyword(e.target.value.toUpperCase())}
-                onKeyDown={(e) => e.key === "Enter" && handleAddKeyword()}
-                placeholder="Новое слово..."
-                className="flex-1 px-3 py-2 rounded-xl border-[1.5px] border-border text-[13px] font-bold uppercase outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
-              />
-              <button
-                onClick={handleAddKeyword}
-                disabled={!newKeyword.trim()}
-                className="px-3 py-2 rounded-xl bg-primary text-primary-foreground text-[12px] font-semibold cursor-pointer transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed border-none flex items-center gap-1"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Добавить
-              </button>
-            </div>
+          {/* ─── Keyword dropdown ─── */}
+          <div className="mb-4">
+            <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">Кодовое слово</label>
+            <SelectDropdown
+              value={selectedKeyword}
+              onChange={(v) => setSelectedKeyword(v as string | null)}
+              options={keywordOptions}
+              placeholder="Выберите слово..."
+              onDelete={handleDeleteKeyword}
+              onAdd={handleAddKeyword}
+              addPlaceholder="Новое слово..."
+            />
           </div>
 
           {/* ─── Badge color ─── */}
@@ -284,100 +365,109 @@ export function CreateFunnelModal({ onClose }: CreateFunnelModalProps) {
             </div>
           </div>
 
-          {/* ─── Product tiers ─── */}
+          {/* ─── Product tiers (dropdowns) ─── */}
           {TIER_STEPS.map((step) => {
             const available = productsByType[step.typeId] || [];
-            const selectedId = selectedProducts[step.field] || null;
             const typeInfo = PRODUCT_TYPES.find((t) => t.id === step.typeId);
 
+            const options = available.map((p) => ({
+              value: p.id,
+              label: p.name,
+              sub: p.price ? `${p.price} ${p.currency}` : undefined,
+            }));
+
             return (
-              <div key={step.field} className="mb-4">
+              <div key={step.field} className="mb-3">
                 <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">
-                  {typeInfo?.icon} {step.label}
-                  <span className="text-[11px] font-normal ml-1">(необязательно)</span>
+                  {step.label}
+                  <span className="text-[11px] font-normal ml-1 text-muted-foreground/70">(необязательно)</span>
                 </label>
                 {available.length === 0 ? (
-                  <div className="text-[12px] text-muted-foreground italic py-1.5">
-                    Нет продуктов типа «{step.label}». Создайте в разделе Продукты.
+                  <div className="text-[12px] text-muted-foreground italic py-1">
+                    Нет продуктов типа «{step.label}»
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-1">
-                    {available.map((p) => {
-                      const sel = selectedId === p.id;
-                      return (
-                        <button
-                          key={p.id}
-                          onClick={() => setSelectedProducts((prev) => ({ ...prev, [step.field]: sel ? null : p.id }))}
-                          className="flex items-center gap-2 px-3 py-2 rounded-xl text-left text-[12px] cursor-pointer transition-all duration-200 border-[1.5px]"
-                          style={{
-                            borderColor: sel ? (typeInfo?.color || "hsl(var(--primary))") : "hsl(var(--border))",
-                            background: sel ? (typeInfo?.color || "hsl(var(--primary))") + "10" : "transparent",
-                          }}
-                        >
-                          <span className="font-semibold text-foreground flex-1 truncate">{p.name}</span>
-                          {p.price && (
-                            <span className="text-[11px] text-muted-foreground shrink-0">
-                              {p.price} {p.currency}
-                            </span>
-                          )}
-                          {sel && <span style={{ color: typeInfo?.color }}>✓</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <SelectDropdown
+                    value={selectedProducts[step.field] || null}
+                    onChange={(v) => setSelectedProducts((prev) => ({ ...prev, [step.field]: v as number | null }))}
+                    options={options}
+                    placeholder={`Выберите ${step.label.toLowerCase()}...`}
+                  />
                 )}
               </div>
             );
           })}
 
-          {/* ─── Content selection ─── */}
-          <div className="mb-5">
+          {/* ─── Content selection with search ─── */}
+          <div className="mb-5 mt-4">
             <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">
-              📝 Контент для воронки
-              <span className="text-[11px] font-normal ml-1">(можно несколько)</span>
+              Контент для воронки
+              {selectedContentIds.size > 0 && (
+                <span className="text-primary ml-1">({selectedContentIds.size})</span>
+              )}
             </label>
             {allContent.length === 0 ? (
               <div className="text-[12px] text-muted-foreground italic py-1.5">
                 Нет контента. Создайте в разделе Контент.
               </div>
             ) : (
-              <div className="flex flex-col gap-0.5 max-h-[200px] overflow-auto rounded-xl border border-border p-1.5">
-                {allContent.map((ci) => {
-                  const sel = selectedContentIds.has(ci.id);
-                  const plat = PLATFORMS.find((p) => p.id === ci.platformId);
+              <>
+                {/* Search */}
+                <div className="relative mb-1.5">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    value={contentSearch}
+                    onChange={(e) => setContentSearch(e.target.value)}
+                    placeholder="Поиск по названию..."
+                    className="w-full pl-8 pr-3 py-2 rounded-xl border-[1.5px] border-border text-[12px] outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+                  />
+                </div>
 
-                  return (
-                    <button
-                      key={ci.id}
-                      onClick={() => toggleContent(ci.id)}
-                      className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-left text-[12px] cursor-pointer transition-all duration-150"
-                      style={{
-                        background: sel ? "hsl(var(--primary) / 0.08)" : "transparent",
-                      }}
-                    >
-                      <span
-                        className="w-4 h-4 rounded-md border-[1.5px] flex items-center justify-center text-[10px] shrink-0"
-                        style={{
-                          borderColor: sel ? "hsl(var(--primary))" : "hsl(var(--border))",
-                          background: sel ? "hsl(var(--primary))" : "transparent",
-                          color: sel ? "white" : "transparent",
-                        }}
-                      >
-                        ✓
-                      </span>
-                      {plat && (
-                        <span className="text-[13px] shrink-0" title={plat.label}>
-                          {plat.icon}
-                        </span>
-                      )}
-                      <span className="text-foreground font-medium flex-1 truncate">{ci.title}</span>
-                      <span className="text-[10px] text-muted-foreground shrink-0 max-w-[80px] truncate">
-                        {ci.topicTitle}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                {/* List */}
+                <div className="flex flex-col gap-0.5 max-h-[180px] overflow-auto rounded-xl border border-border p-1.5">
+                  {filteredContent.length === 0 ? (
+                    <div className="text-[12px] text-muted-foreground text-center py-3">Ничего не найдено</div>
+                  ) : (
+                    filteredContent.map((ci) => {
+                      const sel = selectedContentIds.has(ci.id);
+                      const plat = PLATFORMS.find((p) => p.id === ci.platformId);
+
+                      return (
+                        <button
+                          key={ci.id}
+                          onClick={() => toggleContent(ci.id)}
+                          className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-left text-[12px] cursor-pointer transition-all duration-150 border-none"
+                          style={{
+                            background: sel ? "hsl(var(--primary) / 0.08)" : "transparent",
+                          }}
+                        >
+                          <span
+                            className="w-4 h-4 rounded-md border-[1.5px] flex items-center justify-center text-[10px] shrink-0"
+                            style={{
+                              borderColor: sel ? "hsl(var(--primary))" : "hsl(var(--border))",
+                              background: sel ? "hsl(var(--primary))" : "transparent",
+                              color: sel ? "white" : "transparent",
+                            }}
+                          >
+                            ✓
+                          </span>
+                          {plat && (
+                            <span
+                              className="w-1.5 h-4 rounded-full shrink-0"
+                              style={{ background: plat.color }}
+                              title={plat.label}
+                            />
+                          )}
+                          <span className="text-foreground font-medium flex-1 truncate">{ci.title}</span>
+                          <span className="text-[10px] text-muted-foreground shrink-0 max-w-[80px] truncate">
+                            {ci.topicTitle}
+                          </span>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </>
             )}
           </div>
         </div>
