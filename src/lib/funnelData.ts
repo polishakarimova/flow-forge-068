@@ -46,8 +46,10 @@ export interface Funnel {
   contentItems: ContentItem[];
   cta: string;
   leadMagnet?: FunnelProduct;
+  tripwire?: FunnelProduct;
   midTicket?: FunnelProduct;
   flagship?: FunnelProduct;
+  consultation?: FunnelProduct;
   conversions?: ConversionData[];
 }
 

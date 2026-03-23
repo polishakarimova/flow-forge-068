@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
 import { initialProducts, type Product, type ProductStatusKey } from "@/lib/productData";
 import { initialTopics, type Topic, type ContentItemData, type ContentStatusKey } from "@/lib/contentData";
 import { funnelsData, type Funnel } from "@/lib/funnelData";
@@ -15,18 +15,29 @@ interface DataStore {
   updateTopic: (t: Topic) => void;
   updateContentItem: (item: ContentItemData) => void;
 
+  // Keywords
+  keywords: string[];
+  addKeyword: (kw: string) => void;
+  deleteKeyword: (kw: string) => boolean; // returns false if has funnels
+
   // Funnels
   funnels: Funnel[];
   setFunnels: React.Dispatch<React.SetStateAction<Funnel[]>>;
+  addFunnel: (f: Funnel) => void;
   toggleFunnelActive: (id: string) => void;
+  funnelsForKeyword: (kw: string) => Funnel[];
 }
 
 const DataStoreContext = createContext<DataStore | null>(null);
+
+// Derive initial keywords from funnelsData
+const initialKeywords = [...new Set(funnelsData.map((f) => f.keyword))];
 
 export function DataStoreProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [topics, setTopics] = useState<Topic[]>(initialTopics);
   const [funnels, setFunnels] = useState<Funnel[]>(funnelsData);
+  const [keywords, setKeywords] = useState<string[]>(initialKeywords);
 
   const addProduct = useCallback((data: Omit<Product, "id" | "status" | "createdDate">) => {
     const newProduct: Product = {
@@ -60,25 +71,55 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const addKeyword = useCallback((kw: string) => {
+    setKeywords((prev) => (prev.includes(kw) ? prev : [...prev, kw]));
+  }, []);
+
+  const funnelsForKeyword = useCallback(
+    (kw: string) => funnels.filter((f) => f.keyword === kw),
+    [funnels]
+  );
+
+  const deleteKeyword = useCallback(
+    (kw: string) => {
+      // Can't delete here if has funnels — caller checks via funnelsForKeyword
+      setKeywords((prev) => prev.filter((k) => k !== kw));
+      return true;
+    },
+    []
+  );
+
+  const addFunnel = useCallback((f: Funnel) => {
+    setFunnels((prev) => [f, ...prev]);
+  }, []);
+
   const toggleFunnelActive = useCallback((id: string) => {
     setFunnels((prev) => prev.map((f) => (f.id === id ? { ...f, active: !f.active } : f)));
   }, []);
 
+  const value = useMemo(
+    () => ({
+      products,
+      addProduct,
+      updateProduct,
+      topics,
+      addTopic,
+      updateTopic,
+      updateContentItem,
+      keywords,
+      addKeyword,
+      deleteKeyword,
+      funnels,
+      setFunnels,
+      addFunnel,
+      toggleFunnelActive,
+      funnelsForKeyword,
+    }),
+    [products, addProduct, updateProduct, topics, addTopic, updateTopic, updateContentItem, keywords, addKeyword, deleteKeyword, funnels, setFunnels, addFunnel, toggleFunnelActive, funnelsForKeyword]
+  );
+
   return (
-    <DataStoreContext.Provider
-      value={{
-        products,
-        addProduct,
-        updateProduct,
-        topics,
-        addTopic,
-        updateTopic,
-        updateContentItem,
-        funnels,
-        setFunnels,
-        toggleFunnelActive,
-      }}
-    >
+    <DataStoreContext.Provider value={value}>
       {children}
     </DataStoreContext.Provider>
   );
