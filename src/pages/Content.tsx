@@ -224,20 +224,20 @@ const Content = () => {
             {/* Content tab */}
             {tab === "content" && (
               <div>
-                <div className="flex gap-3 mb-4 items-center">
+                <div className="flex gap-2 mb-3 items-center">
                   <ContentMultiDropdown
                     values={platformFilters}
                     onChange={setPlatformFilters}
                     options={platformOptions}
                     placeholder="Все площадки"
-                    width={220}
+                    width={190}
                   />
                   <ContentDropdown
                     value={statusFilter}
                     onChange={setStatusFilter}
                     options={statusOptions}
                     placeholder="Все статусы"
-                    width={180}
+                    width={160}
                   />
                   {hasFilters && (
                     <button
@@ -247,7 +247,7 @@ const Content = () => {
                       Сбросить
                     </button>
                   )}
-                  <span className="ml-auto text-[13px] text-muted-foreground">
+                  <span className="ml-auto text-[11px] text-muted-foreground">
                     {filteredContent.length} из {allContent.length}
                   </span>
                 </div>
@@ -257,12 +257,12 @@ const Content = () => {
                 ) : (
                   groupedContent.map((g) => (
                     <div key={g.date}>
-                      <div className="flex items-center gap-3 pt-4 pb-2">
-                        <span className="text-[13px] font-bold text-muted-foreground">{g.label}</span>
+                      <div className="flex items-center gap-3 pt-3 pb-1.5">
+                        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{g.label}</span>
                         <div className="flex-1 h-px bg-border" />
                         <span className="text-[12px] text-muted-foreground">{g.items.length}</span>
                       </div>
-                      <div className="flex flex-col gap-1 mb-1">
+                      <div className="flex flex-col gap-0.5 mb-0.5">
                         {g.items.map((ci) => (
                           <ContentCard
                             key={ci.id}

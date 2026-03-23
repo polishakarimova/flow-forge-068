@@ -26,7 +26,7 @@ export function TopicRow({ topic, expanded, onToggle, onOpenContent }: TopicRowP
     >
       <div
         onClick={onToggle}
-        className="flex items-center gap-2 px-3 py-3 md:px-5 md:gap-3 cursor-pointer group transition-colors duration-200 hover:bg-[hsl(var(--primary)/0.04)]"
+        className="flex items-center gap-2 px-3 py-2 md:px-4 md:gap-3 cursor-pointer group transition-colors duration-200 hover:bg-[hsl(var(--primary)/0.04)]"
       >
         {/* Status indicator */}
         <div className="w-[3px] h-5 rounded-sm shrink-0" style={{ background: hottestColor }} />
@@ -68,7 +68,7 @@ export function TopicRow({ topic, expanded, onToggle, onOpenContent }: TopicRowP
       </div>
 
       {expanded && topic.contentItems.length > 0 && (
-        <div className="animate-fade-in border-t border-border bg-muted/30 p-2 pl-6 flex flex-col gap-1">
+        <div className="animate-fade-in border-t border-border bg-muted/30 p-1.5 pl-5 flex flex-col gap-0.5">
           {topic.contentItems.map((ci) => (
             <ContentCard key={ci.id} item={ci} onOpen={onOpenContent} showTopic={false} />
           ))}
