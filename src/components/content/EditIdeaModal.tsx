@@ -22,7 +22,7 @@ export function EditIdeaModal({ topic, onClose, onSave, onRealize }: EditIdeaMod
       className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] animate-in fade-in duration-200"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-3xl w-full max-w-[500px] max-h-[88vh] overflow-auto animate-in slide-in-from-bottom-3 duration-300" style={{ boxShadow: "0 24px 60px rgba(0,0,0,.15)" }}>
+      <div className="bg-card rounded-3xl w-full max-w-[500px] max-h-[88vh] overflow-auto animate-in slide-in-from-bottom-3 duration-300" style={{ boxShadow: "0 24px 60px rgba(0,0,0,.15)" }}>
         <div className="h-[4px] rounded-t-3xl" style={{ background: "linear-gradient(90deg, #fbbf24, #f59e0b)" }} />
         <div className="px-7 py-6">
           {/* Header */}
@@ -33,7 +33,7 @@ export function EditIdeaModal({ topic, onClose, onSave, onRealize }: EditIdeaMod
             </div>
             <button
               onClick={onClose}
-              className="bg-slate-100 border-none rounded-lg w-[30px] h-[30px] cursor-pointer text-[14px] text-slate-500 flex items-center justify-center hover:bg-slate-200 transition-all duration-200"
+              className="bg-muted border-none rounded-lg w-[30px] h-[30px] cursor-pointer text-[14px] text-muted-foreground flex items-center justify-center hover:bg-muted/80 transition-all duration-200"
             >
               ✕
             </button>
@@ -41,7 +41,7 @@ export function EditIdeaModal({ topic, onClose, onSave, onRealize }: EditIdeaMod
 
           {/* Title */}
           <div className="mb-4">
-            <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Название</label>
+            <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">Название</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -51,7 +51,7 @@ export function EditIdeaModal({ topic, onClose, onSave, onRealize }: EditIdeaMod
 
           {/* Plan */}
           <div className="mb-5">
-            <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Тезисный план</label>
+            <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">Тезисный план</label>
             <textarea
               value={thesisPlan}
               onChange={(e) => setThesisPlan(e.target.value)}
@@ -105,7 +105,7 @@ export function EditIdeaModal({ topic, onClose, onSave, onRealize }: EditIdeaMod
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowRealize(false)}
-                  className="py-3 px-4 rounded-2xl bg-slate-100 text-slate-500 border-none text-[14px] font-semibold cursor-pointer hover:bg-slate-200 transition-all duration-200"
+                  className="py-3 px-4 rounded-2xl bg-muted text-muted-foreground border-none text-[14px] font-semibold cursor-pointer hover:bg-muted/80 transition-all duration-200"
                 >
                   ← Назад
                 </button>

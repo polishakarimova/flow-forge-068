@@ -34,20 +34,20 @@ export function CreateTopicModal({ onClose, onCreate }: CreateTopicModalProps) {
       className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] animate-in fade-in duration-200"
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
-      <div className="bg-white rounded-3xl w-full max-w-[500px] max-h-[88vh] overflow-auto animate-in slide-in-from-bottom-3 duration-300" style={{ boxShadow: "0 24px 60px rgba(0,0,0,.15)" }}>
+      <div className="bg-card rounded-3xl w-full max-w-[500px] max-h-[88vh] overflow-auto animate-in slide-in-from-bottom-3 duration-300" style={{ boxShadow: "0 24px 60px rgba(0,0,0,.15)" }}>
         <div className="px-7 pt-6">
           <div className="flex justify-between items-center mb-5">
             <h2 className="text-lg font-bold text-foreground">Новая тема</h2>
             <button
               onClick={handleClose}
-              className="bg-slate-100 border-none rounded-lg w-[30px] h-[30px] cursor-pointer text-[14px] text-slate-500 flex items-center justify-center hover:bg-slate-200 transition-all duration-200"
+              className="bg-muted border-none rounded-lg w-[30px] h-[30px] cursor-pointer text-[14px] text-muted-foreground flex items-center justify-center hover:bg-muted/80 transition-all duration-200"
             >
               ✕
             </button>
           </div>
 
           <div className="mb-4">
-            <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Название темы</label>
+            <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">Название темы</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -58,7 +58,7 @@ export function CreateTopicModal({ onClose, onCreate }: CreateTopicModalProps) {
           </div>
 
           <div className="mb-5">
-            <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Тезисный план</label>
+            <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">Тезисный план</label>
             <textarea
               value={thesisPlan}
               onChange={(e) => setThesisPlan(e.target.value)}
@@ -69,7 +69,7 @@ export function CreateTopicModal({ onClose, onCreate }: CreateTopicModalProps) {
           </div>
 
           <div className="mb-5">
-            <label className="block text-[13px] font-semibold text-slate-700 mb-2">Куда постим?</label>
+            <label className="block text-[13px] font-semibold text-muted-foreground mb-2">Куда постим?</label>
             <div className="flex flex-wrap gap-2">
               {PLATFORMS.map((p) => {
                 const isSelected = selected.includes(p.id);
@@ -94,7 +94,7 @@ export function CreateTopicModal({ onClose, onCreate }: CreateTopicModalProps) {
           </div>
         </div>
 
-        <div className="flex gap-3 px-7 py-4 border-t border-slate-100">
+        <div className="flex gap-3 px-7 py-4 border-t border-border">
           <button
             onClick={() => handleCreate(false)}
             disabled={!hasTitle || selected.length === 0}
