@@ -11,26 +11,17 @@ interface TopicRowProps {
 
 export function TopicRow({ topic, expanded, onToggle, onOpenContent }: TopicRowProps) {
   const platformIds = [...new Set(topic.contentItems.map((c) => c.platformId))];
-  const hottest = topic.contentItems.reduce(
-    (h, c) => Math.max(h, STATUSES[c.status]?.priority || 0),
-    0
-  );
-  const hottestColor = Object.values(STATUSES).find((s) => s.priority === hottest)?.color || "hsl(var(--border))";
 
   return (
     <div
       className={`card-elevated mb-3 overflow-hidden transition-all duration-200 ${
-        expanded ? "border-l-[3px]" : ""
+        expanded ? "border-l-[3px] border-l-primary" : ""
       }`}
-      style={expanded ? { borderLeftColor: hottestColor } : undefined}
     >
       <div
         onClick={onToggle}
         className="flex items-center gap-2 px-3 py-2 md:px-4 md:gap-3 cursor-pointer group transition-colors duration-200 hover:bg-[hsl(var(--primary)/0.04)]"
       >
-        {/* Status indicator */}
-        <div className="w-[3px] h-5 rounded-sm shrink-0" style={{ background: hottestColor }} />
-
         {/* Title */}
         <span className="text-[13px] font-semibold text-foreground flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
           {topic.title}
