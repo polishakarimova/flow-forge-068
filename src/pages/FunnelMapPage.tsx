@@ -2,7 +2,8 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
-import { funnelsData, type BadgeColor } from "@/lib/funnelData";
+import { type BadgeColor } from "@/lib/funnelData";
+import { useDataStore } from "@/lib/dataStore";
 
 /* ── colour helpers ─────────────────────────────────── */
 
@@ -71,16 +72,16 @@ const COL_HEADERS = [
   { x: 960, label: "ПРОДУКТ", icon: "💰", w: 230 },
 ];
 
-/* ── build graph from funnelsData ───────────────────── */
+/* ── build graph from funnelsList ───────────────────── */
 
-function buildGraph() {
+function buildGraph(funnelsList: typeof import("@/lib/funnelData").funnelsData) {
   const nodes: MapNode[] = [];
   const edges: MapEdge[] = [];
   const seenProducts = new Set<string>();
 
   // collect all content items across funnels
   const contentItems: { cId: string; label: string; platform: string; funnelId: string }[] = [];
-  funnelsData.forEach((f) => {
+  funnelsList.forEach((f) => {
     f.contentItems.forEach((ci) => {
       contentItems.push({ cId: ci.id, label: ci.title, platform: ci.platform, funnelId: f.id });
     });
@@ -105,9 +106,9 @@ function buildGraph() {
   const totalContentH = contentItems.length * (NH + NG);
 
   // keyword nodes
-  const kwStartY = 70 + Math.max(0, (totalContentH - funnelsData.length * 60) / 2);
+  const kwStartY = 70 + Math.max(0, (totalContentH - funnelsList.length * 60) / 2);
   let ky = kwStartY;
-  funnelsData.forEach((f) => {
+  funnelsList.forEach((f) => {
     const kwId = `kw-${f.id}`;
     nodes.push({
       id: kwId,
@@ -128,7 +129,7 @@ function buildGraph() {
   });
 
   // lead-magnet nodes
-  const lmList = funnelsData.filter((f) => f.leadMagnet);
+  const lmList = funnelsList.filter((f) => f.leadMagnet);
   const lmStartY = 70 + Math.max(0, (totalContentH - lmList.length * 56) / 2);
   let ly = lmStartY;
   lmList.forEach((f) => {
@@ -152,8 +153,8 @@ function buildGraph() {
   });
 
   // product nodes (midTicket + flagship, deduplicated)
-  const productEntries: { product: typeof funnelsData[0]["midTicket"]; fromLmId: string; funnelColor: string }[] = [];
-  funnelsData.forEach((f) => {
+  const productEntries: { product: typeof funnelsList[0]["midTicket"]; fromLmId: string; funnelColor: string }[] = [];
+  funnelsList.forEach((f) => {
     if (f.midTicket && f.leadMagnet) {
       productEntries.push({ product: f.midTicket, fromLmId: `lm-${f.leadMagnet.id}`, funnelColor: BADGE_HEX[f.badgeColor] });
     }
@@ -339,6 +340,7 @@ function getDist(e: TouchEvent | React.TouchEvent) {
 /* ── main component ─────────────────────────────────── */
 
 const FunnelMapPage = () => {
+  const { funnels } = useDataStore();
   const svgRef = useRef<SVGSVGElement>(null);
   const [pan, setPan] = useState({ x: 20, y: 10 });
   const [zoom, setZoom] = useState(1);
@@ -346,7 +348,7 @@ const FunnelMapPage = () => {
   const [selected, setSelected] = useState<string | null>(null);
   const [showHint, setShowHint] = useState(true);
 
-  const { nodes: initialNodes, edges } = useMemo(() => buildGraph(), []);
+  const { nodes: initialNodes, edges } = useMemo(() => buildGraph(funnels), [funnels]);
   const [nodes, setNodes] = useState<MapNode[]>(initialNodes);
 
   const touchRef = useRef<TouchState>({ startX: 0, startY: 0, panX: 0, panY: 0, dist: 0, zoom: 1, nodeId: null, orig: [], moved: false });

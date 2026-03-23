@@ -2,10 +2,10 @@ import { FileText, GitBranch, Package, Map } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 
 const mainTabs = [
+  { title: "Продукты", url: "/products", icon: Package },
   { title: "Контент", url: "/content", icon: FileText },
   { title: "Воронки", url: "/", icon: GitBranch },
   { title: "Карта", url: "/map", icon: Map },
-  { title: "Продукты", url: "/products", icon: Package },
 ];
 
 export function MobileNav() {

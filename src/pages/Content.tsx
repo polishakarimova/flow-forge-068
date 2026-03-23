@@ -9,11 +9,11 @@ import {
   STATUS_ORDER,
   getEffectiveDate,
   formatDateLabel,
-  initialTopics,
   type Topic,
   type ContentItemData,
   type ContentStatusKey,
 } from "@/lib/contentData";
+import { useDataStore } from "@/lib/dataStore";
 import { TopicRow } from "@/components/content/TopicRow";
 import { ContentCard } from "@/components/content/ContentCard";
 import { CreateTopicModal } from "@/components/content/CreateTopicModal";
@@ -25,7 +25,7 @@ import { ContentMultiDropdown } from "@/components/content/ContentMultiDropdown"
 type TabKey = "topics" | "content" | "ideas";
 
 const Content = () => {
-  const [topics, setTopics] = useState<Topic[]>(initialTopics);
+  const { topics, addTopic, updateTopic, updateContentItem } = useDataStore();
   const [showCreate, setShowCreate] = useState(false);
   const [expandedTopics, setExpandedTopics] = useState<Record<number, boolean>>({ 1: true, 2: true, 3: true });
   const [editingContent, setEditingContent] = useState<ContentItemData | null>(null);
@@ -86,19 +86,16 @@ const Content = () => {
       createdDate: today,
       publishDate: "",
     }));
-    setTopics([{ id: newId, title, thesisPlan, isIdeaBank, contentItems }, ...topics]);
+    addTopic({ title, thesisPlan, isIdeaBank, contentItems });
     if (!isIdeaBank) setExpandedTopics((p) => ({ ...p, [newId]: true }));
   };
 
   const handleSaveContent = (updated: ContentItemData) => {
-    setTopics(topics.map((t) => ({
-      ...t,
-      contentItems: t.contentItems.map((ci) => (ci.id === updated.id ? updated : ci)),
-    })));
+    updateContentItem(updated);
   };
 
   const handleSaveIdea = (updated: Topic) => {
-    setTopics(topics.map((t) => (t.id === updated.id ? { ...t, title: updated.title, thesisPlan: updated.thesisPlan } : t)));
+    updateTopic({ ...updated });
   };
 
   const handleRealizeIdea = (topicId: number, title: string, plan: string, platforms: string[]) => {
@@ -113,9 +110,10 @@ const Content = () => {
       createdDate: today,
       publishDate: "",
     }));
-    setTopics(topics.map((t) =>
-      t.id === topicId ? { ...t, title, thesisPlan: plan, isIdeaBank: false, contentItems } : t
-    ));
+    const topic = topics.find((t) => t.id === topicId);
+    if (topic) {
+      updateTopic({ ...topic, title, thesisPlan: plan, isIdeaBank: false, contentItems });
+    }
     setExpandedTopics((p) => ({ ...p, [topicId]: true }));
     setTab("topics");
   };

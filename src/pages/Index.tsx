@@ -4,22 +4,29 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { PathRow } from "@/components/PathRow";
-import { funnelsData, type Funnel } from "@/lib/funnelData";
+import { ContentDropdown } from "@/components/content/ContentDropdown";
+import { useDataStore } from "@/lib/dataStore";
 
 const Index = () => {
-  const [funnels, setFunnels] = useState<Funnel[]>(funnelsData);
+  const { funnels, toggleFunnelActive } = useDataStore();
   const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
 
-  const keywords = useMemo(
-    () => [...new Set(funnels.map((f) => f.keyword))],
-    [funnels]
-  );
+  const keywordOptions = useMemo(() => {
+    const counts: Record<string, number> = {};
+    funnels.forEach((f) => { counts[f.keyword] = (counts[f.keyword] || 0) + 1; });
+    return Object.entries(counts).map(([kw, n]) => ({
+      value: kw, label: kw, count: n,
+    }));
+  }, [funnels]);
 
-  const products = useMemo(
-    () => [...new Set(funnels.map((f) => f.product))],
-    [funnels]
-  );
+  const productOptions = useMemo(() => {
+    const counts: Record<string, number> = {};
+    funnels.forEach((f) => { counts[f.product] = (counts[f.product] || 0) + 1; });
+    return Object.entries(counts).map(([p, n]) => ({
+      value: p, label: p, count: n,
+    }));
+  }, [funnels]);
 
   const filtered = funnels.filter((f) => {
     if (selectedKeyword && f.keyword !== selectedKeyword) return false;
@@ -30,11 +37,7 @@ const Index = () => {
   const activeFunnels = filtered.filter((f) => f.active);
   const inactiveFunnels = filtered.filter((f) => !f.active);
 
-  const handleToggleActive = (id: string) => {
-    setFunnels((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, active: !f.active } : f))
-    );
-  };
+  const hasFilters = selectedKeyword || selectedProduct;
 
   return (
     <SidebarProvider>
@@ -65,64 +68,33 @@ const Index = () => {
                 </button>
               </div>
 
-              {/* Filter chips */}
-              <div className="flex items-center gap-1.5 pb-3 overflow-x-auto scrollbar-none">
-                {/* Keyword filters */}
-                <button
-                  onClick={() => setSelectedKeyword(null)}
-                  className={`shrink-0 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
-                    !selectedKeyword
-                      ? "violet-surface text-primary"
-                      : "text-muted-foreground hover:text-foreground/70"
-                  }`}
-                >
-                  Все слова
-                </button>
-                {keywords.map((kw) => (
+              {/* Dropdown filters */}
+              <div className="flex items-center gap-2 pb-3">
+                <ContentDropdown
+                  value={selectedKeyword}
+                  onChange={setSelectedKeyword}
+                  options={keywordOptions}
+                  placeholder="Все слова"
+                  width={160}
+                />
+                <ContentDropdown
+                  value={selectedProduct}
+                  onChange={setSelectedProduct}
+                  options={productOptions}
+                  placeholder="Все продукты"
+                  width={220}
+                />
+                {hasFilters && (
                   <button
-                    key={kw}
-                    onClick={() =>
-                      setSelectedKeyword(selectedKeyword === kw ? null : kw)
-                    }
-                    className={`shrink-0 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
-                      selectedKeyword === kw
-                        ? "violet-surface text-primary"
-                        : "text-muted-foreground hover:text-foreground/70"
-                    }`}
+                    onClick={() => { setSelectedKeyword(null); setSelectedProduct(null); }}
+                    className="text-[12px] text-muted-foreground bg-transparent border-none cursor-pointer underline hover:text-foreground transition-colors"
                   >
-                    {kw}
+                    Сбросить
                   </button>
-                ))}
-
-                {/* Divider */}
-                <div className="w-px h-4 bg-border shrink-0 mx-1" />
-
-                {/* Product filters */}
-                <button
-                  onClick={() => setSelectedProduct(null)}
-                  className={`shrink-0 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
-                    !selectedProduct
-                      ? "violet-surface text-primary"
-                      : "text-muted-foreground hover:text-foreground/70"
-                  }`}
-                >
-                  Все продукты
-                </button>
-                {products.map((p) => (
-                  <button
-                    key={p}
-                    onClick={() =>
-                      setSelectedProduct(selectedProduct === p ? null : p)
-                    }
-                    className={`shrink-0 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-colors max-w-[180px] truncate ${
-                      selectedProduct === p
-                        ? "violet-surface text-primary"
-                        : "text-muted-foreground hover:text-foreground/70"
-                    }`}
-                  >
-                    {p}
-                  </button>
-                ))}
+                )}
+                <span className="ml-auto text-[11px] text-muted-foreground">
+                  {filtered.length} из {funnels.length}
+                </span>
               </div>
             </div>
           </header>
@@ -134,7 +106,7 @@ const Index = () => {
                   key={funnel.id}
                   funnel={funnel}
                   defaultExpanded={funnel.keyword === "КЕЙС"}
-                  onToggleActive={handleToggleActive}
+                  onToggleActive={toggleFunnelActive}
                 />
               ))}
             </div>
@@ -154,7 +126,7 @@ const Index = () => {
                     <PathRow
                       key={funnel.id}
                       funnel={funnel}
-                      onToggleActive={handleToggleActive}
+                      onToggleActive={toggleFunnelActive}
                     />
                   ))}
                 </div>

@@ -9,17 +9,16 @@ import {
   PRODUCT_STATUS_ORDER,
   DEFAULT_FORMATS,
   formatProductDateLabel,
-  initialProducts,
   type Product,
-  type ProductStatusKey,
 } from "@/lib/productData";
+import { useDataStore } from "@/lib/dataStore";
 import { ProductCard } from "@/components/products/ProductCard";
 import { CreateProductModal } from "@/components/products/CreateProductModal";
 import { EditProductModal } from "@/components/products/EditProductModal";
 import { ContentDropdown } from "@/components/content/ContentDropdown";
 
 const Products = () => {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const { products, addProduct, updateProduct } = useDataStore();
   const [formats, setFormats] = useState<string[]>(DEFAULT_FORMATS);
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
@@ -74,17 +73,11 @@ const Products = () => {
   }, [products]);
 
   const handleCreate = (data: { name: string; typeId: string; format: string; price: string; currency: string; description: string; link: string }) => {
-    const newProduct: Product = {
-      id: Date.now(),
-      ...data,
-      status: "draft" as ProductStatusKey,
-      createdDate: new Date().toISOString().slice(0, 10),
-    };
-    setProducts([newProduct, ...products]);
+    addProduct(data);
   };
 
   const handleSave = (updated: Product) => {
-    setProducts(products.map((p) => (p.id === updated.id ? updated : p)));
+    updateProduct(updated);
   };
 
   const handleAddFormat = (f: string) => {
