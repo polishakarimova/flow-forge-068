@@ -1,10 +1,7 @@
 import {
-  LayoutDashboard,
-  Lightbulb,
   FileText,
   GitBranch,
   Package,
-  BarChart3,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -20,12 +17,9 @@ import {
 } from "@/components/ui/sidebar";
 
 const navItems = [
-  { title: "Дашборд", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Темы", url: "/themes", icon: Lightbulb },
   { title: "Контент", url: "/content", icon: FileText },
   { title: "Воронки", url: "/", icon: GitBranch },
   { title: "Продукты", url: "/products", icon: Package },
-  { title: "Аналитика", url: "/analytics", icon: BarChart3 },
 ];
 
 export function AppSidebar() {

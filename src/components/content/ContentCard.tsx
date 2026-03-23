@@ -16,9 +16,11 @@ export function ContentCard({ item, topicTitle, showTopic, onOpen }: ContentCard
       className="card-elevated flex items-center gap-2 px-3 py-1.5 cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)]"
       onClick={() => onOpen(item)}
     >
-      {/* Status dot — all pulse equally */}
+      {/* Status dot — gray is static, others pulse */}
       <span className="relative shrink-0 w-2 h-2">
-        <span className="absolute inset-0 rounded-full animate-ping opacity-75" style={{ background: status.color }} />
+        {status.color !== "#94a3b8" && (
+          <span className="absolute inset-0 rounded-full animate-ping opacity-75" style={{ background: status.color }} />
+        )}
         <span className="absolute inset-0 rounded-full" style={{ background: status.color }} />
       </span>
 
