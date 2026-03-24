@@ -4,7 +4,7 @@ import { useDataStore } from "@/lib/dataStore";
 import { PRODUCT_TYPES, type Product } from "@/lib/productData";
 import { PLATFORMS } from "@/lib/contentData";
 import { PlatformIcon } from "@/components/content/PlatformIcon";
-import type { BadgeColor, ContentItem, FunnelProduct, Funnel } from "@/lib/funnelData";
+import type { BadgeColor, Funnel } from "@/lib/funnelData";
 
 interface CreateFunnelModalProps {
   onClose: () => void;
@@ -23,45 +23,6 @@ const TIER_STEPS: { typeId: string; label: string; field: keyof Pick<Funnel, "le
   { typeId: "consultation", label: "Консультация / Личная работа", field: "consultation" },
 ];
 
-const PLATFORM_MAP: Record<string, { platform: string; format: string }> = {
-  stories: { platform: "Instagram", format: "Stories" },
-  tg_post: { platform: "Telegram", format: "Пост" },
-  ig_post: { platform: "Instagram", format: "Пост" },
-  carousel: { platform: "Instagram", format: "Карусель" },
-  reels: { platform: "Instagram", format: "Reels" },
-  threads: { platform: "Threads", format: "Тред" },
-  youtube: { platform: "YouTube", format: "Видео" },
-  article: { platform: "Blog", format: "Статья" },
-  vk: { platform: "VK", format: "Пост" },
-};
-
-const STATUS_MAP: Record<string, "published" | "ready" | "draft"> = {
-  published: "published",
-  ready: "ready",
-  in_progress: "draft",
-  idea: "draft",
-};
-
-function productToFunnelProduct(p: Product): FunnelProduct {
-  const typeInfo = PRODUCT_TYPES.find((t) => t.id === p.typeId);
-  const tierMap: Record<string, "lead-magnet" | "mid-ticket" | "flagship"> = {
-    lead_magnet: "lead-magnet",
-    tripwire: "lead-magnet",
-    mid_ticket: "mid-ticket",
-    flagship: "flagship",
-    consultation: "flagship",
-    private: "flagship",
-  };
-  return {
-    id: `p${p.id}`,
-    name: p.name,
-    price: p.price ? `${p.price} ${p.currency}` : "Бесплатно",
-    type: typeInfo?.label || p.typeId,
-    tier: tierMap[p.typeId] || "lead-magnet",
-    description: p.description,
-    offerUrl: p.link || undefined,
-  };
-}
 
 /* ── Reusable dropdown for keyword / product selection ── */
 
@@ -267,46 +228,27 @@ export function CreateFunnelModal({ onClose }: CreateFunnelModalProps) {
   const handleCreate = () => {
     if (!selectedKeyword) return;
 
-    const contentItems: ContentItem[] = [];
-    selectedContentIds.forEach((id) => {
-      const ci = allContent.find((c) => c.id === id);
-      if (!ci) return;
-      const mapped = PLATFORM_MAP[ci.platformId] || { platform: ci.platformId, format: ci.platformId };
-      contentItems.push({
-        id: `c${ci.id}`,
-        platform: mapped.platform,
-        format: mapped.format,
-        title: ci.title,
-        status: STATUS_MAP[ci.status] || "draft",
-      });
-    });
-
-    const getProduct = (field: string) => {
-      const pId = selectedProducts[field];
-      if (!pId) return undefined;
-      const p = products.find((pr) => pr.id === pId);
-      return p ? productToFunnelProduct(p) : undefined;
-    };
-
-    const leadMagnet = getProduct("leadMagnet");
+    const contentItemIds = Array.from(selectedContentIds);
+    const lmId = selectedProducts["leadMagnet"] || undefined;
+    const lmProduct = lmId ? products.find((p) => p.id === lmId) : undefined;
 
     const funnel: Funnel = {
       id: String(Date.now()),
       keyword: selectedKeyword,
       badgeColor,
-      product: leadMagnet?.name || selectedKeyword,
-      productType: leadMagnet ? "Лид-магнит" : "",
+      product: lmProduct?.name || selectedKeyword,
+      productType: lmProduct ? "Лид-магнит" : "",
       active: true,
-      contentCount: contentItems.length,
+      contentCount: contentItemIds.length,
       leads: 0,
       sales: 0,
-      contentItems,
+      contentItemIds,
       cta: `Напиши ${selectedKeyword} в директ`,
-      leadMagnet,
-      tripwire: getProduct("tripwire"),
-      midTicket: getProduct("midTicket"),
-      flagship: getProduct("flagship"),
-      consultation: getProduct("consultation"),
+      leadMagnetId: selectedProducts["leadMagnet"] || undefined,
+      tripwireId: selectedProducts["tripwire"] || undefined,
+      midTicketId: selectedProducts["midTicket"] || undefined,
+      flagshipId: selectedProducts["flagship"] || undefined,
+      consultationId: selectedProducts["consultation"] || undefined,
     };
 
     addFunnel(funnel);

@@ -20,6 +20,7 @@ import type { Funnel } from "@/lib/funnelData";
 import { productTypeShort } from "@/lib/funnelData";
 import { getBadgeStyle } from "@/lib/badgeStyles";
 import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
+import { useDataStore } from "@/lib/dataStore";
 
 const shortToTypeId: Record<string, string> = {
   "ЛМ": "lead_magnet",
@@ -28,6 +29,15 @@ const shortToTypeId: Record<string, string> = {
   "ФГ": "flagship",
   "КС": "consultation",
   "ЛР": "private",
+};
+
+const TYPE_TO_SHORT: Record<string, string> = {
+  lead_magnet: "ЛМ",
+  tripwire: "ТВ",
+  mid_ticket: "СЧ",
+  flagship: "ФГ",
+  consultation: "КС",
+  private: "ЛР",
 };
 
 interface PathRowProps {
@@ -44,31 +54,30 @@ function truncate(str: string, len: number) {
   return str.length > len ? str.slice(0, len) + "…" : str;
 }
 
-function buildPathString(funnel: Funnel) {
-  const steps: { short: string; name?: string }[] = [];
-
-  if (funnel.leadMagnet) {
-    steps.push({ short: "ЛМ", name: funnel.leadMagnet.name });
-  }
-  if (funnel.midTicket) {
-    steps.push({ short: "СЧ", name: funnel.midTicket.name });
-  }
-  if (funnel.flagship) {
-    steps.push({ short: "ФГ", name: funnel.flagship.name });
-  }
-
-  if (steps.length === 0) {
-    const short = productTypeShort[funnel.productType] || funnel.productType;
-    steps.push({ short });
-  }
-
-  return steps;
-}
-
 export function PathRow({ funnel, defaultExpanded = false, onToggleActive }: PathRowProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const { products } = useDataStore();
   const inactive = !funnel.active;
-  const pathSteps = buildPathString(funnel);
+
+  /* Build path steps from real product IDs */
+  const pathSteps: { short: string; name?: string }[] = [];
+  const idFields: { id?: number; short: string }[] = [
+    { id: funnel.leadMagnetId, short: "ЛМ" },
+    { id: funnel.tripwireId, short: "ТВ" },
+    { id: funnel.midTicketId, short: "СЧ" },
+    { id: funnel.flagshipId, short: "ФГ" },
+    { id: funnel.consultationId, short: "КС" },
+  ];
+  for (const { id, short } of idFields) {
+    if (id != null) {
+      const p = products.find((pr) => pr.id === id);
+      pathSteps.push({ short, name: p?.name });
+    }
+  }
+  if (pathSteps.length === 0) {
+    const short = productTypeShort[funnel.productType] || funnel.productType;
+    pathSteps.push({ short });
+  }
 
   return (
     <div

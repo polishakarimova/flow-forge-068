@@ -16,6 +16,7 @@ interface DataStore {
 
   // Topics / Content
   topics: Topic[];
+  allContentItems: ContentItemData[];
   addTopic: (t: Omit<Topic, "id">) => void;
   updateTopic: (t: Topic) => void;
   updateContentItem: (item: ContentItemData) => void;
@@ -85,6 +86,11 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const allContentItems = useMemo(
+    () => topics.flatMap((t) => t.contentItems),
+    [topics]
+  );
+
   const addKeyword = useCallback((kw: string) => {
     setKeywords((prev) => (prev.includes(kw) ? prev : [...prev, kw]));
   }, []);
@@ -120,6 +126,7 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
       addFormat,
       deleteFormat,
       topics,
+      allContentItems,
       addTopic,
       updateTopic,
       updateContentItem,
@@ -132,7 +139,7 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
       toggleFunnelActive,
       funnelsForKeyword,
     }),
-    [products, addProduct, updateProduct, formats, addFormat, deleteFormat, topics, addTopic, updateTopic, updateContentItem, keywords, addKeyword, deleteKeyword, funnels, setFunnels, addFunnel, toggleFunnelActive, funnelsForKeyword]
+    [products, addProduct, updateProduct, formats, addFormat, deleteFormat, topics, allContentItems, addTopic, updateTopic, updateContentItem, keywords, addKeyword, deleteKeyword, funnels, setFunnels, addFunnel, toggleFunnelActive, funnelsForKeyword]
   );
 
   return (

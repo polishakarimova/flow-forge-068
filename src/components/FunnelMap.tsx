@@ -1,80 +1,23 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus, Send, FileText, MoreHorizontal } from "lucide-react";
-import type { Funnel, ContentStatus, FunnelProduct, ContentItem } from "@/lib/funnelData";
+import type { Funnel } from "@/lib/funnelData";
+import { resolveFunnelContent, resolveFunnelProducts } from "@/lib/funnelData";
+import { useDataStore } from "@/lib/dataStore";
 import { PlatformIcon } from "@/components/content/PlatformIcon";
 import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
-import { STATUSES, type ContentItemData, type ContentStatusKey } from "@/lib/contentData";
+import { STATUSES, type ContentItemData } from "@/lib/contentData";
 import { ContentDetailModal } from "@/components/content/ContentDetailModal";
-
-const FUNNEL_PLATFORM_ID: Record<string, string> = {
-  "Telegram|Пост": "tg_post",
-  "Instagram|Stories": "stories",
-  "Instagram|Пост": "ig_post",
-  "Instagram|Reels": "reels",
-  "Instagram|Карусель": "carousel",
-  "Blog|Статья": "article",
-  "Threads|Тред": "threads",
-  "YouTube|Видео": "youtube",
-  "VK|Пост": "vk",
-};
-
-function getFunnelPlatformId(item: ContentItem): string | null {
-  return FUNNEL_PLATFORM_ID[`${item.platform}|${item.format}`] || null;
-}
-import { productsCatalog } from "@/lib/funnelData";
+import type { Product } from "@/lib/productData";
 import { ProductDrawer } from "@/components/ProductDrawer";
 import { getBadgeStyle } from "@/lib/badgeStyles";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
-/* Map funnel ContentStatus → contentData ContentStatusKey */
-const FUNNEL_STATUS_MAP: Record<ContentStatus, ContentStatusKey> = {
-  published: "published",
-  ready: "ready",
-  draft: "in_progress",
-};
-
-/* Convert funnel ContentItem → ContentItemData for the detail modal */
-function toContentItemData(item: ContentItem): ContentItemData {
-  const platformId = FUNNEL_PLATFORM_ID[`${item.platform}|${item.format}`] || "";
-  return {
-    id: parseInt(item.id.replace(/\D/g, "")) || 0,
-    platformId,
-    status: FUNNEL_STATUS_MAP[item.status] || "in_progress",
-    title: item.title,
-    body: "",
-    createdDate: "",
-    publishDate: "",
-  };
-}
-
-const tierLabel: Record<string, string> = {
-  "lead-magnet": "Лид-магнит",
+const TIER_LABEL: Record<string, string> = {
+  lead_magnet: "Лид-магнит",
   tripwire: "Трипвайер",
-  "mid-ticket": "Средний чек",
+  mid_ticket: "Среднечек",
   flagship: "Флагман",
   consultation: "Консультация",
 };
-
-const TIER_TYPE_ID: Record<string, string> = {
-  "lead-magnet": "lead_magnet",
-  tripwire: "tripwire",
-  "mid-ticket": "mid_ticket",
-  flagship: "flagship",
-  consultation: "consultation",
-};
-
-/* Ordered product tiers for sequential chain */
-const PRODUCT_CHAIN_ORDER: { key: keyof Pick<Funnel, "leadMagnet" | "tripwire" | "midTicket" | "flagship" | "consultation">; tier: string }[] = [
-  { key: "leadMagnet", tier: "lead-magnet" },
-  { key: "tripwire", tier: "tripwire" },
-  { key: "midTicket", tier: "mid-ticket" },
-  { key: "flagship", tier: "flagship" },
-  { key: "consultation", tier: "consultation" },
-];
 
 const NodeCard = ({
   children,
@@ -107,103 +50,53 @@ const NodeCard = ({
   </div>
 );
 
-const SvgConnector = ({
-  delay = 0,
-}: {
-  delay?: number;
-}) => {
-  return (
-    <div
-      className="flex flex-col items-center justify-center shrink-0 px-1 group/connector mt-4"
-      style={{ animation: `fadeSlideIn 0.3s ease-out ${delay}ms both` }}
-    >
-      <svg width="40" height="16" viewBox="0 0 40 16" className="transition-all duration-200">
-        <line
-          x1="0" y1="8" x2="30" y2="8"
-          stroke="#C4B5FD"
-          strokeWidth="1.5"
-          className="transition-all duration-200 group-hover/connector:[stroke-width:2.5]"
-          strokeDasharray="40"
-          strokeDashoffset="40"
-          style={{
-            animation: `drawLine 0.5s ease-out ${delay + 200}ms forwards`,
-          }}
-        />
-        <polygon
-          points="28,4 36,8 28,12"
-          fill="#C4B5FD"
-          className="transition-all duration-200"
-          style={{
-            opacity: 0,
-            animation: `fadeIn 0.3s ease-out ${delay + 500}ms forwards`,
-          }}
-        />
-      </svg>
+const SvgConnector = ({ delay = 0 }: { delay?: number }) => (
+  <div
+    className="flex flex-col items-center justify-center shrink-0 px-1 group/connector mt-4"
+    style={{ animation: `fadeSlideIn 0.3s ease-out ${delay}ms both` }}
+  >
+    <svg width="40" height="16" viewBox="0 0 40 16" className="transition-all duration-200">
+      <line
+        x1="0" y1="8" x2="30" y2="8"
+        stroke="#C4B5FD"
+        strokeWidth="1.5"
+        className="transition-all duration-200 group-hover/connector:[stroke-width:2.5]"
+        strokeDasharray="40"
+        strokeDashoffset="40"
+        style={{ animation: `drawLine 0.5s ease-out ${delay + 200}ms forwards` }}
+      />
+      <polygon
+        points="28,4 36,8 28,12"
+        fill="#C4B5FD"
+        className="transition-all duration-200"
+        style={{ opacity: 0, animation: `fadeIn 0.3s ease-out ${delay + 500}ms forwards` }}
+      />
+    </svg>
+  </div>
+);
+
+const PlaceholderCard = ({ label, delay = 0 }: { label: string; delay?: number }) => (
+  <div
+    className="rounded-2xl border-2 border-dashed border-border p-4 min-w-[160px] flex items-center justify-center text-center
+      hover:-translate-y-0.5 hover:shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.15)] hover:border-primary/30
+      transition-all duration-200 cursor-pointer"
+    style={{ animation: `fadeSlideIn 0.4s ease-out ${delay}ms both` }}
+  >
+    <div className="flex items-center gap-0 text-[12px] text-muted-foreground">
+      <span>+{label}</span>
     </div>
-  );
-};
-
-const PlaceholderCard = ({
-  label,
-  tier,
-  delay = 0,
-}: {
-  label: string;
-  tier: string;
-  delay?: number;
-}) => {
-  const matchingProducts = productsCatalog.filter((p) => p.tier === tier);
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <div
-          className="rounded-2xl border-2 border-dashed border-border p-4 min-w-[160px] flex items-center justify-center text-center
-            hover:-translate-y-0.5 hover:shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.15)] hover:border-primary/30
-            transition-all duration-200 cursor-pointer"
-          style={{ animation: `fadeSlideIn 0.4s ease-out ${delay}ms both` }}
-        >
-          <div className="flex items-center gap-0 text-[12px] text-muted-foreground">
-            <span>+{label}</span>
-          </div>
-        </div>
-      </PopoverTrigger>
-      <PopoverContent className="w-56 p-2" align="start">
-        <div className="space-y-1">
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider px-2 py-1">
-            Выберите продукт
-          </p>
-          {matchingProducts.map((p) => (
-            <button
-              key={p.id}
-              className="w-full text-left px-2 py-1.5 rounded-lg text-[12px] text-foreground hover:bg-muted transition-colors"
-            >
-              {p.name}
-            </button>
-          ))}
-          {matchingProducts.length === 0 && (
-            <p className="text-[11px] text-muted-foreground px-2 py-1">Нет продуктов</p>
-          )}
-          <button className="w-full text-left px-2 py-1.5 rounded-lg text-[12px] text-primary font-medium hover:bg-primary/5 transition-colors">
-            + Создать новый
-          </button>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-};
+  </div>
+);
 
 /* ── Content item row — matches ContentCard from Content screen ── */
 function ContentItemRow({
   item,
   onClick,
 }: {
-  item: ContentItem;
+  item: ContentItemData;
   onClick: () => void;
 }) {
-  const platformId = getFunnelPlatformId(item);
-  const statusKey = FUNNEL_STATUS_MAP[item.status] || "in_progress";
-  const status = STATUSES[statusKey];
+  const status = STATUSES[item.status];
 
   return (
     <div
@@ -220,7 +113,7 @@ function ContentItemRow({
 
       {/* Platform badge */}
       <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-foreground/[0.06] shrink-0">
-        {platformId && <PlatformIcon platformId={platformId} size={14} />}
+        <PlatformIcon platformId={item.platformId} size={14} />
       </span>
 
       {/* Content title */}
@@ -268,27 +161,32 @@ function ExpandedListModal({
 }
 
 export function FunnelMap({ funnel }: { funnel: Funnel }) {
-  const [drawerProduct, setDrawerProduct] = useState<FunnelProduct | null>(null);
-  const [editingContent, setEditingContent] = useState<ContentItem | null>(null);
+  const { allContentItems, products, topics, updateContentItem } = useDataStore();
+  const [drawerProduct, setDrawerProduct] = useState<Product | null>(null);
+  const [editingContent, setEditingContent] = useState<ContentItemData | null>(null);
   const [expandedContent, setExpandedContent] = useState(false);
 
-  /* Build sequential product chain from funnel fields */
-  const productChain: { product: FunnelProduct; tier: string; typeId: string; label: string }[] = [];
-  for (const { key, tier } of PRODUCT_CHAIN_ORDER) {
-    const product = funnel[key];
-    if (product) {
-      productChain.push({
-        product,
-        tier,
-        typeId: TIER_TYPE_ID[tier] || tier,
-        label: tierLabel[tier] || tier,
-      });
-    }
-  }
+  /* Resolve real content items from store */
+  const contentItems = useMemo(
+    () => resolveFunnelContent(funnel, allContentItems),
+    [funnel, allContentItems],
+  );
+
+  /* Resolve real products from store as sequential chain */
+  const productChain = useMemo(
+    () => resolveFunnelProducts(funnel, products),
+    [funnel, products],
+  );
+
+  /* Find topic title for a content item */
+  const getTopicTitle = (ci: ContentItemData) => {
+    const topic = topics.find((t) => t.contentItems.some((c) => c.id === ci.id));
+    return topic?.title || "";
+  };
 
   const PREVIEW_COUNT = 2;
-  const contentPreview = funnel.contentItems.slice(0, PREVIEW_COUNT);
-  const hasMoreContent = funnel.contentItems.length > PREVIEW_COUNT;
+  const contentPreview = contentItems.slice(0, PREVIEW_COUNT);
+  const hasMoreContent = contentItems.length > PREVIEW_COUNT;
 
   return (
     <div className="py-5 px-4 md:px-6 border-t border-border bg-muted/30">
@@ -315,7 +213,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
               Контент
             </span>
-            <span className="text-[10px] text-muted-foreground/60">({funnel.contentItems.length})</span>
+            <span className="text-[10px] text-muted-foreground/60">({contentItems.length})</span>
           </div>
           <div className="space-y-1.5">
             {contentPreview.map((item) => (
@@ -327,7 +225,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
                 className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground mt-1 transition-colors rounded-lg px-1.5 py-1 -mx-1.5 hover:bg-muted/50"
               >
                 <MoreHorizontal className="w-3.5 h-3.5" />
-                <span>ещё {funnel.contentItems.length - PREVIEW_COUNT}</span>
+                <span>ещё {contentItems.length - PREVIEW_COUNT}</span>
               </button>
             )}
             <button className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 mt-2 transition-colors">
@@ -358,35 +256,43 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
         </NodeCard>
 
         {/* === Sequential Product Chain === */}
-        {productChain.map(({ product, tier, typeId, label }, idx) => (
-          <div key={product.id} className="flex items-start">
-            <SvgConnector delay={300 + idx * 150} />
-            <NodeCard
-              delay={350 + idx * 150}
-              flagship={tier === "flagship"}
-              onClick={() => setDrawerProduct(product)}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <ProductTypeIcon typeId={typeId} size={22} />
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  {label}
-                </span>
-              </div>
-              <p className="text-[12px] text-foreground/80 truncate max-w-[160px]">
-                {product.name}
-              </p>
-              {product.price && (
-                <p className="text-[11px] text-primary font-medium mt-1">{product.price} ₽</p>
-              )}
-            </NodeCard>
-          </div>
-        ))}
+        {productChain.map(({ product }, idx) => {
+          const typeId = product.typeId;
+          const label = TIER_LABEL[typeId] || typeId;
+          const isFlagship = typeId === "flagship";
+
+          return (
+            <div key={product.id} className="flex items-start">
+              <SvgConnector delay={300 + idx * 150} />
+              <NodeCard
+                delay={350 + idx * 150}
+                flagship={isFlagship}
+                onClick={() => setDrawerProduct(product)}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <ProductTypeIcon typeId={typeId} size={22} />
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    {label}
+                  </span>
+                </div>
+                <p className="text-[12px] text-foreground/80 truncate max-w-[160px]">
+                  {product.name}
+                </p>
+                {product.price && (
+                  <p className="text-[11px] text-primary font-medium mt-1">
+                    {product.price} {product.currency}
+                  </p>
+                )}
+              </NodeCard>
+            </div>
+          );
+        })}
 
         {/* If no products at all, show placeholder */}
         {productChain.length === 0 && (
           <>
             <SvgConnector delay={300} />
-            <PlaceholderCard label="Продукт" tier="lead-magnet" delay={400} />
+            <PlaceholderCard label="Продукт" delay={400} />
           </>
         )}
       </div>
@@ -394,7 +300,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
       {/* Expanded content list */}
       {expandedContent && (
         <ExpandedListModal title="Контент" onClose={() => setExpandedContent(false)}>
-          {funnel.contentItems.map((item) => (
+          {contentItems.map((item) => (
             <ContentItemRow key={item.id} item={item} onClick={() => { setExpandedContent(false); setEditingContent(item); }} />
           ))}
         </ExpandedListModal>
@@ -410,10 +316,10 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
       {/* Content Detail Modal — same as Content screen */}
       {editingContent && (
         <ContentDetailModal
-          item={toContentItemData(editingContent)}
-          topicTitle=""
+          item={editingContent}
+          topicTitle={getTopicTitle(editingContent)}
           onClose={() => setEditingContent(null)}
-          onSave={() => setEditingContent(null)}
+          onSave={(updated) => { updateContentItem(updated); setEditingContent(null); }}
         />
       )}
     </div>
