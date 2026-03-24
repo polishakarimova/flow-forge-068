@@ -7,7 +7,6 @@ import {
   PRODUCT_TYPES,
   PRODUCT_STATUSES,
   PRODUCT_STATUS_ORDER,
-  DEFAULT_FORMATS,
   formatProductDateLabel,
   type Product,
 } from "@/lib/productData";
@@ -17,9 +16,17 @@ import { CreateProductModal } from "@/components/products/CreateProductModal";
 import { EditProductModal } from "@/components/products/EditProductModal";
 import { ContentDropdown } from "@/components/content/ContentDropdown";
 
+const TYPE_ICON_SRC: Record<string, string> = {
+  lead_magnet: "/icons/magnet.svg",
+  tripwire: "/icons/lightning.svg",
+  mid_ticket: "/icons/coin.svg",
+  flagship: "/icons/diamond.svg",
+  consultation: "/icons/chat.svg",
+  private: "/icons/crown.svg",
+};
+
 const Products = () => {
-  const { products, addProduct, updateProduct } = useDataStore();
-  const [formats, setFormats] = useState<string[]>(DEFAULT_FORMATS);
+  const { products, addProduct, updateProduct, formats, addFormat, deleteFormat } = useDataStore();
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
@@ -54,7 +61,7 @@ const Products = () => {
     const counts: Record<string, number> = {};
     products.forEach((p) => { counts[p.typeId] = (counts[p.typeId] || 0) + 1; });
     return PRODUCT_TYPES.filter((t) => counts[t.id]).map((t) => ({
-      value: t.id, label: t.label, icon: t.icon, count: counts[t.id],
+      value: t.id, label: t.label, iconSrc: TYPE_ICON_SRC[t.id], count: counts[t.id],
     }));
   }, [products]);
 
@@ -81,11 +88,11 @@ const Products = () => {
   };
 
   const handleAddFormat = (f: string) => {
-    if (!formats.includes(f)) setFormats([...formats, f]);
+    addFormat(f);
   };
 
   const handleDeleteFormat = (f: string) => {
-    setFormats(formats.filter((x) => x !== f));
+    deleteFormat(f);
     if (formatFilter === f) setFormatFilter(null);
   };
 

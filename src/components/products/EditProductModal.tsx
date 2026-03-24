@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { PRODUCT_TYPES, type Product, type ProductStatusKey } from "@/lib/productData";
 import { ProductStatusSelect } from "./ProductStatusSelect";
 import { FormatSelector } from "./FormatSelector";
+import { ProductTypeIcon } from "./ProductTypeIcon";
 
 interface EditProductModalProps {
   product: Product;
@@ -41,7 +42,7 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
           {/* Header */}
           <div className="flex justify-between items-center mb-5">
             <div className="flex items-center gap-2">
-              <span className="text-lg">{type?.icon}</span>
+              {type && <ProductTypeIcon typeId={type.id} size={22} />}
               <span className="text-[16px] font-bold" style={{ color: type?.color }}>{type?.label}</span>
             </div>
             <div className="flex items-center gap-2.5">
@@ -76,21 +77,21 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
           {/* Product type */}
           <div className="mb-4">
             <label className="block text-[13px] font-semibold text-muted-foreground mb-2">Тип продукта</label>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1">
               {PRODUCT_TYPES.map((t) => {
                 const sel = typeId === t.id;
                 return (
                   <button
                     key={t.id}
                     onClick={() => setTypeId(t.id)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-normal cursor-pointer transition-all duration-200"
                     style={{
-                      border: sel ? `2px solid ${t.color}` : "2px solid hsl(var(--border))",
+                      border: sel ? `1.5px solid ${t.color}` : "1.5px solid hsl(var(--border))",
                       background: sel ? t.color + "10" : "transparent",
-                      color: sel ? t.color : "hsl(var(--muted-foreground))",
+                      color: sel ? t.color : "#4b5563",
                     }}
                   >
-                    <span>{t.icon}</span>
+                    <ProductTypeIcon typeId={t.id} size={14} />
                     {t.label}
                     {sel && <span>✓</span>}
                   </button>
