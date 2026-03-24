@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Send, FileText } from "lucide-react";
+import { Plus, Send, FileText, MoreHorizontal, ChevronDown } from "lucide-react";
 import type { Funnel, ContentStatus, FunnelProduct, ContentItem } from "@/lib/funnelData";
 import { PlatformIcon } from "@/components/content/PlatformIcon";
 import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
@@ -45,6 +45,12 @@ const tierLabel: Record<string, string> = {
   "lead-magnet": "Лид-магнит",
   "mid-ticket": "Средний чек",
   "flagship": "Флагман",
+};
+
+const TIER_TYPE_ID: Record<string, string> = {
+  "lead-magnet": "lead_magnet",
+  "mid-ticket": "mid_ticket",
+  flagship: "flagship",
 };
 
 const NodeCard = ({
@@ -164,9 +170,110 @@ const PlaceholderCard = ({
   );
 };
 
+/* ── Content item row (icon + truncated title) ── */
+function ContentItemRow({
+  item,
+  onClick,
+}: {
+  item: ContentItem;
+  onClick: () => void;
+}) {
+  const platformId = getFunnelPlatformId(item);
+  return (
+    <div
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className="flex items-center gap-2 text-[12px] cursor-pointer rounded-lg px-1.5 py-1 -mx-1.5
+        transition-all duration-150 hover:bg-primary/5 hover:ring-1 hover:ring-primary/20 active:scale-[0.98]"
+    >
+      <span className={`w-2 h-2 rounded-full shrink-0 ${statusColor[item.status]}`} title={statusLabel[item.status]} />
+      {platformId ? (
+        <PlatformIcon platformId={platformId} size={14} />
+      ) : (
+        <span className="text-muted-foreground font-medium shrink-0">{item.platform}</span>
+      )}
+      <span className="text-foreground/60 truncate">
+        {item.title.length > 22 ? item.title.slice(0, 22) + "…" : item.title}
+      </span>
+    </div>
+  );
+}
+
+/* ── Product row (icon + name) ── */
+function ProductItemRow({
+  product,
+  typeId,
+  onClick,
+}: {
+  product: FunnelProduct;
+  typeId: string;
+  onClick: () => void;
+}) {
+  return (
+    <div
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className="flex items-center gap-2 text-[12px] cursor-pointer rounded-lg px-1.5 py-1 -mx-1.5
+        transition-all duration-150 hover:bg-primary/5 hover:ring-1 hover:ring-primary/20 active:scale-[0.98]"
+    >
+      <ProductTypeIcon typeId={typeId} size={16} />
+      <span className="text-foreground/80 truncate">
+        {product.name.length > 22 ? product.name.slice(0, 22) + "…" : product.name}
+      </span>
+    </div>
+  );
+}
+
+/* ── Expanded list modal overlay ── */
+function ExpandedListModal({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] animate-in fade-in duration-200"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="bg-card rounded-3xl w-full max-w-[420px] max-h-[70vh] overflow-hidden animate-in slide-in-from-bottom-3 duration-300"
+        style={{ boxShadow: "0 24px 60px rgba(0,0,0,.15)" }}
+      >
+        <div className="px-6 pt-5 pb-3 border-b border-border flex items-center justify-between">
+          <h3 className="text-[14px] font-bold text-foreground">{title}</h3>
+          <button
+            onClick={onClose}
+            className="bg-muted border-none rounded-lg w-[28px] h-[28px] cursor-pointer text-[13px] text-muted-foreground flex items-center justify-center hover:bg-muted/80 transition-all"
+          >
+            ✕
+          </button>
+        </div>
+        <div className="px-6 py-4 overflow-y-auto max-h-[55vh] space-y-1">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function FunnelMap({ funnel }: { funnel: Funnel }) {
   const [drawerProduct, setDrawerProduct] = useState<FunnelProduct | null>(null);
   const [drawerContent, setDrawerContent] = useState<ContentItem | null>(null);
+  const [expandedContent, setExpandedContent] = useState(false);
+  const [expandedProducts, setExpandedProducts] = useState(false);
+
+  const allProducts: { product: FunnelProduct; typeId: string }[] = [];
+  if (funnel.leadMagnet) allProducts.push({ product: funnel.leadMagnet, typeId: "lead_magnet" });
+  if (funnel.midTicket) allProducts.push({ product: funnel.midTicket, typeId: "mid_ticket" });
+  if (funnel.flagship) allProducts.push({ product: funnel.flagship, typeId: "flagship" });
+
+  const PREVIEW_COUNT = 2;
+  const contentPreview = funnel.contentItems.slice(0, PREVIEW_COUNT);
+  const hasMoreContent = funnel.contentItems.length > PREVIEW_COUNT;
+  const productPreview = allProducts.slice(0, PREVIEW_COUNT);
+  const hasMoreProducts = allProducts.length > PREVIEW_COUNT;
 
   return (
     <div className="py-5 px-4 md:px-6 border-t border-border bg-muted/30">
@@ -193,33 +300,21 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
               Контент
             </span>
+            <span className="text-[10px] text-muted-foreground/60">({funnel.contentItems.length})</span>
           </div>
           <div className="space-y-1.5">
-            {funnel.contentItems.map((item) => (
-              <div
-                key={item.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDrawerContent(item);
-                }}
-                className="flex items-center gap-2 text-[12px] group/content cursor-pointer rounded-lg px-1.5 py-1 -mx-1.5
-                  transition-all duration-150 hover:bg-primary/5 hover:ring-1 hover:ring-primary/20
-                  active:scale-[0.98]"
-                title="Нажми чтобы открыть"
-              >
-                <span className={`w-2 h-2 rounded-full shrink-0 ${statusColor[item.status]}`} title={statusLabel[item.status]} />
-                {getFunnelPlatformId(item) ? (
-                  <PlatformIcon platformId={getFunnelPlatformId(item)!} size={14} />
-                ) : (
-                  <span className="text-muted-foreground font-medium shrink-0">
-                    {item.platform}
-                  </span>
-                )}
-                <span className="text-foreground/60 truncate">
-                  {item.title.length > 25 ? item.title.slice(0, 25) + "…" : item.title}
-                </span>
-              </div>
+            {contentPreview.map((item) => (
+              <ContentItemRow key={item.id} item={item} onClick={() => setDrawerContent(item)} />
             ))}
+            {hasMoreContent && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setExpandedContent(true); }}
+                className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground mt-1 transition-colors rounded-lg px-1.5 py-1 -mx-1.5 hover:bg-muted/50"
+              >
+                <MoreHorizontal className="w-3.5 h-3.5" />
+                <span>ещё {funnel.contentItems.length - PREVIEW_COUNT}</span>
+              </button>
+            )}
             <button className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 mt-2 transition-colors">
               <Plus className="w-3 h-3" />
               Добавить
@@ -229,7 +324,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
 
         <SvgConnector delay={100} />
 
-        {/* === CTA Node — keyword badge only === */}
+        {/* === CTA Node === */}
         <NodeCard delay={200}>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -249,55 +344,63 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
 
         <SvgConnector delay={300} />
 
-        {/* === Lead Magnet Node === */}
-        {funnel.leadMagnet ? (
-          <NodeCard delay={400} onClick={() => setDrawerProduct(funnel.leadMagnet!)}>
+        {/* === Products Node (combined) === */}
+        {allProducts.length > 0 ? (
+          <NodeCard delay={400}>
             <div className="flex items-center gap-2 mb-3">
-              <ProductTypeIcon typeId="lead_magnet" size={24} />
+              <ProductTypeIcon typeId={allProducts[0].typeId} size={24} />
               <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Лид-магнит
+                Продукты
               </span>
+              <span className="text-[10px] text-muted-foreground/60">({allProducts.length})</span>
             </div>
-            <p className="text-[11px] text-[#9CA3AF]">{funnel.leadMagnet.name}</p>
+            <div className="space-y-1.5">
+              {productPreview.map(({ product, typeId }) => (
+                <ProductItemRow
+                  key={product.id}
+                  product={product}
+                  typeId={typeId}
+                  onClick={() => setDrawerProduct(product)}
+                />
+              ))}
+              {hasMoreProducts && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setExpandedProducts(true); }}
+                  className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground mt-1 transition-colors rounded-lg px-1.5 py-1 -mx-1.5 hover:bg-muted/50"
+                >
+                  <MoreHorizontal className="w-3.5 h-3.5" />
+                  <span>ещё {allProducts.length - PREVIEW_COUNT}</span>
+                </button>
+              )}
+            </div>
           </NodeCard>
         ) : (
-          <PlaceholderCard label="Лид-магнит" tier="lead-magnet" delay={400} />
-        )}
-
-        <SvgConnector delay={500} />
-
-        {/* === Mid-Ticket Node === */}
-        {funnel.midTicket ? (
-          <NodeCard delay={600} onClick={() => setDrawerProduct(funnel.midTicket!)}>
-            <div className="flex items-center gap-2 mb-3">
-              <ProductTypeIcon typeId="mid_ticket" size={24} />
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Средний чек
-              </span>
-            </div>
-            <p className="text-[11px] text-[#9CA3AF]">{funnel.midTicket.name}</p>
-          </NodeCard>
-        ) : (
-          <PlaceholderCard label="Средний чек" tier="mid-ticket" delay={600} />
-        )}
-
-        <SvgConnector delay={700} />
-
-        {/* === Flagship Node === */}
-        {funnel.flagship ? (
-          <NodeCard flagship delay={800} onClick={() => setDrawerProduct(funnel.flagship!)}>
-            <div className="flex items-center gap-2 mb-3">
-              <ProductTypeIcon typeId="flagship" size={24} />
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Флагман
-              </span>
-            </div>
-            <p className="text-[11px] text-[#9CA3AF]">{funnel.flagship.name}</p>
-          </NodeCard>
-        ) : (
-          <PlaceholderCard label="Флагман" tier="flagship" delay={800} />
+          <PlaceholderCard label="Продукт" tier="lead-magnet" delay={400} />
         )}
       </div>
+
+      {/* Expanded content list */}
+      {expandedContent && (
+        <ExpandedListModal title="Контент" onClose={() => setExpandedContent(false)}>
+          {funnel.contentItems.map((item) => (
+            <ContentItemRow key={item.id} item={item} onClick={() => { setExpandedContent(false); setDrawerContent(item); }} />
+          ))}
+        </ExpandedListModal>
+      )}
+
+      {/* Expanded products list */}
+      {expandedProducts && (
+        <ExpandedListModal title="Продукты" onClose={() => setExpandedProducts(false)}>
+          {allProducts.map(({ product, typeId }) => (
+            <ProductItemRow
+              key={product.id}
+              product={product}
+              typeId={typeId}
+              onClick={() => { setExpandedProducts(false); setDrawerProduct(product); }}
+            />
+          ))}
+        </ExpandedListModal>
+      )}
 
       {/* Product Drawer */}
       <ProductDrawer
