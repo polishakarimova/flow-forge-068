@@ -234,11 +234,6 @@ function AddProductPickerModal({
                       <div className="text-[12px] font-medium text-foreground truncate">{product.name}</div>
                       <div className="text-[10px] text-muted-foreground">{typeInfo?.label}</div>
                     </div>
-                    {product.price && (
-                      <span className="text-[10px] text-primary font-medium shrink-0">
-                        {product.price} {product.currency}
-                      </span>
-                    )}
                   </div>
                 );
               })}
@@ -491,11 +486,6 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
                 <p className="text-[11px] text-foreground/80 truncate max-w-[140px]">
                   {product.name}
                 </p>
-                {product.price && (
-                  <p className="text-[10px] text-primary font-medium mt-0.5">
-                    {product.price} {product.currency}
-                  </p>
-                )}
               </NodeCard>
             </div>
           );
