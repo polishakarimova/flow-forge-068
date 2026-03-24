@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { Settings } from "lucide-react";
 import { PLATFORMS, formatDateLabel, type ContentItemData, type ContentStatusKey } from "@/lib/contentData";
 import { StatusSelect } from "./StatusSelect";
 import { PlatformIcon } from "./PlatformIcon";
@@ -8,14 +9,36 @@ interface ContentDetailModalProps {
   topicTitle: string;
   onClose: () => void;
   onSave: (updated: ContentItemData) => void;
+  onTopicRename?: (newTitle: string) => void;
 }
 
-export function ContentDetailModal({ item, topicTitle, onClose, onSave }: ContentDetailModalProps) {
+export function ContentDetailModal({ item, topicTitle, onClose, onSave, onTopicRename }: ContentDetailModalProps) {
   const platform = PLATFORMS.find((p) => p.id === item.platformId);
   const [title, setTitle] = useState(item.title || "");
   const [body, setBody] = useState(item.body || "");
   const [status, setStatus] = useState<ContentStatusKey>(item.status);
   const [publishDate, setPublishDate] = useState(item.publishDate || "");
+
+  const [editingTopic, setEditingTopic] = useState(false);
+  const [topicDraft, setTopicDraft] = useState(topicTitle);
+  const topicInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editingTopic && topicInputRef.current) {
+      topicInputRef.current.focus();
+      topicInputRef.current.select();
+    }
+  }, [editingTopic]);
+
+  const commitTopicEdit = () => {
+    setEditingTopic(false);
+    const trimmed = topicDraft.trim();
+    if (trimmed && trimmed !== topicTitle && onTopicRename) {
+      onTopicRename(trimmed);
+    } else {
+      setTopicDraft(topicTitle);
+    }
+  };
 
   return (
     <div
@@ -30,7 +53,6 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave }: Conten
             <div className="flex items-center gap-2">
               {platform && <PlatformIcon platformId={item.platformId} size={20} />}
               <span className="text-[16px] font-bold text-foreground uppercase">{platform?.label}</span>
-              {topicTitle && <span className="text-[12px] text-muted-foreground">· {topicTitle}</span>}
             </div>
             <div className="flex items-center gap-2.5">
               <StatusSelect value={status} onChange={setStatus} />
@@ -42,6 +64,39 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave }: Conten
               </button>
             </div>
           </div>
+
+          {/* Topic title — thin gray row, non-editable by default */}
+          {topicTitle && (
+            <div className="flex items-center gap-2 mb-3 px-1">
+              {editingTopic ? (
+                <input
+                  ref={topicInputRef}
+                  value={topicDraft}
+                  onChange={(e) => setTopicDraft(e.target.value)}
+                  onBlur={commitTopicEdit}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitTopicEdit();
+                    if (e.key === "Escape") { setTopicDraft(topicTitle); setEditingTopic(false); }
+                  }}
+                  className="flex-1 min-w-0 text-[12px] font-light tracking-wide text-muted-foreground bg-transparent border-b border-muted-foreground/30 outline-none py-0.5"
+                />
+              ) : (
+                <span className="flex-1 min-w-0 text-[12px] font-light tracking-wide text-muted-foreground/60 truncate select-none">
+                  {topicTitle}
+                </span>
+              )}
+              {onTopicRename && (
+                <button
+                  onClick={() => {
+                    if (!editingTopic) { setTopicDraft(topicTitle); setEditingTopic(true); }
+                  }}
+                  className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/50 transition-colors border-none bg-transparent cursor-pointer"
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Title */}
           <div className="mb-4">

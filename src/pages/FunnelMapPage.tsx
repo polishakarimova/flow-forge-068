@@ -127,7 +127,7 @@ function buildGraph(
   });
 
   // Build dynamic column positions
-  const COL_W = 230;
+  const COL_W = 200;
   const COL_GAP = 36;
   const CONTENT_W = 200;
   const contentX = 60;
@@ -436,7 +436,7 @@ function TopicNode({ node }: { node: MapNode }) {
 }
 
 function ProductNode({ node }: { node: MapNode }) {
-  const label = node.label.length > 24 ? node.label.slice(0, 24) + "…" : node.label;
+  const label = node.label.length > 20 ? node.label.slice(0, 20) + "…" : node.label;
   const typeId = node.tier || null;
   const isLeadMagnet = typeId === "lead_magnet";
   return (
@@ -596,7 +596,7 @@ function ContentPickerModalMap({
 /* ── main component ─────────────────────────────────── */
 
 const FunnelMapPage = () => {
-  const { funnels, allContentItems, products, topics, updateContentItem, updateProduct, formats, addFormat, deleteFormat, setFunnels } = useDataStore();
+  const { funnels, allContentItems, products, topics, updateContentItem, updateProduct, updateTopic, formats, addFormat, deleteFormat, setFunnels } = useDataStore();
   const svgRef = useRef<SVGSVGElement>(null);
   const [pan, setPan] = useState({ x: 20, y: 10 });
   const [zoom, setZoom] = useState(1);
@@ -1006,6 +1006,10 @@ const FunnelMapPage = () => {
           topicTitle={getTopicTitle(editingContent)}
           onClose={() => setEditingContent(null)}
           onSave={(updated) => { updateContentItem(updated); setEditingContent(null); }}
+          onTopicRename={(newTitle) => {
+            const topic = topics.find((t) => t.contentItems.some((ci) => ci.id === editingContent.id));
+            if (topic) updateTopic({ ...topic, title: newTitle });
+          }}
         />
       )}
     </SidebarProvider>
