@@ -337,7 +337,6 @@ const Calendar = () => {
                 month={curMonth}
                 eventsByDate={eventsByDate}
                 todayStr={todayStr}
-                onSelectDate={(d) => { setCurrentDate(d); setViewMode("day"); }}
               />
             )}
             {viewMode === "week" && (
@@ -367,22 +366,23 @@ const Calendar = () => {
 /* ── Month View ── */
 
 function MonthView({
-  year, month, eventsByDate, todayStr, onSelectDate,
+  year, month, eventsByDate, todayStr,
 }: {
   year: number;
   month: number;
   eventsByDate: Record<string, CalendarEvent[]>;
   todayStr: string;
-  onSelectDate: (d: Date) => void;
 }) {
   const weeks = getMonthGrid(year, month);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const selectedEvents = selectedDate ? (eventsByDate[selectedDate] || []) : [];
 
   return (
     <div>
       {/* Day headers */}
       <div className="grid grid-cols-7 gap-px mb-1">
         {DAY_NAMES_SHORT.map((d) => (
-          <div key={d} className="text-center text-[11px] font-semibold text-muted-foreground py-1.5">
+          <div key={d} className="text-center text-[10px] font-semibold text-muted-foreground py-1">
             {d}
           </div>
         ))}
@@ -396,22 +396,25 @@ function MonthView({
               const dateStr = toDateStr(day);
               const isCurrentMonth = day.getMonth() === month;
               const isToday = dateStr === todayStr;
+              const isSelected = dateStr === selectedDate;
               const dayEvents = eventsByDate[dateStr] || [];
 
               return (
                 <div
                   key={dateStr}
-                  onClick={() => onSelectDate(day)}
-                  className={`min-h-[80px] md:min-h-[100px] p-1.5 cursor-pointer transition-colors duration-150 ${
-                    isToday
-                      ? "bg-primary/[0.06] ring-1 ring-inset ring-primary/20"
-                      : "bg-card hover:bg-primary/[0.02]"
+                  onClick={() => setSelectedDate(isSelected ? null : dateStr)}
+                  className={`min-h-[68px] md:min-h-[100px] p-1 cursor-pointer transition-colors duration-150 ${
+                    isSelected
+                      ? "bg-primary/[0.10] ring-2 ring-inset ring-primary/30"
+                      : isToday
+                        ? "bg-primary/[0.06] ring-1 ring-inset ring-primary/20"
+                        : "bg-card hover:bg-primary/[0.02]"
                   }`}
                 >
                   {/* Day number */}
                   <div className="flex justify-end mb-0.5">
                     <span
-                      className={`text-[12px] font-medium w-6 h-6 flex items-center justify-center rounded-full ${
+                      className={`text-[11px] font-medium w-5 h-5 flex items-center justify-center rounded-full ${
                         isToday
                           ? "bg-primary text-primary-foreground font-bold"
                           : isCurrentMonth
@@ -424,13 +427,13 @@ function MonthView({
                   </div>
 
                   {/* Events */}
-                  <div className="flex flex-col gap-0.5">
-                    {dayEvents.slice(0, 3).map((ev) => (
+                  <div className="flex flex-col gap-px">
+                    {dayEvents.slice(0, 4).map((ev) => (
                       <EventPill key={ev.id} event={ev} compact />
                     ))}
-                    {dayEvents.length > 3 && (
-                      <span className="text-[9px] text-muted-foreground text-center">
-                        +{dayEvents.length - 3}
+                    {dayEvents.length > 4 && (
+                      <span className="text-[8px] text-muted-foreground text-center">
+                        +{dayEvents.length - 4}
                       </span>
                     )}
                   </div>
@@ -440,6 +443,38 @@ function MonthView({
           </div>
         ))}
       </div>
+
+      {/* Selected day events panel */}
+      {selectedDate && (
+        <div className="mt-3 rounded-2xl border border-border bg-card p-3 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center justify-between mb-2.5">
+            <h3 className="text-[13px] font-semibold text-foreground">
+              {(() => {
+                const d = new Date(selectedDate + "T00:00:00");
+                const dayIdx = (d.getDay() + 6) % 7;
+                return `${DAY_NAMES_FULL[dayIdx]}, ${d.getDate()} ${MONTH_NAMES_SHORT[d.getMonth()]}`;
+              })()}
+            </h3>
+            <button
+              onClick={() => setSelectedDate(null)}
+              className="text-[10px] text-muted-foreground hover:text-foreground px-2 py-0.5 rounded-lg hover:bg-muted/50 transition-colors border-none cursor-pointer bg-transparent"
+            >
+              Скрыть
+            </button>
+          </div>
+          {selectedEvents.length === 0 ? (
+            <div className="text-[12px] text-muted-foreground py-4 text-center">
+              Нет запланированного контента
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              {selectedEvents.map((ev) => (
+                <DayEventCard key={ev.id} event={ev} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -457,7 +492,7 @@ function WeekView({
   const days = getWeekDays(refDate);
 
   return (
-    <div className="grid grid-cols-7 gap-2">
+    <div className="grid grid-cols-1 md:grid-cols-7 gap-2">
       {days.map((day) => {
         const dateStr = toDateStr(day);
         const isToday = dateStr === todayStr;
@@ -467,37 +502,40 @@ function WeekView({
         return (
           <div
             key={dateStr}
-            className={`rounded-2xl border p-2 min-h-[200px] md:min-h-[320px] transition-all duration-200 ${
+            className={`rounded-2xl border p-2 md:min-h-[320px] transition-all duration-200 ${
               isToday
                 ? "border-primary/40 bg-primary/[0.05] shadow-[0_0_0_1px_hsl(var(--primary)/0.1)]"
                 : "border-border bg-card"
             }`}
           >
-            {/* Day header */}
-            <div
-              className="text-center mb-2 cursor-pointer"
-              onClick={() => onSelectDate(day)}
-            >
-              <div className={`text-[10px] font-semibold uppercase ${isToday ? "text-primary" : "text-muted-foreground"}`}>
-                {DAY_NAMES_SHORT[dayIdx]}
-              </div>
+            {/* Mobile: horizontal row layout */}
+            <div className="flex md:flex-col items-start md:items-stretch gap-2 md:gap-0">
+              {/* Day header */}
               <div
-                className={`text-[16px] font-bold mx-auto w-8 h-8 flex items-center justify-center rounded-full ${
-                  isToday ? "bg-primary text-primary-foreground" : "text-foreground"
-                }`}
+                className="text-center md:mb-2 cursor-pointer shrink-0 flex md:block items-center gap-1.5"
+                onClick={() => onSelectDate(day)}
               >
-                {day.getDate()}
+                <div className={`text-[10px] font-semibold uppercase ${isToday ? "text-primary" : "text-muted-foreground"}`}>
+                  {DAY_NAMES_SHORT[dayIdx]}
+                </div>
+                <div
+                  className={`text-[16px] font-bold mx-auto w-8 h-8 flex items-center justify-center rounded-full ${
+                    isToday ? "bg-primary text-primary-foreground" : "text-foreground"
+                  }`}
+                >
+                  {day.getDate()}
+                </div>
               </div>
-            </div>
 
-            {/* Events */}
-            <div className="flex flex-col gap-1">
-              {dayEvents.map((ev) => (
-                <EventPill key={ev.id} event={ev} />
-              ))}
-              {dayEvents.length === 0 && (
-                <div className="text-[10px] text-muted-foreground/40 text-center mt-4">—</div>
-              )}
+              {/* Events */}
+              <div className="flex flex-row md:flex-col flex-wrap gap-1 flex-1 min-w-0">
+                {dayEvents.map((ev) => (
+                  <EventPill key={ev.id} event={ev} />
+                ))}
+                {dayEvents.length === 0 && (
+                  <div className="text-[10px] text-muted-foreground/40 text-center md:mt-4">—</div>
+                )}
+              </div>
             </div>
           </div>
         );
@@ -583,7 +621,9 @@ function DayView({
 function EventPill({ event, compact }: { event: CalendarEvent; compact?: boolean }) {
   return (
     <div
-      className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium truncate transition-all duration-150"
+      className={`flex items-center gap-0.5 px-1 py-px rounded-md font-medium truncate transition-all duration-150 ${
+        compact ? "text-[8px]" : "text-[10px] py-0.5 px-1.5"
+      }`}
       style={{
         background: event.color + "15",
         color: event.color,
@@ -592,7 +632,7 @@ function EventPill({ event, compact }: { event: CalendarEvent; compact?: boolean
       title={event.title}
     >
       {event.icon}
-      <span className="truncate">{compact && event.title.length > 12 ? event.title.slice(0, 12) + "…" : event.title}</span>
+      <span className="truncate">{event.title}</span>
     </div>
   );
 }
