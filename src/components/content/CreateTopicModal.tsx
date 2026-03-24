@@ -80,12 +80,12 @@ export function CreateTopicModal({ onClose, onCreate }: CreateTopicModalProps) {
                     onClick={() => toggle(p.id)}
                     className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] font-semibold cursor-pointer transition-all duration-200"
                     style={{
-                      border: isSelected ? `2px solid ${p.color}` : "2px solid #e8ecf1",
-                      background: isSelected ? p.color + "10" : "#fff",
-                      color: isSelected ? p.color : "#64748b",
+                      border: isSelected ? "2px solid hsl(var(--primary))" : "2px solid #e8ecf1",
+                      background: isSelected ? "hsl(var(--primary) / 0.06)" : "#fff",
+                      color: isSelected ? "hsl(var(--foreground))" : "#64748b",
                     }}
                   >
-                    <PlatformIcon src={p.icon} alt={p.label} size={16} />
+                    <PlatformIcon platformId={p.id} size={16} />
                     {p.label}
                     {isSelected && <span>✓</span>}
                   </button>

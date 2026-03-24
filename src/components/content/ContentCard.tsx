@@ -27,7 +27,7 @@ export function ContentCard({ item, topicTitle, showTopic, onOpen }: ContentCard
 
       {/* Platform badge */}
       <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-foreground/[0.06] shrink-0">
-        {platform && <PlatformIcon src={platform.icon} alt={platform.label} size={14} />}
+        {platform && <PlatformIcon platformId={item.platformId} size={14} />}
       </span>
 
       {/* Content title — dark gray like funnel keywords */}

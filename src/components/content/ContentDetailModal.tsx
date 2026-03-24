@@ -23,13 +23,13 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave }: Conten
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-card rounded-3xl w-full max-w-[520px] max-h-[90vh] overflow-auto animate-in slide-in-from-bottom-3 duration-300" style={{ boxShadow: "0 24px 60px rgba(0,0,0,.15)" }}>
-        <div className="h-[4px] rounded-t-3xl" style={{ background: platform?.color || "#ccc" }} />
+        <div className="h-[4px] rounded-t-3xl bg-primary" />
         <div className="px-7 py-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-5">
             <div className="flex items-center gap-2">
-              {platform && <PlatformIcon src={platform.icon} alt={platform.label} size={20} />}
-              <span className="text-[16px] font-bold" style={{ color: platform?.color }}>{platform?.label}</span>
+              {platform && <PlatformIcon platformId={item.platformId} size={20} />}
+              <span className="text-[16px] font-bold text-foreground">{platform?.label}</span>
               {topicTitle && <span className="text-[12px] text-muted-foreground">· {topicTitle}</span>}
             </div>
             <div className="flex items-center gap-2.5">
@@ -52,8 +52,8 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave }: Conten
               placeholder="О чём этот контент"
               className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none transition-all duration-200"
               onFocus={(e) => {
-                (e.target as HTMLElement).style.borderColor = platform?.color || "#6366f1";
-                (e.target as HTMLElement).style.boxShadow = `0 0 0 3px ${(platform?.color || "#6366f1")}15`;
+                (e.target as HTMLElement).style.borderColor = "hsl(var(--primary))";
+                (e.target as HTMLElement).style.boxShadow = "0 0 0 3px hsl(var(--primary) / 0.08)";
               }}
               onBlur={(e) => {
                 (e.target as HTMLElement).style.borderColor = "hsl(var(--border))";
@@ -73,8 +73,8 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave }: Conten
               className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none resize-y leading-relaxed transition-all duration-200"
               style={{ minHeight: 120 }}
               onFocus={(e) => {
-                (e.target as HTMLElement).style.borderColor = platform?.color || "#6366f1";
-                (e.target as HTMLElement).style.boxShadow = `0 0 0 3px ${(platform?.color || "#6366f1")}15`;
+                (e.target as HTMLElement).style.borderColor = "hsl(var(--primary))";
+                (e.target as HTMLElement).style.boxShadow = "0 0 0 3px hsl(var(--primary) / 0.08)";
               }}
               onBlur={(e) => {
                 (e.target as HTMLElement).style.borderColor = "hsl(var(--border))";
@@ -100,8 +100,8 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave }: Conten
                 className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none transition-all duration-200"
                 style={{ color: publishDate ? "#334155" : "#94a3b8" }}
                 onFocus={(e) => {
-                  (e.target as HTMLElement).style.borderColor = platform?.color || "#6366f1";
-                  (e.target as HTMLElement).style.boxShadow = `0 0 0 3px ${(platform?.color || "#6366f1")}15`;
+                  (e.target as HTMLElement).style.borderColor = "hsl(var(--primary))";
+                  (e.target as HTMLElement).style.boxShadow = "0 0 0 3px hsl(var(--primary) / 0.08)";
                 }}
                 onBlur={(e) => {
                   (e.target as HTMLElement).style.borderColor = "hsl(var(--border))";
@@ -115,7 +115,7 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave }: Conten
           <button
             onClick={() => { onSave({ ...item, title, body, status, publishDate }); onClose(); }}
             className="w-full py-3 rounded-2xl text-[15px] font-bold cursor-pointer text-white border-none transition-all duration-200 hover:shadow-lg"
-            style={{ background: `linear-gradient(135deg, ${platform?.color || "#6366f1"}, ${platform?.color || "#6366f1"}dd)` }}
+            style={{ background: "hsl(var(--primary))" }}
           >
             Сохранить
           </button>
