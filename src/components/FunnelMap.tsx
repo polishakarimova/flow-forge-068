@@ -149,7 +149,7 @@ const NodeCard = ({
     <div
       ref={cardRef}
       onClick={handleClick}
-      className={`relative rounded-2xl border border-border bg-card p-2 md:p-3 shadow-sm min-w-[100px] md:min-w-[120px] transition-shadow duration-200
+      className={`relative z-[1] rounded-2xl border border-border bg-card p-2 md:p-3 shadow-sm min-w-[100px] md:min-w-[120px] transition-shadow duration-200
         hover:-translate-y-0.5 hover:shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.15)] hover:border-primary/30
         ${flagship ? "ring-2 ring-primary/30 border-primary/40 bg-gradient-to-br from-card to-[hsl(var(--violet-soft))] hover:-translate-y-1 hover:shadow-[0_8px_30px_-8px_hsl(var(--primary)/0.25)] hover:ring-primary/50" : ""}
         ${onClick ? "cursor-pointer" : ""}
