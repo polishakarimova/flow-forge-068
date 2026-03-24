@@ -416,9 +416,6 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
                             <PlatformIcon platformId={ci.platformId} size={14} />
                           )}
                           <span className="text-foreground font-medium flex-1 truncate">{ci.title}</span>
-                          <span className="text-[10px] text-muted-foreground shrink-0 max-w-[80px] truncate">
-                            {ci.topicTitle}
-                          </span>
                         </button>
                       );
                     })

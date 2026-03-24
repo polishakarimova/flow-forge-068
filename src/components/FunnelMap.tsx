@@ -312,12 +312,11 @@ function ContentPickerModal({
           ) : (
             filtered.map((ci) => {
               const status = STATUSES[ci.status];
-              const topic = allTopics.find((t) => t.contentItems.some((c) => c.id === ci.id));
               return (
                 <div
                   key={ci.id}
                   onClick={() => onSelect(ci.id)}
-                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)] border border-transparent hover:border-primary/20"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)] border border-transparent hover:border-primary/20"
                 >
                   <span className="relative shrink-0 w-2 h-2">
                     {status.color !== "#94a3b8" && (
@@ -328,9 +327,8 @@ function ContentPickerModal({
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-foreground/[0.06] shrink-0">
                     <PlatformIcon platformId={ci.platformId} size={16} />
                   </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-medium text-foreground truncate">{ci.title || "Не заполнено"}</div>
-                    {topic && <div className="text-[10px] text-muted-foreground truncate">{topic.title}</div>}
+                  <div className="flex-1 min-w-0 text-[12px] text-muted-foreground truncate">
+                    {ci.title || "Не заполнено"}
                   </div>
                 </div>
               );
@@ -446,7 +444,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
         <SvgConnector delay={100} />
 
         {/* === CTA Node === */}
-        <NodeCard delay={200}>
+        <NodeCard delay={200} className="!min-w-0">
           <div className="flex items-center gap-1.5 mb-2">
             <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
               <Send className="w-2.5 h-2.5 text-primary" />
