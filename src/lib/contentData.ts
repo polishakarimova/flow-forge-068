@@ -113,6 +113,16 @@ export const initialTopics: Topic[] = [
     ],
   },
   {
+    id: 6,
+    title: "Как собрать воронку за выходные",
+    thesisPlan: "— Минимальная воронка\n— Что нужно: лид-магнит + бот + 2 поста\n— Пошаговый план на субботу-воскресенье",
+    isIdeaBank: false,
+    contentItems: [
+      { id: 601, platformId: "reels", status: "ready", title: "Собрала воронку за 2 дня — показываю", body: "Хук: Думаешь воронка — это сложно?\nОсновная часть: показываю что я сделала за субботу и воскресенье\nCTA: Напиши ВОРОНКА — пришлю гайд", createdDate: yesterday, publishDate: today },
+      { id: 602, platformId: "tg_post", status: "in_progress", title: "Пошаговый план: воронка за уик-энд", body: "", createdDate: today, publishDate: "" },
+    ],
+  },
+  {
     id: 4,
     title: "Сравнение воронок для разных ниш",
     thesisPlan: "— Разобрать 3 ниши\n— Показать разные воронки\n— Дать шаблон",
