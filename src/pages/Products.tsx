@@ -14,25 +14,25 @@ import { useDataStore } from "@/lib/dataStore";
 import { ProductCard } from "@/components/products/ProductCard";
 import { CreateProductModal } from "@/components/products/CreateProductModal";
 import { EditProductModal } from "@/components/products/EditProductModal";
-import { ContentDropdown } from "@/components/content/ContentDropdown";
+import { ContentMultiDropdown } from "@/components/content/ContentMultiDropdown";
 import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
 
 const Products = () => {
   const { products, addProduct, updateProduct, formats, addFormat, deleteFormat } = useDataStore();
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
-  const [typeFilter, setTypeFilter] = useState<string | null>(null);
-  const [formatFilter, setFormatFilter] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [typeFilters, setTypeFilters] = useState<string[]>([]);
+  const [formatFilters, setFormatFilters] = useState<string[]>([]);
+  const [statusFilters, setStatusFilters] = useState<string[]>([]);
 
   const filtered = useMemo(() => {
     let arr = products;
-    if (typeFilter) arr = arr.filter((p) => p.typeId === typeFilter);
-    if (formatFilter) arr = arr.filter((p) => p.format === formatFilter);
-    if (statusFilter) arr = arr.filter((p) => p.status === statusFilter);
+    if (typeFilters.length > 0) arr = arr.filter((p) => typeFilters.includes(p.typeId));
+    if (formatFilters.length > 0) arr = arr.filter((p) => p.format && formatFilters.includes(p.format));
+    if (statusFilters.length > 0) arr = arr.filter((p) => statusFilters.includes(p.status));
     arr.sort((a, b) => (b.createdDate || "").localeCompare(a.createdDate || ""));
     return arr;
-  }, [products, typeFilter, formatFilter, statusFilter]);
+  }, [products, typeFilters, formatFilters, statusFilters]);
 
   const grouped = useMemo(() => {
     const groups: { date: string; label: string; items: Product[] }[] = [];
@@ -88,7 +88,7 @@ const Products = () => {
     if (formatFilter === f) setFormatFilter(null);
   };
 
-  const hasFilters = typeFilter || formatFilter || statusFilter;
+  const hasFilters = typeFilters.length > 0 || formatFilters.length > 0 || statusFilters.length > 0;
 
   return (
     <SidebarProvider>
@@ -128,30 +128,30 @@ const Products = () => {
           <main className="flex-1 max-w-5xl w-full mx-auto py-5 md:py-6 px-4 md:px-6 pb-20 md:pb-6">
             {/* Filters */}
             <div className="flex gap-2 mb-3 items-center flex-wrap">
-              <ContentDropdown
-                value={typeFilter}
-                onChange={setTypeFilter}
+              <ContentMultiDropdown
+                values={typeFilters}
+                onChange={setTypeFilters}
                 options={typeOptions}
                 placeholder="Все типы"
                 width={160}
               />
-              <ContentDropdown
-                value={formatFilter}
-                onChange={setFormatFilter}
+              <ContentMultiDropdown
+                values={formatFilters}
+                onChange={setFormatFilters}
                 options={formatOptions}
                 placeholder="Все форматы"
                 width={160}
               />
-              <ContentDropdown
-                value={statusFilter}
-                onChange={setStatusFilter}
+              <ContentMultiDropdown
+                values={statusFilters}
+                onChange={setStatusFilters}
                 options={statusOptions}
                 placeholder="Все статусы"
                 width={160}
               />
               {hasFilters && (
                 <button
-                  onClick={() => { setTypeFilter(null); setFormatFilter(null); setStatusFilter(null); }}
+                  onClick={() => { setTypeFilters([]); setFormatFilters([]); setStatusFilters([]); }}
                   className="text-[12px] text-muted-foreground bg-transparent border-none cursor-pointer underline hover:text-foreground transition-colors"
                 >
                   Сбросить

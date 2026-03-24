@@ -27,11 +27,11 @@ export function ContentCard({ item, topicTitle, showTopic, onOpen }: ContentCard
 
       {/* Platform badge */}
       <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-foreground/[0.06] shrink-0">
-        {platform && <PlatformIcon platformId={item.platformId} size={14} />}
+        {platform && <PlatformIcon platformId={item.platformId} size={16} />}
       </span>
 
       {/* Content title — dark gray like funnel keywords */}
-      <div className="flex-1 min-w-0 text-[10px] text-muted-foreground truncate">
+      <div className="flex-1 min-w-0 text-[12px] md:text-[10px] text-muted-foreground truncate">
         {item.title || "Не заполнено"}
       </div>
     </div>

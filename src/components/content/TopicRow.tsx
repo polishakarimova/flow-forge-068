@@ -24,7 +24,7 @@ export function TopicRow({ topic, expanded, onToggle, onOpenContent }: TopicRowP
         className="flex items-center gap-2 px-3 py-2 md:px-4 md:gap-3 cursor-pointer group transition-colors duration-200 hover:bg-[hsl(var(--primary)/0.04)]"
       >
         {/* Title */}
-        <span className="text-[13px] font-semibold text-foreground flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
+        <span className="text-[14px] md:text-[13px] font-semibold text-foreground flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
           {topic.title}
         </span>
 
