@@ -226,39 +226,36 @@ function buildGraph(
     });
   });
 
-  // Product nodes per tier column (deduplicated)
-  const seenProducts = new Set<string>(); // key = "tier-productId"
-  const tierNodeCounts: Record<string, number> = {};
-  tierColumns.forEach(({ tier }) => { tierNodeCounts[tier] = 0; });
+  // Build keyword Y lookup for funnel-aware placement
+  const kwYMap: Record<string, number> = {};
+  const kwNode = nodes.filter((n) => n.type === "keyword");
+  kwNode.forEach((n) => { kwYMap[n.id] = n.y; });
 
-  // First pass: count nodes per tier for vertical centering
+  // First pass: collect product info per tier to compute Y positions
+  // Position each product near its source keyword's Y, with staggering
+  const seenProducts = new Set<string>();
+  const productYSources: Record<string, number[]> = {}; // nodeId → array of source keyword Y positions
+
   funnelsList.forEach((f) => {
     tierColumns.forEach(({ tier }) => {
       const field = TIER_FIELD[tier];
       const productId = f[field] as number | undefined;
       if (productId == null) return;
-      const key = `${tier}-${productId}`;
-      if (!seenProducts.has(key)) {
-        seenProducts.add(key);
-        tierNodeCounts[tier] = (tierNodeCounts[tier] || 0) + 1;
-      }
+      const nodeId = `${tier}-${productId}`;
+      if (!productYSources[nodeId]) productYSources[nodeId] = [];
+      const kwY = kwYMap[`kw-${f.id}`] ?? kwStartY;
+      productYSources[nodeId].push(kwY);
     });
   });
 
-  // Reset for second pass
-  seenProducts.clear();
+  // Stagger offset: spread products in the same tier so they don't stack
+  const STAGGER = 30; // vertical offset between products in same tier
+  const tierIndex: Record<string, number> = {};
+  tierColumns.forEach(({ tier }) => { tierIndex[tier] = 0; });
 
-  // Track Y position per tier
-  const tierYPos: Record<string, number> = {};
-  tierColumns.forEach(({ tier }) => {
-    const count = tierNodeCounts[tier] || 1;
-    tierYPos[tier] = 70 + Math.max(0, (totalContentH - count * 64) / 2);
-  });
-
-  // Create product nodes and chain edges per funnel
+  // Create product nodes positioned near their keyword sources
   funnelsList.forEach((f) => {
-    // Get the chain of tier node IDs for this funnel
-    const funnelChain: string[] = [`kw-${f.id}`]; // start from keyword
+    const funnelChain: string[] = [`kw-${f.id}`];
 
     tierColumns.forEach(({ tier, x }) => {
       const field = TIER_FIELD[tier];
@@ -270,15 +267,23 @@ function buildGraph(
 
       const nodeId = `${tier}-${productId}`;
 
-      // Create node if not yet created
       if (!seenProducts.has(nodeId)) {
         seenProducts.add(nodeId);
+
+        // Position: average of source keyword Ys + stagger offset per tier
+        const sourceYs = productYSources[nodeId] || [];
+        const avgY = sourceYs.length > 0
+          ? sourceYs.reduce((a, b) => a + b, 0) / sourceYs.length
+          : kwStartY;
+        const idx = tierIndex[tier]++;
+        const productY = avgY + idx * STAGGER;
+
         nodes.push({
           id: nodeId,
           type: "product",
           label: product.name,
           x,
-          y: tierYPos[tier],
+          y: productY,
           w: COL_W,
           h: 52,
           color: TIER_COLOR[tier] || "#6366f1",
@@ -286,12 +291,10 @@ function buildGraph(
           tierLabel: TIER_LABEL[tier] || tier,
           productData: product,
         });
-        tierYPos[tier] += 64;
       }
 
       // Add edge from previous element in chain to this product
       const prevId = funnelChain[funnelChain.length - 1];
-      const edgeKey = `${prevId}->${nodeId}`;
       if (!edges.find((e) => e.from === prevId && e.to === nodeId)) {
         edges.push({ from: prevId, to: nodeId, color: TIER_COLOR[tier] || "#C4B5FD" });
       }
