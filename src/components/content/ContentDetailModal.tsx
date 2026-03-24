@@ -29,7 +29,7 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave }: Conten
           <div className="flex justify-between items-center mb-5">
             <div className="flex items-center gap-2">
               {platform && <PlatformIcon platformId={item.platformId} size={20} />}
-              <span className="text-[16px] font-bold text-foreground">{platform?.label}</span>
+              <span className="text-[16px] font-bold text-foreground uppercase">{platform?.label}</span>
               {topicTitle && <span className="text-[12px] text-muted-foreground">· {topicTitle}</span>}
             </div>
             <div className="flex items-center gap-2.5">

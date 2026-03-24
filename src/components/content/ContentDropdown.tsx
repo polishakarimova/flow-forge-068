@@ -58,10 +58,10 @@ export function ContentDropdown({ value, onChange, options, placeholder, width =
       </button>
 
       {open && (
-        <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-card border border-border/60 rounded-2xl z-50 p-1.5 animate-in fade-in slide-in-from-top-2 duration-200 shadow-[0_12px_40px_rgba(0,0,0,.08),0_2px_8px_rgba(0,0,0,.04)]">
+        <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-card border border-border/60 rounded-xl z-50 p-1 animate-in fade-in slide-in-from-top-2 duration-200 shadow-[0_12px_40px_rgba(0,0,0,.08),0_2px_8px_rgba(0,0,0,.04)]">
           <div
             onClick={() => { onChange(null); setOpen(false); }}
-            className={`px-3 py-2 rounded-xl text-[12px] font-normal cursor-pointer transition-all duration-150 ${
+            className={`px-2.5 py-1.5 rounded-lg text-[11px] font-normal cursor-pointer transition-all duration-150 ${
               value === null ? "violet-surface text-primary" : "hover:bg-muted/50"
             }`}
             style={{ color: value === null ? undefined : "#4b5563" }}
@@ -72,15 +72,15 @@ export function ContentDropdown({ value, onChange, options, placeholder, width =
             <div
               key={o.value}
               onClick={() => { onChange(o.value); setOpen(false); }}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-normal cursor-pointer transition-all duration-150 ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-normal cursor-pointer transition-all duration-150 ${
                 value === o.value ? "violet-surface text-primary" : "hover:bg-muted/50"
               }`}
               style={{ color: value === o.value ? undefined : "#4b5563" }}
             >
-              {o.platformId ? <PlatformIcon platformId={o.platformId} size={15} /> : o.iconNode ? o.iconNode : o.iconSrc ? <img src={o.iconSrc} alt="" width={15} height={15} className="shrink-0" /> : o.icon ? <span className="text-[15px]">{o.icon}</span> : null}
-              {o.dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: o.dot }} />}
+              {o.platformId ? <PlatformIcon platformId={o.platformId} size={14} /> : o.iconNode ? o.iconNode : o.iconSrc ? <img src={o.iconSrc} alt="" width={14} height={14} className="shrink-0" /> : o.icon ? <span className="text-[13px]">{o.icon}</span> : null}
+              {o.dot && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: o.dot }} />}
               <span className="flex-1">{o.label}</span>
-              {o.count != null && <span className="text-[12px] text-muted-foreground">{o.count}</span>}
+              {o.count != null && <span className="text-[11px] text-muted-foreground">{o.count}</span>}
             </div>
           ))}
         </div>

@@ -4,15 +4,15 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { PathRow } from "@/components/PathRow";
-import { ContentDropdown } from "@/components/content/ContentDropdown";
+import { ContentMultiDropdown } from "@/components/content/ContentMultiDropdown";
 import { CreateFunnelModal } from "@/components/funnels/CreateFunnelModal";
 import { useDataStore } from "@/lib/dataStore";
 import type { Funnel } from "@/lib/funnelData";
 
 const Index = () => {
   const { funnels, toggleFunnelActive } = useDataStore();
-  const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
-  const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+  const [keywordFilters, setKeywordFilters] = useState<string[]>([]);
+  const [productFilters, setProductFilters] = useState<string[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [editingFunnel, setEditingFunnel] = useState<Funnel | null>(null);
 
@@ -33,15 +33,15 @@ const Index = () => {
   }, [funnels]);
 
   const filtered = funnels.filter((f) => {
-    if (selectedKeyword && f.keyword !== selectedKeyword) return false;
-    if (selectedProduct && f.product !== selectedProduct) return false;
+    if (keywordFilters.length > 0 && !keywordFilters.includes(f.keyword)) return false;
+    if (productFilters.length > 0 && !productFilters.includes(f.product)) return false;
     return true;
   });
 
   const activeFunnels = filtered.filter((f) => f.active);
   const inactiveFunnels = filtered.filter((f) => !f.active);
 
-  const hasFilters = selectedKeyword || selectedProduct;
+  const hasFilters = keywordFilters.length > 0 || productFilters.length > 0;
 
   return (
     <SidebarProvider>
@@ -77,23 +77,23 @@ const Index = () => {
 
               {/* Dropdown filters */}
               <div className="flex items-center gap-2 pb-3">
-                <ContentDropdown
-                  value={selectedKeyword}
-                  onChange={setSelectedKeyword}
+                <ContentMultiDropdown
+                  values={keywordFilters}
+                  onChange={setKeywordFilters}
                   options={keywordOptions}
                   placeholder="Все слова"
                   width={160}
                 />
-                <ContentDropdown
-                  value={selectedProduct}
-                  onChange={setSelectedProduct}
+                <ContentMultiDropdown
+                  values={productFilters}
+                  onChange={setProductFilters}
                   options={productOptions}
                   placeholder="Все продукты"
-                  width={220}
+                  width={200}
                 />
                 {hasFilters && (
                   <button
-                    onClick={() => { setSelectedKeyword(null); setSelectedProduct(null); }}
+                    onClick={() => { setKeywordFilters([]); setProductFilters([]); }}
                     className="text-[12px] text-muted-foreground bg-transparent border-none cursor-pointer underline hover:text-foreground transition-colors"
                   >
                     Сбросить

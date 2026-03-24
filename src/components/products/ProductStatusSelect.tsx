@@ -24,16 +24,16 @@ export function ProductStatusSelect({ value, onChange }: ProductStatusSelectProp
     <div ref={ref} className="relative inline-block">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-xl border-none text-[13px] font-semibold cursor-pointer whitespace-nowrap transition-all duration-200 hover:shadow-sm"
+        className="flex items-center gap-1.5 px-2 py-1 rounded-lg border-none text-[11px] font-semibold cursor-pointer whitespace-nowrap transition-all duration-200 hover:shadow-sm"
         style={{ background: cur.bg, color: cur.color }}
       >
-        <span className="w-2 h-2 rounded-full" style={{ background: cur.color }} />
+        <span className="w-1.5 h-1.5 rounded-full" style={{ background: cur.color }} />
         {cur.label}
-        <span className="text-[9px] ml-0.5">▾</span>
+        <span className="text-[8px] ml-0.5">▾</span>
       </button>
 
       {open && (
-        <div className="absolute top-[calc(100%+6px)] right-0 min-w-[160px] bg-card border border-border/60 rounded-2xl z-[60] p-1.5 animate-in fade-in slide-in-from-top-2 duration-200 shadow-[0_12px_40px_rgba(0,0,0,.08),0_2px_8px_rgba(0,0,0,.04)]">
+        <div className="absolute top-[calc(100%+4px)] right-0 min-w-[140px] bg-card border border-border/60 rounded-xl z-[60] p-1 animate-in fade-in slide-in-from-top-2 duration-200 shadow-[0_12px_40px_rgba(0,0,0,.08),0_2px_8px_rgba(0,0,0,.04)]">
           {PRODUCT_STATUS_ORDER.map((k) => {
             const s = PRODUCT_STATUSES[k];
             const active = value === k;
@@ -41,7 +41,7 @@ export function ProductStatusSelect({ value, onChange }: ProductStatusSelectProp
               <div
                 key={k}
                 onClick={() => { onChange(k); setOpen(false); }}
-                className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer transition-all duration-150"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer transition-all duration-150"
                 style={{
                   color: active ? s.color : "hsl(var(--muted-foreground))",
                   background: active ? s.bg : "transparent",
@@ -49,9 +49,9 @@ export function ProductStatusSelect({ value, onChange }: ProductStatusSelectProp
                 onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLElement).style.background = "hsl(var(--muted) / 0.5)"; }}
                 onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLElement).style.background = active ? s.bg : "transparent"; }}
               >
-                <span className="w-2 h-2 rounded-full" style={{ background: s.color }} />
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.color }} />
                 {s.label}
-                {active && <span className="ml-auto text-[11px]">✓</span>}
+                {active && <span className="ml-auto text-[10px]">✓</span>}
               </div>
             );
           })}
