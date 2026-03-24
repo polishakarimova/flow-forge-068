@@ -5,7 +5,7 @@ interface ProductTypeIconProps {
 }
 
 const ICONS: Record<string, (s: number) => JSX.Element> = {
-  // Корона — личка
+  // Корона — личная работа
   private: (s) => (
     <svg width={s} height={s} viewBox="0 0 48 48" fill="none">
       <defs>
@@ -79,17 +79,15 @@ const ICONS: Record<string, (s: number) => JSX.Element> = {
   mid_ticket: (s) => (
     <svg width={s} height={s} viewBox="0 0 48 48" fill="none">
       <defs>
-        <linearGradient id="co-g" x1="4" y1="4" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+        <linearGradient id="co-g" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor="#c4b5fd" />
           <stop offset="100%" stopColor="#7c3aed" />
         </linearGradient>
       </defs>
-      <circle cx="21" cy="25" r="17" fill="url(#co-g)" />
-      <circle cx="21" cy="25" r="17" fill="white" fillOpacity="0.1" />
-      <circle cx="21" cy="25" r="13" stroke="#ede9fe" strokeWidth="1.2" opacity="0.35" />
-      <text x="21" y="31" textAnchor="middle" fill="#ede9fe" fontSize="17" fontWeight="bold" fontFamily="Arial, sans-serif">$</text>
-      <path d="M34 30l7-7m0 0l-2.5-2.5m2.5 2.5l2.5-2.5" stroke="#a78bfa" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M34 30l7-7m0 0l-2.5-2.5m2.5 2.5l2.5-2.5" stroke="#ddd6fe" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="24" cy="24" r="18" fill="url(#co-g)" />
+      <circle cx="24" cy="24" r="18" fill="white" fillOpacity="0.1" />
+      <circle cx="24" cy="24" r="13.5" stroke="#ede9fe" strokeWidth="1.2" opacity="0.35" />
+      <text x="24" y="30.5" textAnchor="middle" fill="#ede9fe" fontSize="19" fontWeight="bold" fontFamily="Arial, sans-serif">$</text>
     </svg>
   ),
 

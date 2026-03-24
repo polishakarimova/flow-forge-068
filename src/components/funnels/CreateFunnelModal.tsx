@@ -20,7 +20,7 @@ const TIER_STEPS: { typeId: string; label: string; field: keyof Pick<Funnel, "le
   { typeId: "tripwire", label: "Трипвайер", field: "tripwire" },
   { typeId: "mid_ticket", label: "Среднечек", field: "midTicket" },
   { typeId: "flagship", label: "Флагман", field: "flagship" },
-  { typeId: "consultation", label: "Консультация / Личка", field: "consultation" },
+  { typeId: "consultation", label: "Консультация / Личная работа", field: "consultation" },
 ];
 
 const PLATFORM_MAP: Record<string, { platform: string; format: string }> = {

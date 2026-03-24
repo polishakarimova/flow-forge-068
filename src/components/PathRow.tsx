@@ -27,7 +27,7 @@ const shortToTypeId: Record<string, string> = {
   "СЧ": "mid_ticket",
   "ФГ": "flagship",
   "КС": "consultation",
-  "ЛК": "private",
+  "ЛР": "private",
 };
 
 interface PathRowProps {

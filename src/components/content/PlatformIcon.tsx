@@ -116,8 +116,7 @@ const ICONS: Record<string, (size: number) => JSX.Element> = {
       </defs>
       <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#th_g1)" />
       <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#th_g2)" />
-      <path d="M18.5 12.5C18.5 12.5 17.2 11 15.5 11C13.5 11 12 12.5 12 14C12 15.5 13.5 16.2 15.5 16.8C17.5 17.4 19 18.2 19 20C19 21.8 17.5 23 15.5 23C13.5 23 12 21.5 12 21.5" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none" />
-      <path d="M19.5 14.5C20.5 15.3 21 16.5 21 18C21 21.5 18.5 24 15.5 24C12.5 24 10 21.5 10 18C10 14 12.5 11 16 9" stroke="white" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.5" />
+      <path d="M19.2 14.8c-.2-.1-.4-.2-.6-.2-1.5-.7-3.2-.3-4 1.2-.6 1.2-.4 2.6.4 3.6.9 1.1 2.4 1.5 3.7 1 1.2-.5 2-1.7 2-3 0-2.8-1.8-5.2-4.5-5.8-2.4-.5-4.8.6-6 2.7-1 1.8-1 4.2.1 6 1.2 2 3.4 3 5.7 2.8 1.6-.1 3-.9 4-2.1" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none" />
     </svg>
   ),
   youtube: (s) => (
@@ -172,7 +171,7 @@ const ICONS: Record<string, (size: number) => JSX.Element> = {
       </defs>
       <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#vk_g1)" />
       <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#vk_g2)" />
-      <path d="M8 12H10.5C10.5 12 10.8 16.5 12.8 18C14 16.5 15.5 12 15.5 12H18C18 12 15.8 17.5 14.5 19.5C16.2 21.5 18.5 23 18.5 23H15.5C15.5 23 13.8 21.5 12.8 19.8C11.5 21.5 9.5 23 9.5 23H7.5C7.5 23 10 21 11.8 19C10 17 8 12 8 12Z" fill="white" opacity="0.95" />
+      <text x="16" y="20.5" textAnchor="middle" fill="white" fontSize="12" fontWeight="900" fontFamily="Arial, Helvetica, sans-serif" letterSpacing="-0.5">VK</text>
     </svg>
   ),
 };

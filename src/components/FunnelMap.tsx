@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Plus, Send, FileText, Gift, DollarSign, Crown } from "lucide-react";
+import { Plus, Send, FileText } from "lucide-react";
 import type { Funnel, ContentStatus, FunnelProduct, ContentItem } from "@/lib/funnelData";
 import { PlatformIcon } from "@/components/content/PlatformIcon";
+import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
 
 const FUNNEL_PLATFORM_ID: Record<string, string> = {
   "Telegram|Пост": "tg_post",
@@ -252,9 +253,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
         {funnel.leadMagnet ? (
           <NodeCard delay={400} onClick={() => setDrawerProduct(funnel.leadMagnet!)}>
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Gift className="w-3.5 h-3.5 text-primary" />
-              </div>
+              <ProductTypeIcon typeId="lead_magnet" size={24} />
               <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Лид-магнит
               </span>
@@ -271,9 +270,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
         {funnel.midTicket ? (
           <NodeCard delay={600} onClick={() => setDrawerProduct(funnel.midTicket!)}>
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                <DollarSign className="w-3.5 h-3.5 text-primary" />
-              </div>
+              <ProductTypeIcon typeId="mid_ticket" size={24} />
               <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Средний чек
               </span>
@@ -290,9 +287,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
         {funnel.flagship ? (
           <NodeCard flagship delay={800} onClick={() => setDrawerProduct(funnel.flagship!)}>
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Crown className="w-3.5 h-3.5 text-primary" />
-              </div>
+              <ProductTypeIcon typeId="flagship" size={24} />
               <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Флагман
               </span>

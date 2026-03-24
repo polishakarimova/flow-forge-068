@@ -2,8 +2,12 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
-import { type BadgeColor } from "@/lib/funnelData";
+import { type BadgeColor, type ContentItem, type FunnelProduct } from "@/lib/funnelData";
 import { useDataStore } from "@/lib/dataStore";
+import { PlatformIcon } from "@/components/content/PlatformIcon";
+import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
+import { ProductDrawer } from "@/components/ProductDrawer";
+import { ContentDrawer } from "@/components/ContentDrawer";
 
 /* ── inline SVG icons (Lucide-style, stroke, 14×14) ─── */
 
@@ -50,53 +54,6 @@ function SvgIconCoin({ x, y }: { x: number; y: number }) {
   );
 }
 
-function SvgIconZap({ x, y }: { x: number; y: number }) {
-  return (
-    <g transform={`translate(${x}, ${y})`} fill="none" stroke={ICON_COLOR} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="9,1 3,8 7,8 5,14 11,7 7,7" />
-    </g>
-  );
-}
-
-function SvgIconDiamond({ x, y }: { x: number; y: number }) {
-  return (
-    <g transform={`translate(${x}, ${y})`} fill="none" stroke={ICON_COLOR} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="7,1 13,6 7,13 1,6" />
-      <line x1="1" y1="6" x2="13" y2="6" />
-      <line x1="5" y1="1" x2="3" y2="6" />
-      <line x1="9" y1="1" x2="11" y2="6" />
-      <line x1="7" y1="6" x2="7" y2="13" />
-    </g>
-  );
-}
-
-function SvgIconRocket({ x, y }: { x: number; y: number }) {
-  return (
-    <g transform={`translate(${x}, ${y})`} fill="none" stroke={ICON_COLOR} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M7 13s-2-1-3-3c0 0-1-2 1-6 1-2 3-3 3-3s2 1 3 3c2 4 1 6 1 6-1 2-3 3-3 3z" />
-      <circle cx="7" cy="6" r="1.5" />
-      <path d="M4 10l-2 3" />
-      <path d="M10 10l2 3" />
-    </g>
-  );
-}
-
-function SvgIconTarget({ x, y }: { x: number; y: number }) {
-  return (
-    <g transform={`translate(${x}, ${y})`} fill="none" stroke={ICON_COLOR} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="7" cy="7" r="6" />
-      <circle cx="7" cy="7" r="3.5" />
-      <circle cx="7" cy="7" r="1" fill={ICON_COLOR} />
-    </g>
-  );
-}
-
-const TIER_SVG_ICON: Record<string, (props: { x: number; y: number }) => JSX.Element> = {
-  "lead-magnet": SvgIconMagnet,
-  "mid-ticket": SvgIconDiamond,
-  flagship: SvgIconRocket,
-};
-
 const COL_SVG_ICON: ((props: { x: number; y: number }) => JSX.Element)[] = [
   SvgIconFileText,
   SvgIconKey,
@@ -111,15 +68,6 @@ const BADGE_HEX: Record<BadgeColor, string> = {
   honey: "#E8B66D",
   lilac: "#A78BFA",
   amber: "#D4A056",
-};
-
-const PLATFORM_COLOR: Record<string, string> = {
-  Telegram: "#2AABEE",
-  Instagram: "#E1306C",
-  Blog: "#34A853",
-  YouTube: "#FF0000",
-  Threads: "#000000",
-  VK: "#4680C2",
 };
 
 const TIER_LABEL: Record<string, string> = {
@@ -147,6 +95,10 @@ interface MapNode {
   color: string;
   tier?: string;
   tierLabel?: string;
+  platformId?: string;
+  contentItem?: ContentItem;
+  funnelProduct?: FunnelProduct;
+  funnelId?: string;
 }
 
 interface MapEdge {
@@ -173,18 +125,31 @@ function buildGraph(funnelsList: typeof import("@/lib/funnelData").funnelsData) 
   const edges: MapEdge[] = [];
   const seenProducts = new Set<string>();
 
+  const FUNNEL_PLATFORM_ID: Record<string, string> = {
+    "Telegram|Пост": "tg_post",
+    "Instagram|Stories": "stories",
+    "Instagram|Пост": "ig_post",
+    "Instagram|Reels": "reels",
+    "Instagram|Карусель": "carousel",
+    "Blog|Статья": "article",
+    "Threads|Тред": "threads",
+    "YouTube|Видео": "youtube",
+    "VK|Пост": "vk",
+  };
+
   // collect all content items across funnels
-  const contentItems: { cId: string; label: string; platform: string; funnelId: string }[] = [];
+  const contentItems: { cId: string; label: string; platform: string; funnelId: string; platformId: string; ci: ContentItem }[] = [];
   funnelsList.forEach((f) => {
     f.contentItems.forEach((ci) => {
-      contentItems.push({ cId: ci.id, label: ci.title, platform: ci.platform, funnelId: f.id });
+      const platformId = FUNNEL_PLATFORM_ID[`${ci.platform}|${ci.format}`] || "";
+      contentItems.push({ cId: ci.id, label: ci.title, platform: ci.platform, funnelId: f.id, platformId, ci });
     });
   });
 
   // content nodes
   const NH = 40, NG = 8;
   let y = 70;
-  contentItems.forEach(({ cId, label, platform }) => {
+  contentItems.forEach(({ cId, label, platformId, ci, funnelId }) => {
     nodes.push({
       id: cId,
       type: "content",
@@ -193,7 +158,10 @@ function buildGraph(funnelsList: typeof import("@/lib/funnelData").funnelsData) 
       y,
       w: 240,
       h: NH,
-      color: PLATFORM_COLOR[platform] || "#94a3b8",
+      color: "#C4B5FD",
+      platformId,
+      contentItem: ci,
+      funnelId,
     });
     y += NH + NG;
   });
@@ -218,7 +186,7 @@ function buildGraph(funnelsList: typeof import("@/lib/funnelData").funnelsData) 
 
     // edges: content → keyword
     f.contentItems.forEach((ci) => {
-      edges.push({ from: ci.id, to: kwId, color: BADGE_HEX[f.badgeColor] + "60" });
+      edges.push({ from: ci.id, to: kwId, color: "#C4B5FD" });
     });
   });
 
@@ -239,21 +207,22 @@ function buildGraph(funnelsList: typeof import("@/lib/funnelData").funnelsData) 
         w: 220,
         h: 46,
         color: "#8b5cf6",
+        funnelProduct: lm,
       });
       ly += 56;
     }
     // edge: keyword → lead-magnet
-    edges.push({ from: `kw-${f.id}`, to: lmId, color: BADGE_HEX[f.badgeColor] + "60" });
+    edges.push({ from: `kw-${f.id}`, to: lmId, color: "#C4B5FD" });
   });
 
   // product nodes (midTicket + flagship, deduplicated)
-  const productEntries: { product: typeof funnelsList[0]["midTicket"]; fromLmId: string; funnelColor: string }[] = [];
+  const productEntries: { product: typeof funnelsList[0]["midTicket"]; fromLmId: string }[] = [];
   funnelsList.forEach((f) => {
     if (f.midTicket && f.leadMagnet) {
-      productEntries.push({ product: f.midTicket, fromLmId: `lm-${f.leadMagnet.id}`, funnelColor: BADGE_HEX[f.badgeColor] });
+      productEntries.push({ product: f.midTicket, fromLmId: `lm-${f.leadMagnet.id}` });
     }
     if (f.flagship && f.leadMagnet) {
-      productEntries.push({ product: f.flagship, fromLmId: `lm-${f.leadMagnet.id}`, funnelColor: BADGE_HEX[f.badgeColor] });
+      productEntries.push({ product: f.flagship, fromLmId: `lm-${f.leadMagnet.id}` });
     }
   });
 
@@ -279,16 +248,17 @@ function buildGraph(funnelsList: typeof import("@/lib/funnelData").funnelsData) 
       color: TIER_COLOR[product.tier] || "#6366f1",
       tier: product.tier,
       tierLabel: TIER_LABEL[product.tier] || product.type,
+      funnelProduct: product,
     });
     py += 64;
   });
 
   // edges: lead-magnet → product
-  productEntries.forEach(({ product, fromLmId, funnelColor }) => {
+  productEntries.forEach(({ product, fromLmId }) => {
     if (!product) return;
     const pId = `pr-${product.id}`;
     if (!edges.find((e) => e.from === fromLmId && e.to === pId)) {
-      edges.push({ from: fromLmId, to: pId, color: funnelColor + "60" });
+      edges.push({ from: fromLmId, to: pId, color: "#C4B5FD" });
     }
   });
 
@@ -342,12 +312,16 @@ function getConnected(nodeId: string, edges: MapEdge[]) {
 /* ── SVG node renderers ─────────────────────────────── */
 
 function ContentNode({ node }: { node: MapNode }) {
-  const label = node.label.length > 30 ? node.label.slice(0, 30) + "…" : node.label;
+  const label = node.label.length > 24 ? node.label.slice(0, 24) + "…" : node.label;
   return (
     <g>
-      <rect x={0} y={0} width={node.w} height={node.h} rx={8} fill="hsl(var(--card))" stroke={node.color} strokeWidth={1.5} />
-      <line x1={0} y1={4} x2={0} y2={node.h - 4} stroke={node.color} strokeWidth={4} strokeLinecap="round" />
-      <text x={14} y={node.h / 2 + 1} fontSize={11} fontWeight={500} fill="hsl(var(--foreground))" dominantBaseline="middle" fontFamily="Inter, system-ui, sans-serif">
+      <rect x={0} y={0} width={node.w} height={node.h} rx={8} fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth={1.5} />
+      {node.platformId && (
+        <foreignObject x={8} y={(node.h - 18) / 2} width={18} height={18}>
+          <PlatformIcon platformId={node.platformId} size={18} />
+        </foreignObject>
+      )}
+      <text x={32} y={node.h / 2 + 1} fontSize={11} fontWeight={500} fill="hsl(var(--foreground))" dominantBaseline="middle" fontFamily="Inter, system-ui, sans-serif">
         {label}
       </text>
     </g>
@@ -366,11 +340,14 @@ function KeywordNode({ node }: { node: MapNode }) {
 }
 
 function LeadMagnetNode({ node }: { node: MapNode }) {
-  const label = node.label.length > 26 ? node.label.slice(0, 26) + "…" : node.label;
+  const label = node.label.length > 24 ? node.label.slice(0, 24) + "…" : node.label;
   return (
     <g>
       <rect x={0} y={0} width={node.w} height={node.h} rx={8} fill="#faf5ff" stroke="#d8b4fe" strokeWidth={1.5} strokeDasharray="4 2" />
-      <text x={12} y={12} fontSize={9} fontWeight={700} fill="#8b5cf6" fontFamily="Inter, system-ui, sans-serif" letterSpacing="0.05em">
+      <foreignObject x={8} y={2} width={18} height={18}>
+        <ProductTypeIcon typeId="lead_magnet" size={18} />
+      </foreignObject>
+      <text x={28} y={12} fontSize={9} fontWeight={700} fill="#8b5cf6" fontFamily="Inter, system-ui, sans-serif" letterSpacing="0.05em">
         ЛИД-МАГНИТ
       </text>
       <text x={12} y={node.h / 2 + 8} fontSize={11} fontWeight={500} fill="hsl(var(--muted-foreground))" dominantBaseline="middle" fontFamily="Inter, system-ui, sans-serif">
@@ -380,13 +357,23 @@ function LeadMagnetNode({ node }: { node: MapNode }) {
   );
 }
 
+const TIER_TYPE_ID: Record<string, string> = {
+  "lead-magnet": "lead_magnet",
+  "mid-ticket": "mid_ticket",
+  flagship: "flagship",
+};
+
 function ProductNode({ node }: { node: MapNode }) {
   const label = node.label.length > 24 ? node.label.slice(0, 24) + "…" : node.label;
-  const TierIcon = node.tier ? TIER_SVG_ICON[node.tier] : null;
+  const typeId = node.tier ? TIER_TYPE_ID[node.tier] : null;
   return (
     <g>
-      <rect x={0} y={0} width={node.w} height={node.h} rx={10} fill="hsl(var(--card))" stroke={node.color} strokeWidth={2} />
-      {TierIcon && <TierIcon x={10} y={5} />}
+      <rect x={0} y={0} width={node.w} height={node.h} rx={10} fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth={1.5} />
+      {typeId && (
+        <foreignObject x={8} y={2} width={18} height={18}>
+          <ProductTypeIcon typeId={typeId} size={18} />
+        </foreignObject>
+      )}
       <text x={28} y={16} fontSize={9} fontWeight={700} fill={node.color} fontFamily="Inter, system-ui, sans-serif" letterSpacing="0.04em">
         {node.tierLabel}
       </text>
@@ -445,6 +432,10 @@ const FunnelMapPage = () => {
 
   const { nodes: initialNodes, edges } = useMemo(() => buildGraph(funnels), [funnels]);
   const [nodes, setNodes] = useState<MapNode[]>(initialNodes);
+  const [drawerProduct, setDrawerProduct] = useState<FunnelProduct | null>(null);
+  const [drawerContent, setDrawerContent] = useState<ContentItem | null>(null);
+  const [drawerFunnel, setDrawerFunnel] = useState<typeof funnels[0] | null>(null);
+  const dragMovedRef = useRef(false);
 
   const touchRef = useRef<TouchState>({ startX: 0, startY: 0, panX: 0, panY: 0, dist: 0, zoom: 1, nodeId: null, orig: [], moved: false });
   const isMobile = typeof window !== "undefined" && "ontouchstart" in window;
@@ -462,9 +453,21 @@ const FunnelMapPage = () => {
     setZoom((z) => Math.min(2.5, Math.max(0.2, z * (e.deltaY > 0 ? 0.92 : 1.08))));
   }, []);
 
+  const handleNodeClick = useCallback((node: MapNode) => {
+    if (node.type === "keyword") return;
+    if (node.type === "content" && node.contentItem) {
+      const f = funnels.find((fun) => fun.id === node.funnelId);
+      setDrawerFunnel(f || null);
+      setDrawerContent(node.contentItem);
+    } else if ((node.type === "leadmagnet" || node.type === "product") && node.funnelProduct) {
+      setDrawerProduct(node.funnelProduct);
+    }
+  }, [funnels]);
+
   /* mouse desktop */
   const handleMouseDown = useCallback(
     (e: React.MouseEvent, nodeId?: string) => {
+      dragMovedRef.current = false;
       if (nodeId) {
         e.stopPropagation();
         setDragging({ type: "node", startX: e.clientX, startY: e.clientY, nodeId, orig: nodes });
@@ -478,6 +481,7 @@ const FunnelMapPage = () => {
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
       if (!dragging) return;
+      dragMovedRef.current = true;
       if (dragging.type === "pan") {
         setPan({ x: e.clientX - dragging.startX, y: e.clientY - dragging.startY });
       } else if (dragging.orig && dragging.nodeId) {
@@ -558,17 +562,24 @@ const FunnelMapPage = () => {
   /* render a single node */
   const renderNode = (node: MapNode) => {
     const dimmed = highlighted && !highlighted.nodes.has(node.id);
+    const isClickable = node.type !== "keyword";
     return (
       <g
         key={node.id}
         transform={`translate(${node.x}, ${node.y})`}
-        style={{ cursor: "grab", opacity: dimmed ? 0.12 : 1, transition: "opacity .2s" }}
+        style={{ cursor: isClickable ? "pointer" : "grab", opacity: dimmed ? 0.12 : 1, transition: "opacity .2s" }}
         onMouseDown={(e) => handleMouseDown(e, node.id)}
+        onMouseUp={() => {
+          if (!dragMovedRef.current && isClickable) handleNodeClick(node);
+        }}
         onMouseEnter={() => !isMobile && setSelected(node.id)}
         onMouseLeave={() => !isMobile && setSelected(null)}
         onTouchStart={(e) => {
           handleTouchStart(e, node.id);
           handleTap(node.id);
+        }}
+        onTouchEnd={() => {
+          if (!touchRef.current.moved && isClickable) handleNodeClick(node);
         }}
       >
         {isMobile && <rect x={-6} y={-6} width={node.w + 12} height={node.h + 12} fill="transparent" />}
@@ -684,7 +695,7 @@ const FunnelMapPage = () => {
                     <EdgePath
                       from={e.from}
                       to={e.to}
-                      color={highlighted && !dimmed ? e.color.replace("60", "cc") : e.color}
+                      color={e.color}
                       nodes={nodes}
                     />
                   </g>
@@ -699,6 +710,18 @@ const FunnelMapPage = () => {
 
         <MobileNav />
       </div>
+
+      <ProductDrawer
+        product={drawerProduct}
+        open={!!drawerProduct}
+        onOpenChange={(open) => !open && setDrawerProduct(null)}
+      />
+      <ContentDrawer
+        content={drawerContent}
+        funnel={drawerFunnel}
+        open={!!drawerContent}
+        onOpenChange={(open) => { if (!open) { setDrawerContent(null); setDrawerFunnel(null); } }}
+      />
     </SidebarProvider>
   );
 };
