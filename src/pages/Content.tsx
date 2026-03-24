@@ -127,7 +127,7 @@ const Content = () => {
     const counts: Record<string, number> = {};
     allContent.forEach((ci) => { counts[ci.platformId] = (counts[ci.platformId] || 0) + 1; });
     return PLATFORMS.filter((p) => counts[p.id]).map((p) => ({
-      value: p.id, label: p.label, icon: p.icon, count: counts[p.id],
+      value: p.id, label: p.label, platformId: p.id, count: counts[p.id],
     }));
   }, [allContent]);
 

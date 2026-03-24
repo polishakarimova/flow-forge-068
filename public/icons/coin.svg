@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="coin-grad" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#c4b5fd"/>
+      <stop offset="50%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="coin-shine" x1="10" y1="8" x2="38" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ede9fe" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <circle cx="22" cy="24" r="18" fill="url(#coin-grad)" stroke="#7c3aed" stroke-width="1.5"/>
+  <circle cx="22" cy="24" r="18" fill="url(#coin-shine)"/>
+  <circle cx="22" cy="24" r="14" fill="none" stroke="#7c3aed" stroke-width="1" opacity="0.3"/>
+  <text x="22" y="30" text-anchor="middle" fill="#ede9fe" font-size="18" font-weight="bold" font-family="Arial">$</text>
+  <path d="M34 32l8-8m0 0l-3-3m3 3l3-3" stroke="#8b5cf6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M34 32l8-8m0 0l-3-3m3 3l3-3" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

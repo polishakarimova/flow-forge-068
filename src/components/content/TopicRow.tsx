@@ -37,10 +37,9 @@ export function TopicRow({ topic, expanded, onToggle, onOpenContent }: TopicRowP
               <span
                 key={pid}
                 className="w-[22px] h-[22px] rounded-md flex items-center justify-center"
-                style={{ background: pl.color + "12" }}
                 title={pl.label}
               >
-                <PlatformIcon src={pl.icon} alt={pl.label} size={14} />
+                <PlatformIcon platformId={pid} size={14} />
               </span>
             );
           })}

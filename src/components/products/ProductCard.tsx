@@ -1,4 +1,5 @@
 import { PRODUCT_TYPES, PRODUCT_STATUSES, type Product } from "@/lib/productData";
+import { ProductTypeIcon } from "./ProductTypeIcon";
 
 interface ProductCardProps {
   product: Product;
@@ -11,7 +12,7 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
 
   return (
     <div
-      className="card-elevated flex items-center gap-2 px-3 py-1.5 cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)]"
+      className="card-elevated flex items-center gap-1.5 px-3 py-1 cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)]"
       onClick={() => onOpen(product)}
     >
       {/* Status dot — gray is static, others pulse */}
@@ -23,18 +24,19 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
       </span>
 
       {/* Type abbreviation badge */}
-      <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-[0.05em] bg-foreground/[0.06] text-muted-foreground shrink-0">
+      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium uppercase tracking-[0.03em] bg-foreground/[0.05] shrink-0" style={{ color: "#4b5563" }}>
+        {type && <ProductTypeIcon typeId={type.id} size={13} />}
         {type?.short}
       </span>
 
       {/* Product name — dark gray like funnel keywords */}
-      <div className="flex-1 min-w-0 text-[10px] text-muted-foreground truncate">
+      <div className="flex-1 min-w-0 text-[10px] font-normal truncate" style={{ color: "#374151" }}>
         {product.name}
       </div>
 
       {/* Format badge */}
       {product.format && (
-        <span className="text-[10px] px-2 py-0.5 rounded-lg font-semibold shrink-0 whitespace-nowrap violet-surface text-primary">
+        <span className="text-[10px] px-1.5 py-0.5 rounded-lg font-normal shrink-0 whitespace-nowrap violet-surface text-primary">
           {product.format}
         </span>
       )}

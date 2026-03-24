@@ -3,6 +3,7 @@ import { Plus, Trash2, AlertTriangle, Search, ChevronDown } from "lucide-react";
 import { useDataStore } from "@/lib/dataStore";
 import { PRODUCT_TYPES, type Product } from "@/lib/productData";
 import { PLATFORMS } from "@/lib/contentData";
+import { PlatformIcon } from "@/components/content/PlatformIcon";
 import type { BadgeColor, ContentItem, FunnelProduct, Funnel } from "@/lib/funnelData";
 
 interface CreateFunnelModalProps {
@@ -453,14 +454,7 @@ export function CreateFunnelModal({ onClose }: CreateFunnelModalProps) {
                             ✓
                           </span>
                           {plat && (
-                            <img
-                              src={plat.icon}
-                              alt={plat.label}
-                              width={14}
-                              height={14}
-                              className="shrink-0"
-                              style={{ objectFit: "contain" }}
-                            />
+                            <PlatformIcon platformId={ci.platformId} size={14} />
                           )}
                           <span className="text-foreground font-medium flex-1 truncate">{ci.title}</span>
                           <span className="text-[10px] text-muted-foreground shrink-0 max-w-[80px] truncate">

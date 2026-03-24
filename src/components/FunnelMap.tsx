@@ -1,21 +1,22 @@
 import { useState } from "react";
 import { Plus, Send, FileText, Gift, DollarSign, Crown } from "lucide-react";
 import type { Funnel, ContentStatus, FunnelProduct, ContentItem } from "@/lib/funnelData";
+import { PlatformIcon } from "@/components/content/PlatformIcon";
 
-const FUNNEL_PLATFORM_ICON: Record<string, string> = {
-  "Telegram|Пост": "/icons/telegram.svg",
-  "Instagram|Stories": "/icons/stories.svg",
-  "Instagram|Пост": "/icons/instagram.svg",
-  "Instagram|Reels": "/icons/reels.svg",
-  "Instagram|Карусель": "/icons/carousel.svg",
-  "Blog|Статья": "/icons/article.svg",
-  "Threads|Тред": "/icons/threads.svg",
-  "YouTube|Видео": "/icons/youtube.svg",
-  "VK|Пост": "/icons/vk.svg",
+const FUNNEL_PLATFORM_ID: Record<string, string> = {
+  "Telegram|Пост": "tg_post",
+  "Instagram|Stories": "stories",
+  "Instagram|Пост": "ig_post",
+  "Instagram|Reels": "reels",
+  "Instagram|Карусель": "carousel",
+  "Blog|Статья": "article",
+  "Threads|Тред": "threads",
+  "YouTube|Видео": "youtube",
+  "VK|Пост": "vk",
 };
 
-function getFunnelItemIcon(item: ContentItem): string | null {
-  return FUNNEL_PLATFORM_ICON[`${item.platform}|${item.format}`] || null;
+function getFunnelPlatformId(item: ContentItem): string | null {
+  return FUNNEL_PLATFORM_ID[`${item.platform}|${item.format}`] || null;
 }
 import { productsCatalog } from "@/lib/funnelData";
 import { ProductDrawer } from "@/components/ProductDrawer";
@@ -206,8 +207,8 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
                 title="Нажми чтобы открыть"
               >
                 <span className={`w-2 h-2 rounded-full shrink-0 ${statusColor[item.status]}`} title={statusLabel[item.status]} />
-                {getFunnelItemIcon(item) ? (
-                  <img src={getFunnelItemIcon(item)!} alt={`${item.platform} ${item.format}`} width={14} height={14} className="shrink-0" style={{ objectFit: "contain" }} />
+                {getFunnelPlatformId(item) ? (
+                  <PlatformIcon platformId={getFunnelPlatformId(item)!} size={14} />
                 ) : (
                   <span className="text-muted-foreground font-medium shrink-0">
                     {item.platform}

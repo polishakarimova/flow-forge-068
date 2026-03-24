@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
-import { initialProducts, type Product, type ProductStatusKey } from "@/lib/productData";
+import { initialProducts, DEFAULT_FORMATS, type Product, type ProductStatusKey } from "@/lib/productData";
 import { initialTopics, type Topic, type ContentItemData, type ContentStatusKey } from "@/lib/contentData";
 import { funnelsData, type Funnel } from "@/lib/funnelData";
 
@@ -8,6 +8,11 @@ interface DataStore {
   products: Product[];
   addProduct: (p: Omit<Product, "id" | "status" | "createdDate">) => void;
   updateProduct: (p: Product) => void;
+
+  // Formats
+  formats: string[];
+  addFormat: (f: string) => void;
+  deleteFormat: (f: string) => void;
 
   // Topics / Content
   topics: Topic[];
@@ -35,6 +40,7 @@ const initialKeywords = [...new Set(funnelsData.map((f) => f.keyword))];
 
 export function DataStoreProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [formats, setFormats] = useState<string[]>(DEFAULT_FORMATS);
   const [topics, setTopics] = useState<Topic[]>(initialTopics);
   const [funnels, setFunnels] = useState<Funnel[]>(funnelsData);
   const [keywords, setKeywords] = useState<string[]>(initialKeywords);
@@ -51,6 +57,14 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
 
   const updateProduct = useCallback((updated: Product) => {
     setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+  }, []);
+
+  const addFormat = useCallback((f: string) => {
+    setFormats((prev) => prev.includes(f) ? prev : [...prev, f]);
+  }, []);
+
+  const deleteFormat = useCallback((f: string) => {
+    setFormats((prev) => prev.filter((x) => x !== f));
   }, []);
 
   const addTopic = useCallback((data: Omit<Topic, "id">) => {
@@ -102,6 +116,9 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
       products,
       addProduct,
       updateProduct,
+      formats,
+      addFormat,
+      deleteFormat,
       topics,
       addTopic,
       updateTopic,
@@ -115,7 +132,7 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
       toggleFunnelActive,
       funnelsForKeyword,
     }),
-    [products, addProduct, updateProduct, topics, addTopic, updateTopic, updateContentItem, keywords, addKeyword, deleteKeyword, funnels, setFunnels, addFunnel, toggleFunnelActive, funnelsForKeyword]
+    [products, addProduct, updateProduct, formats, addFormat, deleteFormat, topics, addTopic, updateTopic, updateContentItem, keywords, addKeyword, deleteKeyword, funnels, setFunnels, addFunnel, toggleFunnelActive, funnelsForKeyword]
   );
 
   return (
