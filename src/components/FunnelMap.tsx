@@ -75,15 +75,18 @@ const NodeCard = ({
     return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
   }, [cardId, width]);
 
+  const cardRef = useRef<HTMLDivElement>(null);
+
   const handleResizeStart = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    const el = (e.target as HTMLElement).parentElement!;
-    dragRef.current = { startX: e.clientX, startW: el.offsetWidth };
+    const el = cardRef.current;
+    if (el) dragRef.current = { startX: e.clientX, startW: el.offsetWidth };
   };
 
   return (
     <div
+      ref={cardRef}
       onClick={onClick}
       className={`relative rounded-2xl border border-border bg-card p-3 shadow-sm min-w-[120px] transition-shadow duration-200
         hover:-translate-y-0.5 hover:shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.15)] hover:border-primary/30
@@ -100,10 +103,10 @@ const NodeCard = ({
       {cardId && (
         <div
           onMouseDown={handleResizeStart}
-          className="absolute top-0 right-0 w-2 h-full cursor-col-resize group/handle"
+          className="absolute top-0 -right-2 w-5 h-full cursor-col-resize group/handle z-10 flex items-center justify-center"
           style={{ touchAction: "none" }}
         >
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-full bg-border opacity-0 group-hover/handle:opacity-100 transition-opacity" />
+          <div className="w-1 h-8 rounded-full bg-primary/20 group-hover/handle:bg-primary/50 transition-colors" />
         </div>
       )}
     </div>
@@ -503,12 +506,12 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
         <SvgConnector delay={100} />
 
         {/* === CTA Node === */}
-        <NodeCard delay={200} cardId={`${funnel.id}-cta`} className="!min-w-0 !p-2">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <div className="w-4 h-4 rounded-md bg-primary/10 flex items-center justify-center">
-              <Send className="w-2 h-2 text-primary" />
+        <NodeCard delay={200} cardId={`${funnel.id}-cta`}>
+          <div className="flex items-center gap-1.5 mb-2">
+            <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
+              <Send className="w-2.5 h-2.5 text-primary" />
             </div>
-            <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
               CTA
             </span>
           </div>
