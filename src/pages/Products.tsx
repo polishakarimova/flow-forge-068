@@ -85,7 +85,7 @@ const Products = () => {
 
   const handleDeleteFormat = (f: string) => {
     deleteFormat(f);
-    if (formatFilter === f) setFormatFilter(null);
+    setFormatFilters((prev) => prev.filter((v) => v !== f));
   };
 
   const hasFilters = typeFilters.length > 0 || formatFilters.length > 0 || statusFilters.length > 0;

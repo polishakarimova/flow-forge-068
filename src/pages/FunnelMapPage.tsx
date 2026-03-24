@@ -3,7 +3,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
 import type { BadgeColor, Funnel } from "@/lib/funnelData";
-import { resolveFunnelContent, resolveFunnelProducts } from "@/lib/funnelData";
+import { resolveFunnelContent } from "@/lib/funnelData";
 import { useDataStore } from "@/lib/dataStore";
 import { PlatformIcon } from "@/components/content/PlatformIcon";
 import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
