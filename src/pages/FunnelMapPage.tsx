@@ -7,7 +7,7 @@ import { resolveFunnelContent, resolveFunnelProducts } from "@/lib/funnelData";
 import { useDataStore } from "@/lib/dataStore";
 import { PlatformIcon } from "@/components/content/PlatformIcon";
 import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
-import { ProductDrawer } from "@/components/ProductDrawer";
+import { EditProductModal } from "@/components/products/EditProductModal";
 import { ContentDetailModal } from "@/components/content/ContentDetailModal";
 import type { ContentItemData } from "@/lib/contentData";
 import type { Product } from "@/lib/productData";
@@ -57,13 +57,6 @@ function SvgIconCoin({ x, y }: { x: number; y: number }) {
   );
 }
 
-const COL_SVG_ICON: ((props: { x: number; y: number }) => JSX.Element)[] = [
-  SvgIconFileText,
-  SvgIconKey,
-  SvgIconMagnet,
-  SvgIconCoin,
-];
-
 /* ── colour helpers ─────────────────────────────────── */
 
 const BADGE_HEX: Record<BadgeColor, string> = {
@@ -72,6 +65,8 @@ const BADGE_HEX: Record<BadgeColor, string> = {
   lilac: "#A78BFA",
   amber: "#D4A056",
 };
+
+const TIER_ORDER = ["lead_magnet", "tripwire", "mid_ticket", "flagship", "consultation"] as const;
 
 const TIER_LABEL: Record<string, string> = {
   lead_magnet: "ЛИД-МАГНИТ",
@@ -89,11 +84,19 @@ const TIER_COLOR: Record<string, string> = {
   consultation: "#22c55e",
 };
 
+const TIER_FIELD: Record<string, keyof Funnel> = {
+  lead_magnet: "leadMagnetId",
+  tripwire: "tripwireId",
+  mid_ticket: "midTicketId",
+  flagship: "flagshipId",
+  consultation: "consultationId",
+};
+
 /* ── node / edge types ──────────────────────────────── */
 
 interface MapNode {
   id: string;
-  type: "content" | "keyword" | "leadmagnet" | "product";
+  type: "content" | "keyword" | "product";
   label: string;
   x: number;
   y: number;
@@ -114,18 +117,14 @@ interface MapEdge {
   color: string;
 }
 
-/* ── column layout constants ────────────────────────── */
+interface ColHeader {
+  x: number;
+  label: string;
+  w: number;
+  icon: ((props: { x: number; y: number }) => JSX.Element) | null;
+}
 
-const COL_X = { content: 60, keyword: 380, leadmagnet: 650, product: 960 };
-
-const COL_HEADERS = [
-  { x: 60, label: "КОНТЕНТ", w: 240 },
-  { x: 380, label: "КОДОВОЕ СЛОВО", w: 160 },
-  { x: 650, label: "ЛИД-МАГНИТ", w: 220 },
-  { x: 960, label: "ПРОДУКТ", w: 230 },
-];
-
-/* ── build graph from funnels + real data ───────────── */
+/* ── build graph — full chain per funnel ───────────── */
 
 function buildGraph(
   funnelsList: Funnel[],
@@ -134,9 +133,46 @@ function buildGraph(
 ) {
   const nodes: MapNode[] = [];
   const edges: MapEdge[] = [];
-  const seenProducts = new Set<number>();
 
-  // collect all content items across funnels (resolved from store)
+  // Determine which tier columns are actually used across funnels
+  const usedTiers = new Set<string>();
+  funnelsList.forEach((f) => {
+    TIER_ORDER.forEach((tier) => {
+      const field = TIER_FIELD[tier];
+      if (f[field] != null) usedTiers.add(tier);
+    });
+  });
+
+  // Build dynamic column positions
+  const COL_W = 230;
+  const COL_GAP = 60;
+  const contentX = 60;
+  const keywordX = contentX + 240 + COL_GAP;
+  // After keyword, place each used tier column
+  const tierColumns: { tier: string; x: number }[] = [];
+  let nextX = keywordX + 160 + COL_GAP;
+  TIER_ORDER.forEach((tier) => {
+    if (usedTiers.has(tier)) {
+      tierColumns.push({ tier, x: nextX });
+      nextX += COL_W + COL_GAP;
+    }
+  });
+
+  // Build column headers
+  const headers: ColHeader[] = [
+    { x: contentX, label: "КОНТЕНТ", w: 240, icon: SvgIconFileText },
+    { x: keywordX, label: "КОДОВОЕ СЛОВО", w: 160, icon: SvgIconKey },
+  ];
+  tierColumns.forEach(({ tier, x }, idx) => {
+    headers.push({
+      x,
+      label: TIER_LABEL[tier] || tier,
+      w: COL_W,
+      icon: idx === 0 ? SvgIconMagnet : SvgIconCoin,
+    });
+  });
+
+  // Collect content items per funnel
   const contentEntries: { ci: ContentItemData; funnelId: string }[] = [];
   funnelsList.forEach((f) => {
     const items = resolveFunnelContent(f, allContentItems);
@@ -145,7 +181,7 @@ function buildGraph(
     });
   });
 
-  // content nodes
+  // Content nodes
   const NH = 40, NG = 8;
   let y = 70;
   contentEntries.forEach(({ ci, funnelId }) => {
@@ -153,7 +189,7 @@ function buildGraph(
       id: `ci-${ci.id}`,
       type: "content",
       label: ci.title,
-      x: COL_X.content,
+      x: contentX,
       y,
       w: 240,
       h: NH,
@@ -166,7 +202,7 @@ function buildGraph(
   });
   const totalContentH = contentEntries.length * (NH + NG);
 
-  // keyword nodes
+  // Keyword nodes
   const kwStartY = 70 + Math.max(0, (totalContentH - funnelsList.length * 60) / 2);
   let ky = kwStartY;
   funnelsList.forEach((f) => {
@@ -175,7 +211,7 @@ function buildGraph(
       id: kwId,
       type: "keyword",
       label: f.keyword,
-      x: COL_X.keyword,
+      x: keywordX,
       y: ky,
       w: 160,
       h: 48,
@@ -183,87 +219,88 @@ function buildGraph(
     });
     ky += 60;
 
-    // edges: content → keyword
+    // Edges: content → keyword
     const items = resolveFunnelContent(f, allContentItems);
     items.forEach((ci) => {
       edges.push({ from: `ci-${ci.id}`, to: kwId, color: "#C4B5FD" });
     });
   });
 
-  // lead-magnet nodes
-  const lmList = funnelsList.filter((f) => f.leadMagnetId != null);
-  const lmStartY = 70 + Math.max(0, (totalContentH - lmList.length * 56) / 2);
-  let ly = lmStartY;
-  lmList.forEach((f) => {
-    const lmProduct = allProducts.find((p) => p.id === f.leadMagnetId);
-    if (!lmProduct) return;
-    const lmId = `lm-${lmProduct.id}`;
-    if (!nodes.find((n) => n.id === lmId)) {
-      nodes.push({
-        id: lmId,
-        type: "leadmagnet",
-        label: lmProduct.name,
-        x: COL_X.leadmagnet,
-        y: ly,
-        w: 220,
-        h: 46,
-        color: "#8b5cf6",
-        productData: lmProduct,
-      });
-      ly += 56;
-    }
-    edges.push({ from: `kw-${f.id}`, to: lmId, color: "#C4B5FD" });
-  });
+  // Product nodes per tier column (deduplicated)
+  const seenProducts = new Set<string>(); // key = "tier-productId"
+  const tierNodeCounts: Record<string, number> = {};
+  tierColumns.forEach(({ tier }) => { tierNodeCounts[tier] = 0; });
 
-  // product nodes (non-lead-magnet tiers, deduplicated)
-  const productEntries: { product: Product; fromLmId: string }[] = [];
+  // First pass: count nodes per tier for vertical centering
   funnelsList.forEach((f) => {
-    if (!f.leadMagnetId) return;
-    const fromLmId = `lm-${f.leadMagnetId}`;
-    const tierIds = [f.tripwireId, f.midTicketId, f.flagshipId, f.consultationId];
-    tierIds.forEach((pId) => {
-      if (pId != null) {
-        const p = allProducts.find((pr) => pr.id === pId);
-        if (p) productEntries.push({ product: p, fromLmId });
+    tierColumns.forEach(({ tier }) => {
+      const field = TIER_FIELD[tier];
+      const productId = f[field] as number | undefined;
+      if (productId == null) return;
+      const key = `${tier}-${productId}`;
+      if (!seenProducts.has(key)) {
+        seenProducts.add(key);
+        tierNodeCounts[tier] = (tierNodeCounts[tier] || 0) + 1;
       }
     });
   });
 
-  const uniqueProducts = productEntries.filter((pe) => {
-    if (seenProducts.has(pe.product.id)) return false;
-    seenProducts.add(pe.product.id);
-    return true;
+  // Reset for second pass
+  seenProducts.clear();
+
+  // Track Y position per tier
+  const tierYPos: Record<string, number> = {};
+  tierColumns.forEach(({ tier }) => {
+    const count = tierNodeCounts[tier] || 1;
+    tierYPos[tier] = 70 + Math.max(0, (totalContentH - count * 64) / 2);
   });
 
-  const pStartY = 70 + Math.max(0, (totalContentH - uniqueProducts.length * 64) / 2);
-  let py = pStartY;
-  uniqueProducts.forEach(({ product }) => {
-    const pId = `pr-${product.id}`;
-    nodes.push({
-      id: pId,
-      type: "product",
-      label: product.name,
-      x: COL_X.product,
-      y: py,
-      w: 230,
-      h: 52,
-      color: TIER_COLOR[product.typeId] || "#6366f1",
-      tier: product.typeId,
-      tierLabel: TIER_LABEL[product.typeId] || product.typeId,
-      productData: product,
+  // Create product nodes and chain edges per funnel
+  funnelsList.forEach((f) => {
+    // Get the chain of tier node IDs for this funnel
+    const funnelChain: string[] = [`kw-${f.id}`]; // start from keyword
+
+    tierColumns.forEach(({ tier, x }) => {
+      const field = TIER_FIELD[tier];
+      const productId = f[field] as number | undefined;
+      if (productId == null) return;
+
+      const product = allProducts.find((p) => p.id === productId);
+      if (!product) return;
+
+      const nodeId = `${tier}-${productId}`;
+
+      // Create node if not yet created
+      if (!seenProducts.has(nodeId)) {
+        seenProducts.add(nodeId);
+        nodes.push({
+          id: nodeId,
+          type: "product",
+          label: product.name,
+          x,
+          y: tierYPos[tier],
+          w: COL_W,
+          h: 52,
+          color: TIER_COLOR[tier] || "#6366f1",
+          tier,
+          tierLabel: TIER_LABEL[tier] || tier,
+          productData: product,
+        });
+        tierYPos[tier] += 64;
+      }
+
+      // Add edge from previous element in chain to this product
+      const prevId = funnelChain[funnelChain.length - 1];
+      const edgeKey = `${prevId}->${nodeId}`;
+      if (!edges.find((e) => e.from === prevId && e.to === nodeId)) {
+        edges.push({ from: prevId, to: nodeId, color: TIER_COLOR[tier] || "#C4B5FD" });
+      }
+
+      funnelChain.push(nodeId);
     });
-    py += 64;
   });
 
-  // edges: lead-magnet → product
-  productEntries.forEach(({ product, fromLmId }) => {
-    const pId = `pr-${product.id}`;
-    if (!edges.find((e) => e.from === fromLmId && e.to === pId)) {
-      edges.push({ from: fromLmId, to: pId, color: "#C4B5FD" });
-    }
-  });
-
-  return { nodes, edges };
+  return { nodes, edges, headers };
 }
 
 /* ── graph traversal for highlight ──────────────────── */
@@ -337,30 +374,17 @@ function KeywordNode({ node }: { node: MapNode }) {
   );
 }
 
-function LeadMagnetNode({ node }: { node: MapNode }) {
-  const label = node.label.length > 24 ? node.label.slice(0, 24) + "…" : node.label;
-  return (
-    <g>
-      <rect x={0} y={0} width={node.w} height={node.h} rx={8} fill="#faf5ff" stroke="#d8b4fe" strokeWidth={1.5} strokeDasharray="4 2" />
-      <foreignObject x={8} y={2} width={18} height={18}>
-        <ProductTypeIcon typeId="lead_magnet" size={18} />
-      </foreignObject>
-      <text x={28} y={12} fontSize={9} fontWeight={700} fill="#8b5cf6" fontFamily="Inter, system-ui, sans-serif" letterSpacing="0.05em">
-        ЛИД-МАГНИТ
-      </text>
-      <text x={12} y={node.h / 2 + 8} fontSize={11} fontWeight={500} fill="hsl(var(--muted-foreground))" dominantBaseline="middle" fontFamily="Inter, system-ui, sans-serif">
-        {label}
-      </text>
-    </g>
-  );
-}
-
 function ProductNode({ node }: { node: MapNode }) {
   const label = node.label.length > 24 ? node.label.slice(0, 24) + "…" : node.label;
   const typeId = node.tier || null;
+  const isLeadMagnet = typeId === "lead_magnet";
   return (
     <g>
-      <rect x={0} y={0} width={node.w} height={node.h} rx={10} fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth={1.5} />
+      {isLeadMagnet ? (
+        <rect x={0} y={0} width={node.w} height={node.h} rx={8} fill="#faf5ff" stroke="#d8b4fe" strokeWidth={1.5} strokeDasharray="4 2" />
+      ) : (
+        <rect x={0} y={0} width={node.w} height={node.h} rx={10} fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth={1.5} />
+      )}
       {typeId && (
         <foreignObject x={8} y={2} width={18} height={18}>
           <ProductTypeIcon typeId={typeId} size={18} />
@@ -376,7 +400,7 @@ function ProductNode({ node }: { node: MapNode }) {
   );
 }
 
-/* ── bezier edge ────────────────────────────────────── */
+/* ── bezier edge with arrowhead ────────────────────── */
 
 function EdgePath({ from, to, color, nodes }: { from: string; to: string; color: string; nodes: MapNode[] }) {
   const a = nodes.find((n) => n.id === from);
@@ -387,7 +411,19 @@ function EdgePath({ from, to, color, nodes }: { from: string; to: string; color:
   const x2 = b.x;
   const y2 = b.y + b.h / 2;
   const cx = (x1 + x2) / 2;
-  return <path d={`M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2},${y2}`} fill="none" stroke={color} strokeWidth={2} />;
+
+  // Arrow tip
+  const arrowSize = 5;
+  const ax = x2 - 1;
+  const ay1t = y2 - arrowSize;
+  const ay2t = y2 + arrowSize;
+
+  return (
+    <g>
+      <path d={`M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2},${y2}`} fill="none" stroke={color} strokeWidth={2} />
+      <polygon points={`${ax - arrowSize},${ay1t} ${ax},${y2} ${ax - arrowSize},${ay2t}`} fill={color} />
+    </g>
+  );
 }
 
 /* ── touch helpers ──────────────────────────────────── */
@@ -414,7 +450,7 @@ function getDist(e: TouchEvent | React.TouchEvent) {
 /* ── main component ─────────────────────────────────── */
 
 const FunnelMapPage = () => {
-  const { funnels, allContentItems, products, topics, updateContentItem } = useDataStore();
+  const { funnels, allContentItems, products, topics, updateContentItem, updateProduct, formats, addFormat, deleteFormat } = useDataStore();
   const svgRef = useRef<SVGSVGElement>(null);
   const [pan, setPan] = useState({ x: 20, y: 10 });
   const [zoom, setZoom] = useState(1);
@@ -422,17 +458,22 @@ const FunnelMapPage = () => {
   const [selected, setSelected] = useState<string | null>(null);
   const [showHint, setShowHint] = useState(true);
 
-  const { nodes: initialNodes, edges } = useMemo(
+  const { nodes: initialNodes, edges, headers } = useMemo(
     () => buildGraph(funnels, allContentItems, products),
     [funnels, allContentItems, products],
   );
   const [nodes, setNodes] = useState<MapNode[]>(initialNodes);
-  const [drawerProduct, setDrawerProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingContent, setEditingContent] = useState<ContentItemData | null>(null);
   const dragMovedRef = useRef(false);
 
   const touchRef = useRef<TouchState>({ startX: 0, startY: 0, panX: 0, panY: 0, dist: 0, zoom: 1, nodeId: null, orig: [], moved: false });
   const isMobile = typeof window !== "undefined" && "ontouchstart" in window;
+
+  // Sync nodes when graph changes
+  useEffect(() => {
+    setNodes(initialNodes);
+  }, [initialNodes]);
 
   useEffect(() => {
     const t = setTimeout(() => setShowHint(false), 4000);
@@ -455,8 +496,8 @@ const FunnelMapPage = () => {
     if (node.type === "keyword") return;
     if (node.type === "content" && node.contentItemData) {
       setEditingContent(node.contentItemData);
-    } else if ((node.type === "leadmagnet" || node.type === "product") && node.productData) {
-      setDrawerProduct(node.productData);
+    } else if (node.type === "product" && node.productData) {
+      setEditingProduct(node.productData);
     }
   }, []);
 
@@ -577,7 +618,6 @@ const FunnelMapPage = () => {
         {isMobile && <rect x={-6} y={-6} width={node.w + 12} height={node.h + 12} fill="transparent" />}
         {node.type === "content" && <ContentNode node={node} />}
         {node.type === "keyword" && <KeywordNode node={node} />}
-        {node.type === "leadmagnet" && <LeadMagnetNode node={node} />}
         {node.type === "product" && <ProductNode node={node} />}
       </g>
     );
@@ -637,7 +677,7 @@ const FunnelMapPage = () => {
               onClick={() => setShowHint(false)}
             >
               {isMobile
-                ? "👆 двигай · щипком зумь · тап = цепочка"
+                ? "двигай · щипком зумь · тап = цепочка"
                 : "scroll = zoom · drag = двигать · hover = цепочка"}
             </div>
           )}
@@ -654,26 +694,23 @@ const FunnelMapPage = () => {
             onTouchEnd={handleTouchEnd}
           >
             <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
-              {COL_HEADERS.map((h, i) => {
-                const Icon = COL_SVG_ICON[i];
-                return (
-                  <g key={h.label}>
-                    {Icon && <Icon x={h.x + 8} y={22} />}
-                    <text
-                      x={h.x + 26}
-                      y={36}
-                      fontSize={10}
-                      fontWeight={800}
-                      fill="hsl(var(--muted-foreground))"
-                      letterSpacing="0.08em"
-                      fontFamily="Inter, system-ui, sans-serif"
-                    >
-                      {h.label}
-                    </text>
-                    <line x1={h.x} y1={52} x2={h.x + h.w} y2={52} stroke="hsl(var(--border))" strokeWidth={1} />
-                  </g>
-                );
-              })}
+              {headers.map((h) => (
+                <g key={h.label}>
+                  {h.icon && <h.icon x={h.x + 8} y={22} />}
+                  <text
+                    x={h.x + (h.icon ? 26 : 8)}
+                    y={36}
+                    fontSize={10}
+                    fontWeight={800}
+                    fill="hsl(var(--muted-foreground))"
+                    letterSpacing="0.08em"
+                    fontFamily="Inter, system-ui, sans-serif"
+                  >
+                    {h.label}
+                  </text>
+                  <line x1={h.x} y1={52} x2={h.x + h.w} y2={52} stroke="hsl(var(--border))" strokeWidth={1} />
+                </g>
+              ))}
 
               {edges.map((e, i) => {
                 const dimmed = highlighted && !highlighted.edges.has(`${e.from}->${e.to}`);
@@ -697,11 +734,17 @@ const FunnelMapPage = () => {
         <MobileNav />
       </div>
 
-      <ProductDrawer
-        product={drawerProduct}
-        open={!!drawerProduct}
-        onOpenChange={(open) => !open && setDrawerProduct(null)}
-      />
+      {/* Product Edit Modal — same style as Products page */}
+      {editingProduct && (
+        <EditProductModal
+          product={editingProduct}
+          onClose={() => setEditingProduct(null)}
+          onSave={(updated) => { updateProduct(updated); setEditingProduct(null); }}
+          formats={formats}
+          onAddFormat={addFormat}
+          onDeleteFormat={deleteFormat}
+        />
+      )}
 
       {editingContent && (
         <ContentDetailModal
