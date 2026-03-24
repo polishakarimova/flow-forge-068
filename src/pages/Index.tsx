@@ -7,12 +7,14 @@ import { PathRow } from "@/components/PathRow";
 import { ContentDropdown } from "@/components/content/ContentDropdown";
 import { CreateFunnelModal } from "@/components/funnels/CreateFunnelModal";
 import { useDataStore } from "@/lib/dataStore";
+import type { Funnel } from "@/lib/funnelData";
 
 const Index = () => {
   const { funnels, toggleFunnelActive } = useDataStore();
   const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [editingFunnel, setEditingFunnel] = useState<Funnel | null>(null);
 
   const keywordOptions = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -112,6 +114,7 @@ const Index = () => {
                   funnel={funnel}
                   defaultExpanded={funnel.keyword === "КЕЙС"}
                   onToggleActive={toggleFunnelActive}
+                  onEdit={setEditingFunnel}
                 />
               ))}
             </div>
@@ -132,6 +135,7 @@ const Index = () => {
                       key={funnel.id}
                       funnel={funnel}
                       onToggleActive={toggleFunnelActive}
+                      onEdit={setEditingFunnel}
                     />
                   ))}
                 </div>
@@ -149,6 +153,12 @@ const Index = () => {
         <MobileNav />
       </div>
       {showCreate && <CreateFunnelModal onClose={() => setShowCreate(false)} />}
+      {editingFunnel && (
+        <CreateFunnelModal
+          editFunnel={editingFunnel}
+          onClose={() => setEditingFunnel(null)}
+        />
+      )}
     </SidebarProvider>
   );
 };

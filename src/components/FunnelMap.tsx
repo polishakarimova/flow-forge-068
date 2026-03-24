@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Plus, Send, FileText, MoreHorizontal, Trash2 } from "lucide-react";
 import type { Funnel } from "@/lib/funnelData";
 import { resolveFunnelContent, resolveFunnelProducts } from "@/lib/funnelData";
 import { useDataStore } from "@/lib/dataStore";
 import { PlatformIcon } from "@/components/content/PlatformIcon";
 import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
-import { STATUSES, type ContentItemData } from "@/lib/contentData";
+import { STATUSES, type ContentItemData, type Topic } from "@/lib/contentData";
 import { ContentDetailModal } from "@/components/content/ContentDetailModal";
 import { EditProductModal } from "@/components/products/EditProductModal";
 import { CreateProductModal } from "@/components/products/CreateProductModal";
@@ -119,9 +119,9 @@ function ContentItemRow({
         <span className="absolute inset-0 rounded-full" style={{ background: status.color }} />
       </span>
       <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-foreground/[0.06] shrink-0">
-        <PlatformIcon platformId={item.platformId} size={14} />
+        <PlatformIcon platformId={item.platformId} size={16} />
       </span>
-      <div className="flex-1 min-w-0 text-[10px] text-muted-foreground truncate">
+      <div className="flex-1 min-w-0 text-[12px] md:text-[10px] text-muted-foreground truncate">
         {item.title || "Не заполнено"}
       </div>
       {onDelete && (
@@ -261,13 +261,100 @@ function AddProductPickerModal({
   );
 }
 
+/* ── Content picker modal ── */
+function ContentPickerModal({
+  availableContent,
+  topics: allTopics,
+  onSelect,
+  onClose,
+}: {
+  availableContent: ContentItemData[];
+  topics: Topic[];
+  onSelect: (ciId: number) => void;
+  onClose: () => void;
+}) {
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return availableContent;
+    const q = search.toLowerCase();
+    return availableContent.filter((ci) => {
+      const topic = allTopics.find((t) => t.contentItems.some((c) => c.id === ci.id));
+      return ci.title.toLowerCase().includes(q) || (topic?.title || "").toLowerCase().includes(q);
+    });
+  }, [availableContent, search, allTopics]);
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] animate-in fade-in duration-200"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="bg-card rounded-3xl w-full max-w-[440px] max-h-[70vh] overflow-hidden animate-in slide-in-from-bottom-3 duration-300"
+        style={{ boxShadow: "0 24px 60px rgba(0,0,0,.15)" }}
+      >
+        <div className="px-6 pt-5 pb-3 border-b border-border flex items-center justify-between">
+          <h3 className="text-[14px] font-bold text-foreground">Добавить контент</h3>
+          <button
+            onClick={onClose}
+            className="bg-muted border-none rounded-lg w-[28px] h-[28px] cursor-pointer text-[13px] text-muted-foreground flex items-center justify-center hover:bg-muted/80 transition-all"
+          >
+            ✕
+          </button>
+        </div>
+        <div className="px-6 pt-3">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Поиск по названию или теме…"
+            className="w-full px-3 py-2 rounded-xl border border-border bg-muted/30 text-[12px] text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/40 transition-colors"
+          />
+        </div>
+        <div className="px-6 py-3 overflow-y-auto max-h-[50vh] space-y-0.5">
+          {filtered.length === 0 ? (
+            <p className="text-[12px] text-muted-foreground text-center py-6">Нет доступного контента</p>
+          ) : (
+            filtered.map((ci) => {
+              const status = STATUSES[ci.status];
+              const topic = allTopics.find((t) => t.contentItems.some((c) => c.id === ci.id));
+              return (
+                <div
+                  key={ci.id}
+                  onClick={() => onSelect(ci.id)}
+                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)] border border-transparent hover:border-primary/20"
+                >
+                  <span className="relative shrink-0 w-2 h-2">
+                    {status.color !== "#94a3b8" && (
+                      <span className="absolute inset-0 rounded-full animate-ping opacity-75" style={{ background: status.color }} />
+                    )}
+                    <span className="absolute inset-0 rounded-full" style={{ background: status.color }} />
+                  </span>
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-foreground/[0.06] shrink-0">
+                    <PlatformIcon platformId={ci.platformId} size={16} />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[12px] font-medium text-foreground truncate">{ci.title || "Не заполнено"}</div>
+                    {topic && <div className="text-[10px] text-muted-foreground truncate">{topic.title}</div>}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function FunnelMap({ funnel }: { funnel: Funnel }) {
-  const { allContentItems, products, topics, updateContentItem, updateProduct, addProduct, formats, addFormat, deleteFormat } = useDataStore();
+  const { allContentItems, products, topics, updateContentItem, updateProduct, addProduct, formats, addFormat, deleteFormat, setFunnels } = useDataStore();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingContent, setEditingContent] = useState<ContentItemData | null>(null);
   const [expandedContent, setExpandedContent] = useState(false);
   const [showAddProductPicker, setShowAddProductPicker] = useState(false);
   const [showCreateProduct, setShowCreateProduct] = useState(false);
+  const [showContentPicker, setShowContentPicker] = useState(false);
 
   /* Resolve real content items from store */
   const contentItems = useMemo(
@@ -286,6 +373,20 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
     const topic = topics.find((t) => t.contentItems.some((c) => c.id === ci.id));
     return topic?.title || "";
   };
+
+  /* Content items not already in this funnel (for picker) */
+  const availableContent = useMemo(() => {
+    const usedIds = new Set(funnel.contentItemIds);
+    return allContentItems.filter((ci) => !usedIds.has(ci.id));
+  }, [allContentItems, funnel.contentItemIds]);
+
+  const addContentToFunnel = useCallback((ciId: number) => {
+    setFunnels((prev) => prev.map((f) =>
+      f.id === funnel.id
+        ? { ...f, contentItemIds: [...f.contentItemIds, ciId], contentCount: f.contentCount + 1 }
+        : f
+    ));
+  }, [funnel.id, setFunnels]);
 
   /* Products not already in this funnel (for picker) */
   const availableProducts = useMemo(() => {
@@ -338,8 +439,8 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
               </div>
             )}
             <button
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 mt-2 transition-colors"
+              onClick={(e) => { e.stopPropagation(); setShowContentPicker(true); }}
+              className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 mt-2 transition-colors cursor-pointer"
             >
               <Plus className="w-3 h-3" />
               Добавить
@@ -428,14 +529,13 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
         <ExpandedListModal
           title={`Контент (${contentItems.length})`}
           onClose={() => setExpandedContent(false)}
-          onAdd={() => {}}
+          onAdd={() => { setExpandedContent(false); setShowContentPicker(true); }}
         >
           {contentItems.map((item) => (
             <ContentItemRow
               key={item.id}
               item={item}
               onClick={() => { setExpandedContent(false); setEditingContent(item); }}
-              onDelete={() => {}}
             />
           ))}
         </ExpandedListModal>
@@ -468,6 +568,16 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
           formats={formats}
           onAddFormat={addFormat}
           onDeleteFormat={deleteFormat}
+        />
+      )}
+
+      {/* Content picker modal */}
+      {showContentPicker && (
+        <ContentPickerModal
+          availableContent={availableContent}
+          topics={topics}
+          onSelect={(ciId) => { addContentToFunnel(ciId); }}
+          onClose={() => setShowContentPicker(false)}
         />
       )}
 

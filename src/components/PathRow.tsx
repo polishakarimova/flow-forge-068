@@ -7,6 +7,7 @@ import {
   Copy,
   Archive,
   Trash2,
+  Settings,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -44,6 +45,7 @@ interface PathRowProps {
   funnel: Funnel;
   defaultExpanded?: boolean;
   onToggleActive?: (id: string) => void;
+  onEdit?: (funnel: Funnel) => void;
 }
 
 function truncateKeyword(str: string, maxLen = 6) {
@@ -54,7 +56,7 @@ function truncate(str: string, len: number) {
   return str.length > len ? str.slice(0, len) + "…" : str;
 }
 
-export function PathRow({ funnel, defaultExpanded = false, onToggleActive }: PathRowProps) {
+export function PathRow({ funnel, defaultExpanded = false, onToggleActive, onEdit }: PathRowProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const { products } = useDataStore();
   const inactive = !funnel.active;
@@ -118,6 +120,12 @@ export function PathRow({ funnel, defaultExpanded = false, onToggleActive }: Pat
                   <Play className="w-4 h-4" /> Активировать
                 </>
               )}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onEdit?.(funnel)}
+              className="gap-2"
+            >
+              <Settings className="w-4 h-4" /> Редактировать
             </DropdownMenuItem>
             <DropdownMenuItem className="gap-2">
               <Copy className="w-4 h-4" /> Дублировать

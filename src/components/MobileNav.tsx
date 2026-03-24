@@ -1,4 +1,4 @@
-import { FileText, GitBranch, Package, Map } from "lucide-react";
+import { FileText, GitBranch, Package, Map, CalendarDays } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 
 const mainTabs = [
@@ -6,6 +6,7 @@ const mainTabs = [
   { title: "Контент", url: "/content", icon: FileText },
   { title: "Воронки", url: "/", icon: GitBranch },
   { title: "Карта", url: "/map", icon: Map },
+  { title: "Календарь", url: "/calendar", icon: CalendarDays },
 ];
 
 export function MobileNav() {

@@ -3,13 +3,14 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
 import type { BadgeColor, Funnel } from "@/lib/funnelData";
-import { resolveFunnelContent, resolveFunnelProducts } from "@/lib/funnelData";
+import { resolveFunnelContent } from "@/lib/funnelData";
 import { useDataStore } from "@/lib/dataStore";
 import { PlatformIcon } from "@/components/content/PlatformIcon";
 import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
 import { EditProductModal } from "@/components/products/EditProductModal";
 import { ContentDetailModal } from "@/components/content/ContentDetailModal";
-import type { ContentItemData } from "@/lib/contentData";
+import type { ContentItemData, Topic } from "@/lib/contentData";
+import { STATUSES } from "@/lib/contentData";
 import type { Product } from "@/lib/productData";
 
 /* ── inline SVG icons (Lucide-style, stroke, 14×14) ─── */
@@ -76,7 +77,7 @@ const TIER_FIELD: Record<string, keyof Funnel> = {
 
 interface MapNode {
   id: string;
-  type: "content" | "keyword" | "product";
+  type: "content" | "keyword" | "product" | "topic";
   label: string;
   x: number;
   y: number;
@@ -89,6 +90,8 @@ interface MapNode {
   contentItemData?: ContentItemData;
   productData?: Product;
   funnelId?: string;
+  topicItems?: ContentItemData[]; // grouped content items for topic node
+  itemCount?: number;
 }
 
 interface MapEdge {
@@ -111,6 +114,7 @@ function buildGraph(
   funnelsList: Funnel[],
   allContentItems: ContentItemData[],
   allProducts: Product[],
+  allTopics: Topic[],
 ) {
   const nodes: MapNode[] = [];
   const edges: MapEdge[] = [];
@@ -129,7 +133,6 @@ function buildGraph(
   const COL_GAP = 60;
   const contentX = 60;
   const keywordX = contentX + 240 + COL_GAP;
-  // After keyword, place each used tier column
   const tierColumns: { tier: string; x: number }[] = [];
   let nextX = keywordX + 160 + COL_GAP;
   TIER_ORDER.forEach((tier) => {
@@ -154,35 +157,69 @@ function buildGraph(
     });
   });
 
-  // Collect content items per funnel
-  const contentEntries: { ci: ContentItemData; funnelId: string }[] = [];
+  // Group content items by topic per funnel
+  // topicKey = "funnelId-topicId" to handle same topic across funnels
+  const topicGroups: { topicId: number; topicTitle: string; items: ContentItemData[]; funnelId: string }[] = [];
+
   funnelsList.forEach((f) => {
     const items = resolveFunnelContent(f, allContentItems);
+    // Group by parent topic
+    const byTopic = new Map<number, { title: string; items: ContentItemData[] }>();
     items.forEach((ci) => {
-      contentEntries.push({ ci, funnelId: f.id });
+      const topic = allTopics.find((t) => t.contentItems.some((c) => c.id === ci.id));
+      const topicId = topic?.id ?? -ci.id; // fallback: treat as own group
+      const topicTitle = topic?.title ?? ci.title;
+      if (!byTopic.has(topicId)) {
+        byTopic.set(topicId, { title: topicTitle, items: [] });
+      }
+      byTopic.get(topicId)!.items.push(ci);
+    });
+    byTopic.forEach(({ title, items: groupItems }, topicId) => {
+      topicGroups.push({ topicId, topicTitle: title, items: groupItems, funnelId: f.id });
     });
   });
 
-  // Content nodes
-  const NH = 40, NG = 8;
+  // Content / topic nodes
+  const NH_TOPIC = 48, NG = 8;
   let y = 70;
-  contentEntries.forEach(({ ci, funnelId }) => {
-    nodes.push({
-      id: `ci-${ci.id}`,
-      type: "content",
-      label: ci.title,
-      x: contentX,
-      y,
-      w: 240,
-      h: NH,
-      color: "#C4B5FD",
-      platformId: ci.platformId,
-      contentItemData: ci,
-      funnelId,
-    });
-    y += NH + NG;
+  topicGroups.forEach(({ topicId, topicTitle, items, funnelId }) => {
+    if (items.length === 1) {
+      // Single item — show as regular content node
+      const ci = items[0];
+      nodes.push({
+        id: `ci-${ci.id}`,
+        type: "content",
+        label: ci.title,
+        x: contentX,
+        y,
+        w: 240,
+        h: 40,
+        color: "#C4B5FD",
+        platformId: ci.platformId,
+        contentItemData: ci,
+        funnelId,
+      });
+      y += 40 + NG;
+    } else {
+      // Multiple items — group into topic node
+      const nodeId = `topic-${funnelId}-${topicId}`;
+      nodes.push({
+        id: nodeId,
+        type: "topic",
+        label: topicTitle,
+        x: contentX,
+        y,
+        w: 240,
+        h: NH_TOPIC,
+        color: "#C4B5FD",
+        funnelId,
+        topicItems: items,
+        itemCount: items.length,
+      });
+      y += NH_TOPIC + NG;
+    }
   });
-  const totalContentH = contentEntries.length * (NH + NG);
+  const totalContentH = y - 70;
 
   // Keyword nodes
   const kwStartY = 70 + Math.max(0, (totalContentH - funnelsList.length * 60) / 2);
@@ -201,10 +238,10 @@ function buildGraph(
     });
     ky += 60;
 
-    // Edges: content → keyword
-    const items = resolveFunnelContent(f, allContentItems);
-    items.forEach((ci) => {
-      edges.push({ from: `ci-${ci.id}`, to: kwId, color: "#C4B5FD" });
+    // Edges: content/topic → keyword
+    const funnelNodes = nodes.filter((n) => n.funnelId === f.id && (n.type === "content" || n.type === "topic"));
+    funnelNodes.forEach((n) => {
+      edges.push({ from: n.id, to: kwId, color: "#C4B5FD" });
     });
   });
 
@@ -359,6 +396,39 @@ function KeywordNode({ node }: { node: MapNode }) {
   );
 }
 
+function TopicNode({ node }: { node: MapNode }) {
+  const label = node.label.length > 22 ? node.label.slice(0, 22) + "…" : node.label;
+  const count = node.itemCount || 0;
+  return (
+    <g>
+      <rect x={0} y={0} width={node.w} height={node.h} rx={10} fill="hsl(var(--card))" stroke="#C4B5FD" strokeWidth={1.5} />
+      {/* Folder icon */}
+      <foreignObject x={8} y={6} width={16} height={16}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+        </svg>
+      </foreignObject>
+      <text x={28} y={16} fontSize={11} fontWeight={600} fill="hsl(var(--foreground))" dominantBaseline="middle" fontFamily="Inter, system-ui, sans-serif">
+        {label}
+      </text>
+      {/* Count badge + platform icons */}
+      <rect x={8} y={node.h - 20} width={36} height={16} rx={8} fill="#C4B5FD" fillOpacity={0.15} />
+      <text x={26} y={node.h - 12} fontSize={10} fontWeight={700} fill="#8b5cf6" textAnchor="middle" dominantBaseline="middle" fontFamily="Inter, system-ui, sans-serif">
+        {count} ед.
+      </text>
+      {/* Platform icons preview */}
+      {node.topicItems && (() => {
+        const platforms = [...new Set(node.topicItems.map((ci) => ci.platformId))];
+        return platforms.slice(0, 4).map((pid, i) => (
+          <foreignObject key={pid} x={50 + i * 20} y={node.h - 21} width={18} height={18}>
+            <PlatformIcon platformId={pid} size={16} />
+          </foreignObject>
+        ));
+      })()}
+    </g>
+  );
+}
+
 function ProductNode({ node }: { node: MapNode }) {
   const label = node.label.length > 24 ? node.label.slice(0, 24) + "…" : node.label;
   const typeId = node.tier || null;
@@ -432,10 +502,97 @@ function getDist(e: TouchEvent | React.TouchEvent) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
+/* ── content picker modal for map page ──────────────── */
+
+function ContentPickerModalMap({
+  availableContent,
+  allTopics,
+  onSelect,
+  onClose,
+}: {
+  availableContent: ContentItemData[];
+  allTopics: Topic[];
+  onSelect: (ciId: number) => void;
+  onClose: () => void;
+}) {
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return availableContent;
+    const q = search.toLowerCase();
+    return availableContent.filter((ci) => {
+      const topic = allTopics.find((t) => t.contentItems.some((c) => c.id === ci.id));
+      return ci.title.toLowerCase().includes(q) || (topic?.title || "").toLowerCase().includes(q);
+    });
+  }, [availableContent, search, allTopics]);
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] animate-in fade-in duration-200"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="bg-card rounded-3xl w-full max-w-[440px] max-h-[70vh] overflow-hidden animate-in slide-in-from-bottom-3 duration-300"
+        style={{ boxShadow: "0 24px 60px rgba(0,0,0,.15)" }}
+      >
+        <div className="px-6 pt-5 pb-3 border-b border-border flex items-center justify-between">
+          <h3 className="text-[14px] font-bold text-foreground">Добавить контент</h3>
+          <button
+            onClick={onClose}
+            className="bg-muted border-none rounded-lg w-[28px] h-[28px] cursor-pointer text-[13px] text-muted-foreground flex items-center justify-center hover:bg-muted/80 transition-all"
+          >
+            ✕
+          </button>
+        </div>
+        <div className="px-6 pt-3">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Поиск по названию или теме…"
+            className="w-full px-3 py-2 rounded-xl border border-border bg-muted/30 text-[12px] text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/40 transition-colors"
+          />
+        </div>
+        <div className="px-6 py-3 overflow-y-auto max-h-[50vh] space-y-0.5">
+          {filtered.length === 0 ? (
+            <p className="text-[12px] text-muted-foreground text-center py-6">Нет доступного контента</p>
+          ) : (
+            filtered.map((ci) => {
+              const status = STATUSES[ci.status];
+              const topic = allTopics.find((t) => t.contentItems.some((c) => c.id === ci.id));
+              return (
+                <div
+                  key={ci.id}
+                  onClick={() => onSelect(ci.id)}
+                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)] border border-transparent hover:border-primary/20"
+                >
+                  <span className="relative shrink-0 w-2 h-2">
+                    {status.color !== "#94a3b8" && (
+                      <span className="absolute inset-0 rounded-full animate-ping opacity-75" style={{ background: status.color }} />
+                    )}
+                    <span className="absolute inset-0 rounded-full" style={{ background: status.color }} />
+                  </span>
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-foreground/[0.06] shrink-0">
+                    <PlatformIcon platformId={ci.platformId} size={16} />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[12px] font-medium text-foreground truncate">{ci.title || "Не заполнено"}</div>
+                    {topic && <div className="text-[10px] text-muted-foreground truncate">{topic.title}</div>}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── main component ─────────────────────────────────── */
 
 const FunnelMapPage = () => {
-  const { funnels, allContentItems, products, topics, updateContentItem, updateProduct, formats, addFormat, deleteFormat } = useDataStore();
+  const { funnels, allContentItems, products, topics, updateContentItem, updateProduct, formats, addFormat, deleteFormat, setFunnels } = useDataStore();
   const svgRef = useRef<SVGSVGElement>(null);
   const [pan, setPan] = useState({ x: 20, y: 10 });
   const [zoom, setZoom] = useState(1);
@@ -444,15 +601,18 @@ const FunnelMapPage = () => {
   const [showHint, setShowHint] = useState(true);
 
   const { nodes: initialNodes, edges, headers } = useMemo(
-    () => buildGraph(funnels, allContentItems, products),
-    [funnels, allContentItems, products],
+    () => buildGraph(funnels, allContentItems, products, topics),
+    [funnels, allContentItems, products, topics],
   );
   const [nodes, setNodes] = useState<MapNode[]>(initialNodes);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingContent, setEditingContent] = useState<ContentItemData | null>(null);
+  const [expandedTopic, setExpandedTopic] = useState<{ title: string; items: ContentItemData[]; funnelId?: string } | null>(null);
+  const [showContentPicker, setShowContentPicker] = useState<string | null>(null); // funnelId
   const dragMovedRef = useRef(false);
 
   const touchRef = useRef<TouchState>({ startX: 0, startY: 0, panX: 0, panY: 0, dist: 0, zoom: 1, nodeId: null, orig: [], moved: false });
+  const lastTapRef = useRef<{ nodeId: string; time: number }>({ nodeId: "", time: 0 });
   const isMobile = typeof window !== "undefined" && "ontouchstart" in window;
 
   // Sync nodes when graph changes
@@ -481,6 +641,8 @@ const FunnelMapPage = () => {
     if (node.type === "keyword") return;
     if (node.type === "content" && node.contentItemData) {
       setEditingContent(node.contentItemData);
+    } else if (node.type === "topic" && node.topicItems) {
+      setExpandedTopic({ title: node.label, items: node.topicItems, funnelId: node.funnelId });
     } else if (node.type === "product" && node.productData) {
       setEditingProduct(node.productData);
     }
@@ -587,9 +749,7 @@ const FunnelMapPage = () => {
         transform={`translate(${node.x}, ${node.y})`}
         style={{ cursor: isClickable ? "pointer" : "grab", opacity: dimmed ? 0.12 : 1, transition: "opacity .2s" }}
         onMouseDown={(e) => handleMouseDown(e, node.id)}
-        onMouseUp={() => {
-          if (!dragMovedRef.current && isClickable) handleNodeClick(node);
-        }}
+        onDoubleClick={() => { if (isClickable) handleNodeClick(node); }}
         onMouseEnter={() => !isMobile && setSelected(node.id)}
         onMouseLeave={() => !isMobile && setSelected(null)}
         onTouchStart={(e) => {
@@ -597,11 +757,21 @@ const FunnelMapPage = () => {
           handleTap(node.id);
         }}
         onTouchEnd={() => {
-          if (!touchRef.current.moved && isClickable) handleNodeClick(node);
+          if (!touchRef.current.moved && isClickable) {
+            const now = Date.now();
+            const last = lastTapRef.current;
+            if (last.nodeId === node.id && now - last.time < 350) {
+              handleNodeClick(node);
+              lastTapRef.current = { nodeId: "", time: 0 };
+            } else {
+              lastTapRef.current = { nodeId: node.id, time: now };
+            }
+          }
         }}
       >
         {isMobile && <rect x={-6} y={-6} width={node.w + 12} height={node.h + 12} fill="transparent" />}
         {node.type === "content" && <ContentNode node={node} />}
+        {node.type === "topic" && <TopicNode node={node} />}
         {node.type === "keyword" && <KeywordNode node={node} />}
         {node.type === "product" && <ProductNode node={node} />}
       </g>
@@ -662,8 +832,8 @@ const FunnelMapPage = () => {
               onClick={() => setShowHint(false)}
             >
               {isMobile
-                ? "двигай · щипком зумь · тап = цепочка"
-                : "scroll = zoom · drag = двигать · hover = цепочка"}
+                ? "двигай · щипком зумь · 2× тап = открыть"
+                : "scroll = zoom · drag = двигать · 2× клик = открыть"}
             </div>
           )}
 
@@ -724,6 +894,96 @@ const FunnelMapPage = () => {
 
         <MobileNav />
       </div>
+
+      {/* Topic expansion modal */}
+      {expandedTopic && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] animate-in fade-in duration-200"
+          onClick={(e) => { if (e.target === e.currentTarget) setExpandedTopic(null); }}
+        >
+          <div
+            className="bg-card rounded-3xl w-full max-w-[440px] max-h-[70vh] overflow-hidden animate-in slide-in-from-bottom-3 duration-300"
+            style={{ boxShadow: "0 24px 60px rgba(0,0,0,.15)" }}
+          >
+            <div className="px-6 pt-5 pb-3 border-b border-border flex items-center justify-between">
+              <div>
+                <h3 className="text-[14px] font-bold text-foreground">{expandedTopic.title}</h3>
+                <span className="text-[11px] text-muted-foreground">{expandedTopic.items.length} единиц контента</span>
+              </div>
+              <button
+                onClick={() => setExpandedTopic(null)}
+                className="bg-muted border-none rounded-lg w-[28px] h-[28px] cursor-pointer text-[13px] text-muted-foreground flex items-center justify-center hover:bg-muted/80 transition-all"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="px-6 py-4 overflow-y-auto max-h-[55vh] space-y-1">
+              {expandedTopic.items.map((item) => {
+                const status = STATUSES[item.status];
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => { setExpandedTopic(null); setEditingContent(item); }}
+                    className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)] border border-transparent hover:border-primary/20"
+                  >
+                    <span className="relative shrink-0 w-2 h-2">
+                      {status.color !== "#94a3b8" && (
+                        <span className="absolute inset-0 rounded-full animate-ping opacity-75" style={{ background: status.color }} />
+                      )}
+                      <span className="absolute inset-0 rounded-full" style={{ background: status.color }} />
+                    </span>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-foreground/[0.06] shrink-0">
+                      <PlatformIcon platformId={item.platformId} size={16} />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] md:text-[12px] font-medium text-foreground truncate">{item.title || "Не заполнено"}</div>
+                      <div className="text-[11px] md:text-[10px] text-muted-foreground">{status.label}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {expandedTopic.funnelId && (
+              <div className="px-6 py-3 border-t border-border">
+                <button
+                  onClick={() => {
+                    const fid = expandedTopic.funnelId!;
+                    setExpandedTopic(null);
+                    setShowContentPicker(fid);
+                  }}
+                  className="flex items-center gap-1.5 text-[12px] text-primary hover:text-primary/80 font-medium transition-colors cursor-pointer bg-transparent border-none"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Добавить
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Content picker modal */}
+      {showContentPicker && (() => {
+        const funnelId = showContentPicker;
+        const funnel = funnels.find((f) => f.id === funnelId);
+        if (!funnel) return null;
+        const usedIds = new Set(funnel.contentItemIds);
+        const available = allContentItems.filter((ci) => !usedIds.has(ci.id));
+        return (
+          <ContentPickerModalMap
+            availableContent={available}
+            allTopics={topics}
+            onSelect={(ciId) => {
+              setFunnels((prev) => prev.map((f) =>
+                f.id === funnelId
+                  ? { ...f, contentItemIds: [...f.contentItemIds, ciId], contentCount: f.contentCount + 1 }
+                  : f
+              ));
+            }}
+            onClose={() => setShowContentPicker(null)}
+          />
+        );
+      })()}
 
       {/* Product Edit Modal — same style as Products page */}
       {editingProduct && (

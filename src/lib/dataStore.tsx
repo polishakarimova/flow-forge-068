@@ -6,7 +6,7 @@ import { funnelsData, type Funnel } from "@/lib/funnelData";
 interface DataStore {
   // Products
   products: Product[];
-  addProduct: (p: Omit<Product, "id" | "status" | "createdDate">) => void;
+  addProduct: (p: Omit<Product, "id" | "status" | "createdDate" | "publishDate">) => void;
   updateProduct: (p: Product) => void;
 
   // Formats
@@ -30,6 +30,7 @@ interface DataStore {
   funnels: Funnel[];
   setFunnels: React.Dispatch<React.SetStateAction<Funnel[]>>;
   addFunnel: (f: Funnel) => void;
+  updateFunnel: (f: Funnel) => void;
   toggleFunnelActive: (id: string) => void;
   funnelsForKeyword: (kw: string) => Funnel[];
 }
@@ -46,12 +47,13 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
   const [funnels, setFunnels] = useState<Funnel[]>(funnelsData);
   const [keywords, setKeywords] = useState<string[]>(initialKeywords);
 
-  const addProduct = useCallback((data: Omit<Product, "id" | "status" | "createdDate">) => {
+  const addProduct = useCallback((data: Omit<Product, "id" | "status" | "createdDate" | "publishDate">) => {
     const newProduct: Product = {
       ...data,
       id: Date.now(),
       status: "draft" as ProductStatusKey,
       createdDate: new Date().toISOString().slice(0, 10),
+      publishDate: "",
     };
     setProducts((prev) => [newProduct, ...prev]);
   }, []);
@@ -113,6 +115,10 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
     setFunnels((prev) => [f, ...prev]);
   }, []);
 
+  const updateFunnel = useCallback((f: Funnel) => {
+    setFunnels((prev) => prev.map((x) => (x.id === f.id ? f : x)));
+  }, []);
+
   const toggleFunnelActive = useCallback((id: string) => {
     setFunnels((prev) => prev.map((f) => (f.id === id ? { ...f, active: !f.active } : f)));
   }, []);
@@ -136,10 +142,11 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
       funnels,
       setFunnels,
       addFunnel,
+      updateFunnel,
       toggleFunnelActive,
       funnelsForKeyword,
     }),
-    [products, addProduct, updateProduct, formats, addFormat, deleteFormat, topics, allContentItems, addTopic, updateTopic, updateContentItem, keywords, addKeyword, deleteKeyword, funnels, setFunnels, addFunnel, toggleFunnelActive, funnelsForKeyword]
+    [products, addProduct, updateProduct, formats, addFormat, deleteFormat, topics, allContentItems, addTopic, updateTopic, updateContentItem, keywords, addKeyword, deleteKeyword, funnels, setFunnels, addFunnel, updateFunnel, toggleFunnelActive, funnelsForKeyword]
   );
 
   return (

@@ -1,11 +1,13 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { PlatformIcon } from "./PlatformIcon";
 
 export interface MultiDropdownOption {
   value: string;
   label: string;
   icon?: string;
+  iconNode?: ReactNode;
   platformId?: string;
+  dot?: string;
   count?: number;
 }
 
@@ -51,12 +53,13 @@ export function ContentMultiDropdown({ values, onChange, options, placeholder, w
               selected.map((o, i) => (
                 <span key={o.value} className="flex items-center gap-1">
                   {i > 0 && <span className="text-muted-foreground/40">,</span>}
-                  {o.platformId ? <PlatformIcon platformId={o.platformId} size={14} /> : o.icon ? <span>{o.icon}</span> : null}
+                  {o.platformId ? <PlatformIcon platformId={o.platformId} size={14} /> : o.iconNode ? o.iconNode : o.icon ? <span>{o.icon}</span> : null}
+                  {o.dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: o.dot }} />}
                   <span>{o.label}</span>
                 </span>
               ))
             ) : (
-              <span>{selected.length} площадки</span>
+              <span>{selected.length} выбрано</span>
             )
           ) : (
             placeholder
@@ -102,7 +105,8 @@ export function ContentMultiDropdown({ values, onChange, options, placeholder, w
                 >
                   {checked ? "✓" : ""}
                 </span>
-                {o.platformId ? <PlatformIcon platformId={o.platformId} size={15} /> : o.icon ? <span className="text-[15px]">{o.icon}</span> : null}
+                {o.platformId ? <PlatformIcon platformId={o.platformId} size={15} /> : o.iconNode ? o.iconNode : o.icon ? <span className="text-[15px]">{o.icon}</span> : null}
+                {o.dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: o.dot }} />}
                 <span className="flex-1 text-foreground">{o.label}</span>
                 {o.count != null && <span className="text-[12px] text-muted-foreground">{o.count}</span>}
               </div>

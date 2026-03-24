@@ -19,7 +19,6 @@ import { ContentCard } from "@/components/content/ContentCard";
 import { CreateTopicModal } from "@/components/content/CreateTopicModal";
 import { ContentDetailModal } from "@/components/content/ContentDetailModal";
 import { EditIdeaModal } from "@/components/content/EditIdeaModal";
-import { ContentDropdown } from "@/components/content/ContentDropdown";
 import { ContentMultiDropdown } from "@/components/content/ContentMultiDropdown";
 
 type TabKey = "topics" | "content" | "ideas";
@@ -33,7 +32,7 @@ const Content = () => {
   const [editingIdea, setEditingIdea] = useState<Topic | null>(null);
   const [tab, setTab] = useState<TabKey>("topics");
   const [platformFilters, setPlatformFilters] = useState<string[]>([]);
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [statusFilters, setStatusFilters] = useState<string[]>([]);
 
   // Derived data
   const allContent = useMemo(() => {
@@ -49,7 +48,7 @@ const Content = () => {
   const filteredContent = useMemo(() => {
     let arr = allContent;
     if (platformFilters.length > 0) arr = arr.filter((c) => platformFilters.includes(c.platformId));
-    if (statusFilter) arr = arr.filter((c) => c.status === statusFilter);
+    if (statusFilters.length > 0) arr = arr.filter((c) => statusFilters.includes(c.status));
     arr.sort((a, b) => {
       const da = getEffectiveDate(a) || "0000";
       const db = getEffectiveDate(b) || "0000";
@@ -57,7 +56,7 @@ const Content = () => {
       return (STATUSES[b.status]?.priority || 0) - (STATUSES[a.status]?.priority || 0);
     });
     return arr;
-  }, [allContent, platformFilters, statusFilter]);
+  }, [allContent, platformFilters, statusFilters]);
 
   const groupedContent = useMemo(() => {
     const groups: { date: string; label: string; items: typeof filteredContent }[] = [];
@@ -139,7 +138,7 @@ const Content = () => {
     }));
   }, [allContent]);
 
-  const hasFilters = platformFilters.length > 0 || statusFilter;
+  const hasFilters = platformFilters.length > 0 || statusFilters.length > 0;
 
   const TABS: { key: TabKey; label: string; count: number }[] = [
     { key: "topics", label: "Темы", count: activeTopics.length },
@@ -230,16 +229,16 @@ const Content = () => {
                     placeholder="Все площадки"
                     width={190}
                   />
-                  <ContentDropdown
-                    value={statusFilter}
-                    onChange={setStatusFilter}
+                  <ContentMultiDropdown
+                    values={statusFilters}
+                    onChange={setStatusFilters}
                     options={statusOptions}
                     placeholder="Все статусы"
                     width={160}
                   />
                   {hasFilters && (
                     <button
-                      onClick={() => { setPlatformFilters([]); setStatusFilter(null); }}
+                      onClick={() => { setPlatformFilters([]); setStatusFilters([]); }}
                       className="text-[12px] text-muted-foreground bg-transparent border-none cursor-pointer underline hover:text-foreground transition-colors"
                     >
                       Сбросить

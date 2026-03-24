@@ -8,6 +8,7 @@ import Index from "./pages/Index.tsx";
 import Content from "./pages/Content.tsx";
 import Products from "./pages/Products.tsx";
 import FunnelMapPage from "./pages/FunnelMapPage.tsx";
+import Calendar from "./pages/Calendar.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/content" element={<Content />} />
             <Route path="/products" element={<Products />} />
             <Route path="/map" element={<FunnelMapPage />} />
+            <Route path="/calendar" element={<Calendar />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

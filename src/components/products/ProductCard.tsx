@@ -24,19 +24,19 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
       </span>
 
       {/* Type abbreviation badge */}
-      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium uppercase tracking-[0.03em] bg-foreground/[0.05] shrink-0" style={{ color: "#4b5563" }}>
-        {type && <ProductTypeIcon typeId={type.id} size={13} />}
+      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] md:text-[10px] font-medium uppercase tracking-[0.03em] bg-foreground/[0.05] shrink-0" style={{ color: "#4b5563" }}>
+        {type && <ProductTypeIcon typeId={type.id} size={14} />}
         {type?.short}
       </span>
 
       {/* Product name — dark gray like funnel keywords */}
-      <div className="flex-1 min-w-0 text-[10px] font-normal truncate" style={{ color: "#374151" }}>
+      <div className="flex-1 min-w-0 text-[12px] md:text-[10px] font-normal truncate" style={{ color: "#374151" }}>
         {product.name}
       </div>
 
       {/* Format badge */}
       {product.format && (
-        <span className="text-[10px] px-1.5 py-0.5 rounded-lg font-normal shrink-0 whitespace-nowrap violet-surface text-primary">
+        <span className="text-[11px] md:text-[10px] px-1.5 py-0.5 rounded-lg font-normal shrink-0 whitespace-nowrap violet-surface text-primary">
           {product.format}
         </span>
       )}

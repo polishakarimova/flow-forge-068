@@ -8,6 +8,7 @@ import type { BadgeColor, Funnel } from "@/lib/funnelData";
 
 interface CreateFunnelModalProps {
   onClose: () => void;
+  editFunnel?: Funnel;
 }
 
 const BADGE_COLORS: { value: BadgeColor; label: string; hex: string }[] = [
@@ -146,13 +147,25 @@ function SelectDropdown({
 
 /* ── Main modal ── */
 
-export function CreateFunnelModal({ onClose }: CreateFunnelModalProps) {
-  const { keywords, addKeyword, deleteKeyword, funnelsForKeyword, products, topics, addFunnel } = useDataStore();
+export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProps) {
+  const { keywords, addKeyword, deleteKeyword, funnelsForKeyword, products, topics, addFunnel, updateFunnel } = useDataStore();
+  const isEdit = !!editFunnel;
 
-  const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
-  const [badgeColor, setBadgeColor] = useState<BadgeColor>("violet");
-  const [selectedProducts, setSelectedProducts] = useState<Record<string, number | null>>({});
-  const [selectedContentIds, setSelectedContentIds] = useState<Set<number>>(new Set());
+  const [selectedKeyword, setSelectedKeyword] = useState<string | null>(editFunnel?.keyword ?? null);
+  const [badgeColor, setBadgeColor] = useState<BadgeColor>(editFunnel?.badgeColor ?? "violet");
+  const [selectedProducts, setSelectedProducts] = useState<Record<string, number | null>>(() => {
+    if (!editFunnel) return {};
+    return {
+      leadMagnet: editFunnel.leadMagnetId ?? null,
+      tripwire: editFunnel.tripwireId ?? null,
+      midTicket: editFunnel.midTicketId ?? null,
+      flagship: editFunnel.flagshipId ?? null,
+      consultation: editFunnel.consultationId ?? null,
+    };
+  });
+  const [selectedContentIds, setSelectedContentIds] = useState<Set<number>>(
+    () => new Set(editFunnel?.contentItemIds ?? [])
+  );
   const [contentSearch, setContentSearch] = useState("");
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
@@ -225,7 +238,7 @@ export function CreateFunnelModal({ onClose }: CreateFunnelModalProps) {
     });
   };
 
-  const handleCreate = () => {
+  const handleSave = () => {
     if (!selectedKeyword) return;
 
     const contentItemIds = Array.from(selectedContentIds);
@@ -233,15 +246,15 @@ export function CreateFunnelModal({ onClose }: CreateFunnelModalProps) {
     const lmProduct = lmId ? products.find((p) => p.id === lmId) : undefined;
 
     const funnel: Funnel = {
-      id: String(Date.now()),
+      id: isEdit ? editFunnel.id : String(Date.now()),
       keyword: selectedKeyword,
       badgeColor,
       product: lmProduct?.name || selectedKeyword,
       productType: lmProduct ? "Лид-магнит" : "",
-      active: true,
+      active: isEdit ? editFunnel.active : true,
       contentCount: contentItemIds.length,
-      leads: 0,
-      sales: 0,
+      leads: isEdit ? editFunnel.leads : 0,
+      sales: isEdit ? editFunnel.sales : 0,
       contentItemIds,
       cta: `Напиши ${selectedKeyword} в директ`,
       leadMagnetId: selectedProducts["leadMagnet"] || undefined,
@@ -251,7 +264,11 @@ export function CreateFunnelModal({ onClose }: CreateFunnelModalProps) {
       consultationId: selectedProducts["consultation"] || undefined,
     };
 
-    addFunnel(funnel);
+    if (isEdit) {
+      updateFunnel(funnel);
+    } else {
+      addFunnel(funnel);
+    }
     onClose();
   };
 
@@ -266,7 +283,7 @@ export function CreateFunnelModal({ onClose }: CreateFunnelModalProps) {
         <div className="px-7 pt-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-5">
-            <h2 className="text-lg font-bold text-foreground">Новая воронка</h2>
+            <h2 className="text-lg font-bold text-foreground">{isEdit ? "Редактировать воронку" : "Новая воронка"}</h2>
             <button
               onClick={onClose}
               className="bg-muted border-none rounded-lg w-[30px] h-[30px] cursor-pointer text-[14px] text-muted-foreground flex items-center justify-center hover:bg-muted/80 transition-all duration-200"
@@ -415,7 +432,7 @@ export function CreateFunnelModal({ onClose }: CreateFunnelModalProps) {
         {/* Footer */}
         <div className="px-7 py-4 border-t border-border">
           <button
-            onClick={handleCreate}
+            onClick={handleSave}
             disabled={!canCreate}
             className="w-full py-3 px-4 rounded-2xl text-[14px] font-bold cursor-pointer transition-all duration-200 disabled:cursor-not-allowed border-none"
             style={{
@@ -423,7 +440,7 @@ export function CreateFunnelModal({ onClose }: CreateFunnelModalProps) {
               color: canCreate ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
             }}
           >
-            Создать воронку →
+            {isEdit ? "Сохранить изменения" : "Создать воронку →"}
           </button>
         </div>
       </div>
