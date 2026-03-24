@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { Plus, Send, FileText, MoreHorizontal, Trash2 } from "lucide-react";
+import { Plus, Send, FileText, MoreHorizontal } from "lucide-react";
 import type { Funnel } from "@/lib/funnelData";
 import { resolveFunnelContent, resolveFunnelProducts } from "@/lib/funnelData";
 import { useDataStore } from "@/lib/dataStore";
@@ -68,7 +68,6 @@ const NodeCard = ({
   style,
   delay = 0,
   cardId,
-  onDelete,
 }: {
   children: React.ReactNode;
   className?: string;
@@ -77,56 +76,45 @@ const NodeCard = ({
   style?: React.CSSProperties;
   delay?: number;
   cardId?: string;
-  onDelete?: () => void;
 }) => {
   const savedW = cardId ? loadCardWidths()[cardId] : undefined;
   const [width, setWidth] = useState<number | undefined>(savedW);
-  const [showDelete, setShowDelete] = useState(false);
+  const widthRef = useRef(width);
+  widthRef.current = width;
   const dragRef = useRef<{ startX: number; startW: number } | null>(null);
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!dragRef.current) return;
       e.preventDefault();
-      const newW = Math.max(120, dragRef.current.startW + e.clientX - dragRef.current.startX);
+      const newW = Math.max(80, dragRef.current.startW + e.clientX - dragRef.current.startX);
       setWidth(newW);
     };
-    const onUp = () => {
-      if (dragRef.current && cardId && width) {
-        saveCardWidth(cardId, width);
-      }
-      dragRef.current = null;
-    };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
-  }, [cardId, width]);
-
-  /* Touch resize support */
-  useEffect(() => {
     const onTouchMove = (e: TouchEvent) => {
       if (!dragRef.current) return;
       e.preventDefault();
       const touch = e.touches[0];
-      const newW = Math.max(120, dragRef.current.startW + touch.clientX - dragRef.current.startX);
+      const newW = Math.max(80, dragRef.current.startW + touch.clientX - dragRef.current.startX);
       setWidth(newW);
     };
-    const onTouchEnd = () => {
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = null;
-      }
-      if (dragRef.current && cardId && width) {
-        saveCardWidth(cardId, width);
+    const onEnd = () => {
+      if (dragRef.current && cardId && widthRef.current) {
+        saveCardWidth(cardId, widthRef.current);
       }
       dragRef.current = null;
     };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onEnd);
     window.addEventListener("touchmove", onTouchMove, { passive: false });
-    window.addEventListener("touchend", onTouchEnd);
-    return () => { window.removeEventListener("touchmove", onTouchMove); window.removeEventListener("touchend", onTouchEnd); };
-  }, [cardId, width]);
+    window.addEventListener("touchend", onEnd);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onEnd);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onEnd);
+    };
+  }, [cardId]);
 
   const handleResizeStart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -137,32 +125,10 @@ const NodeCard = ({
 
   const handleTouchStart = (e: React.TouchEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     const touch = e.touches[0];
     const el = cardRef.current;
-    const startX = touch.clientX;
-
-    /* Long press → show delete */
-    longPressTimer.current = setTimeout(() => {
-      longPressTimer.current = null;
-      if (onDelete) {
-        setShowDelete(true);
-        // vibrate if supported
-        if (navigator.vibrate) navigator.vibrate(30);
-      }
-    }, 600);
-
-    /* Short touch → start resize immediately after small movement */
-    if (el) {
-      dragRef.current = { startX, startW: el.offsetWidth };
-    }
-  };
-
-  const handleTouchMove = () => {
-    /* Cancel long press if user moves finger (they're resizing) */
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
+    if (el) dragRef.current = { startX: touch.clientX, startW: el.offsetWidth };
   };
 
   return (
@@ -173,7 +139,6 @@ const NodeCard = ({
         hover:-translate-y-0.5 hover:shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.15)] hover:border-primary/30
         ${flagship ? "ring-2 ring-primary/30 border-primary/40 bg-gradient-to-br from-card to-[hsl(var(--violet-soft))] hover:-translate-y-1 hover:shadow-[0_8px_30px_-8px_hsl(var(--primary)/0.25)] hover:ring-primary/50" : ""}
         ${onClick ? "cursor-pointer" : ""}
-        ${showDelete ? "ring-2 ring-destructive/50 border-destructive/40" : ""}
         ${className}`}
       style={{
         animation: `fadeSlideIn 0.4s ease-out ${delay}ms both`,
@@ -182,33 +147,13 @@ const NodeCard = ({
       }}
     >
       {children}
-      {/* Delete overlay after long press */}
-      {showDelete && onDelete && (
-        <div className="absolute inset-0 rounded-2xl bg-destructive/10 backdrop-blur-[2px] flex items-center justify-center z-20 animate-in fade-in duration-150">
-          <div className="flex gap-2">
-            <button
-              onClick={(e) => { e.stopPropagation(); onDelete(); setShowDelete(false); }}
-              className="px-3 py-1.5 rounded-xl bg-destructive text-destructive-foreground text-[11px] font-semibold border-none cursor-pointer hover:bg-destructive/90 transition-colors"
-            >
-              <Trash2 className="w-3 h-3 inline mr-1" />
-              Удалить
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowDelete(false); }}
-              className="px-3 py-1.5 rounded-xl bg-card text-foreground text-[11px] font-semibold border border-border cursor-pointer hover:bg-muted transition-colors"
-            >
-              Отмена
-            </button>
-          </div>
-        </div>
-      )}
       {cardId && (
         <div
           onMouseDown={handleResizeStart}
           onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          className="absolute top-0 -right-2 w-7 h-full cursor-col-resize group/handle z-10 flex items-center justify-center"
-          style={{ touchAction: "none" }}
+          onClick={(e) => e.stopPropagation()}
+          className="absolute top-0 -right-3 w-8 h-full cursor-col-resize group/handle z-10 flex items-center justify-center select-none"
+          style={{ touchAction: "none", WebkitUserSelect: "none", userSelect: "none" }}
         >
           <div className="w-1 h-8 rounded-full bg-primary/20 group-hover/handle:bg-primary/50 transition-colors" />
         </div>
@@ -242,40 +187,20 @@ const SvgConnector = ({ delay = 0 }: { delay?: number }) => (
   </div>
 );
 
-/* ── Gray plus button between blocks ── */
-const AddProductButton = ({ delay = 0, onClick }: { delay?: number; onClick: () => void }) => (
-  <div
-    className="flex flex-col items-center justify-center shrink-0 px-0.5 mt-4"
-    style={{ animation: `fadeSlideIn 0.3s ease-out ${delay}ms both` }}
-  >
-    <button
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
-      className="w-6 h-6 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center
-        text-muted-foreground/40 hover:border-primary/50 hover:text-primary hover:bg-primary/5
-        transition-all duration-200 cursor-pointer"
-      title="Добавить продукт"
-    >
-      <Plus className="w-3 h-3" />
-    </button>
-  </div>
-);
-
 /* ── Content item row ── */
 function ContentItemRow({
   item,
   onClick,
-  onDelete,
 }: {
   item: ContentItemData;
   onClick: () => void;
-  onDelete?: () => void;
 }) {
   const status = STATUSES[item.status];
 
   return (
     <div
       onClick={(e) => { e.stopPropagation(); onClick(); }}
-      className="card-elevated flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)] group/row"
+      className="card-elevated flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)]"
     >
       <span className="relative shrink-0 w-1.5 h-1.5 md:w-2 md:h-2">
         {status.color !== "#94a3b8" && (
@@ -289,14 +214,6 @@ function ContentItemRow({
       <div className="flex-1 min-w-0 text-[10px] md:text-[11px] text-muted-foreground truncate">
         {item.title || "Не заполнено"}
       </div>
-      {onDelete && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="opacity-0 group-hover/row:opacity-100 shrink-0 w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
-        >
-          <Trash2 className="w-3 h-3" />
-        </button>
-      )}
     </div>
   );
 }
@@ -546,19 +463,6 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
     ));
   }, [funnel.id, setFunnels]);
 
-  const removeProductFromFunnel = useCallback((product: Product) => {
-    setFunnels((prev) => prev.map((f) => {
-      if (f.id !== funnel.id) return f;
-      const updated = { ...f };
-      if (updated.leadMagnetId === product.id) updated.leadMagnetId = undefined;
-      if (updated.tripwireId === product.id) updated.tripwireId = undefined;
-      if (updated.midTicketId === product.id) updated.midTicketId = undefined;
-      if (updated.flagshipId === product.id) updated.flagshipId = undefined;
-      if (updated.consultationId === product.id) updated.consultationId = undefined;
-      return updated;
-    }));
-  }, [funnel.id, setFunnels]);
-
   /* Products not already in this funnel (for picker) */
   const availableProducts = useMemo(() => {
     const usedIds = new Set(productChain.map(({ product }) => product.id));
@@ -590,12 +494,6 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
           delay={0}
           cardId={`${funnel.id}-content`}
           onClick={hasMoreContent ? () => setExpandedContent(true) : undefined}
-          onDelete={contentItems.length > 0 ? () => {
-            /* Remove all content from funnel */
-            setFunnels((prev) => prev.map((f) =>
-              f.id === funnel.id ? { ...f, contentItemIds: [], contentCount: 0 } : f
-            ));
-          } : undefined}
         >
           <div className="flex items-center gap-1 md:gap-1.5 mb-1 md:mb-2">
             <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-primary/10 flex items-center justify-center">
@@ -660,7 +558,6 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
                 cardId={`${funnel.id}-product-${product.id}`}
                 flagship={isFlagship}
                 onClick={() => setEditingProduct(product)}
-                onDelete={() => removeProductFromFunnel(product)}
               >
                 <div className="flex items-center gap-1 md:gap-1.5 mb-1 md:mb-1.5">
                   <ProductTypeIcon typeId={typeId} size={16} />
@@ -675,6 +572,24 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
             </div>
           );
         })}
+
+        {/* Add product button at end of chain */}
+        {availableProducts.length > 0 && (
+          <div
+            className="flex flex-col items-center justify-center shrink-0 px-1 mt-4"
+            style={{ animation: `fadeSlideIn 0.3s ease-out ${300 + productChain.length * 150}ms both` }}
+          >
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowAddProductPicker(true); }}
+              className="w-6 h-6 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center
+                text-muted-foreground/40 hover:border-primary/50 hover:text-primary hover:bg-primary/5
+                transition-all duration-200 cursor-pointer"
+              title="Добавить продукт"
+            >
+              <Plus className="w-3 h-3" />
+            </button>
+          </div>
+        )}
 
       </div>
 
