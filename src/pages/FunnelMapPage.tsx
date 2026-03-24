@@ -28,12 +28,10 @@ function SvgIconFileText({ x, y }: { x: number; y: number }) {
   );
 }
 
-function SvgIconKey({ x, y }: { x: number; y: number }) {
+function SvgIconCta({ x, y }: { x: number; y: number }) {
   return (
     <g transform={`translate(${x}, ${y})`} fill="none" stroke={ICON_COLOR} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="8" cy="5" r="3" />
-      <line x1="8" y1="8" x2="8" y2="14" />
-      <line x1="6" y1="11" x2="10" y2="11" />
+      <path d="M3 5h10a2 2 0 012 2v4a2 2 0 01-2 2H8l-3 3V5z" />
     </g>
   );
 }
@@ -130,7 +128,7 @@ function buildGraph(
 
   // Build dynamic column positions
   const COL_W = 230;
-  const COL_GAP = 60;
+  const COL_GAP = 36;
   const contentX = 60;
   const keywordX = contentX + 240 + COL_GAP;
   const tierColumns: { tier: string; x: number }[] = [];
@@ -145,7 +143,7 @@ function buildGraph(
   // Build column headers
   const headers: ColHeader[] = [
     { x: contentX, label: "КОНТЕНТ", w: 240, icon: SvgIconFileText },
-    { x: keywordX, label: "КОДОВОЕ СЛОВО", w: 160, icon: SvgIconKey },
+    { x: keywordX, label: "CTA", w: 160, icon: SvgIconCta },
   ];
   tierColumns.forEach(({ tier, x }) => {
     headers.push({
@@ -181,7 +179,8 @@ function buildGraph(
 
   // Content / topic nodes
   const NH_TOPIC = 48, NG = 8;
-  let y = 70;
+  const CONTENT_START_Y = 100;
+  let y = CONTENT_START_Y;
   topicGroups.forEach(({ topicId, topicTitle, items, funnelId }) => {
     if (items.length === 1) {
       // Single item — show as regular content node
@@ -219,10 +218,10 @@ function buildGraph(
       y += NH_TOPIC + NG;
     }
   });
-  const totalContentH = y - 70;
+  const totalContentH = y - CONTENT_START_Y;
 
   // Keyword nodes
-  const kwStartY = 70 + Math.max(0, (totalContentH - funnelsList.length * 60) / 2);
+  const kwStartY = CONTENT_START_Y + Math.max(0, (totalContentH - funnelsList.length * 60) / 2);
   let ky = kwStartY;
   funnelsList.forEach((f) => {
     const kwId = `kw-${f.id}`;
