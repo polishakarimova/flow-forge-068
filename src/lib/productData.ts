@@ -75,4 +75,5 @@ export const initialProducts: Product[] = [
   { id: 4, name: "Наставничество 1 на 1", typeId: "flagship", format: "Наставничество", status: "active", price: "150 000", currency: "₽", description: "3 месяца работы, 12 созвонов, чат 24/7", link: "https://mysite.ru/mentoring", createdDate: yesterday, publishDate: "" },
   { id: 5, name: "Разбор вашей воронки", typeId: "consultation", format: "Разбор", status: "active", price: "5 000", currency: "₽", description: "", link: "", createdDate: twoDaysAgo, publishDate: yesterday },
   { id: 6, name: "Закрытый канал по подписке", typeId: "private", format: "Канал по подписке", status: "paused", price: "990/мес", currency: "₽", description: "Еженедельные разборы + шаблоны", link: "https://t.me/+secret", createdDate: twoDaysAgo, publishDate: "" },
+  { id: 7, name: "Гайд «Воронка за выходные»", typeId: "lead_magnet", format: "PDF-гайд", status: "active", price: "", currency: "₽", description: "Пошаговый план: собрать воронку с нуля за 2 дня", link: "https://t.me/mybot?start=weekend", createdDate: yesterday, publishDate: today },
 ];
