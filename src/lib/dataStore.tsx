@@ -6,7 +6,7 @@ import { funnelsData, type Funnel } from "@/lib/funnelData";
 interface DataStore {
   // Products
   products: Product[];
-  addProduct: (p: Omit<Product, "id" | "status" | "createdDate">) => void;
+  addProduct: (p: Omit<Product, "id" | "status" | "createdDate" | "publishDate">) => void;
   updateProduct: (p: Product) => void;
 
   // Formats
@@ -47,12 +47,13 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
   const [funnels, setFunnels] = useState<Funnel[]>(funnelsData);
   const [keywords, setKeywords] = useState<string[]>(initialKeywords);
 
-  const addProduct = useCallback((data: Omit<Product, "id" | "status" | "createdDate">) => {
+  const addProduct = useCallback((data: Omit<Product, "id" | "status" | "createdDate" | "publishDate">) => {
     const newProduct: Product = {
       ...data,
       id: Date.now(),
       status: "draft" as ProductStatusKey,
       createdDate: new Date().toISOString().slice(0, 10),
+      publishDate: "",
     };
     setProducts((prev) => [newProduct, ...prev]);
   }, []);

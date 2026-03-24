@@ -25,6 +25,7 @@ export interface Product {
   description: string;
   link: string;
   createdDate: string;
+  publishDate: string;
 }
 
 export const PRODUCT_TYPES: ProductType[] = [
@@ -63,14 +64,15 @@ export function formatProductDateLabel(dateStr: string): string {
 }
 
 const today = new Date().toISOString().slice(0, 10);
+const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
 const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10);
 
 export const initialProducts: Product[] = [
-  { id: 1, name: "PDF-разбор «Как мы сделали 1,4 ляма»", typeId: "lead_magnet", format: "PDF-гайд", status: "active", price: "", currency: "₽", description: "Пошаговый разбор запуска с цифрами и скриншотами", link: "https://t.me/mybot?start=case", createdDate: today },
-  { id: 2, name: "Мини-курс «5 воронок для эксперта»", typeId: "tripwire", format: "Мини-курс", status: "active", price: "2 990", currency: "₽", description: "5 видео-уроков + шаблоны воронок", link: "", createdDate: today },
-  { id: 3, name: "Интенсив по контент-воронкам", typeId: "mid_ticket", format: "Интенсив", status: "draft", price: "14 900", currency: "₽", description: "", link: "", createdDate: yesterday },
-  { id: 4, name: "Наставничество 1 на 1", typeId: "flagship", format: "Наставничество", status: "active", price: "150 000", currency: "₽", description: "3 месяца работы, 12 созвонов, чат 24/7", link: "https://mysite.ru/mentoring", createdDate: yesterday },
-  { id: 5, name: "Разбор вашей воронки", typeId: "consultation", format: "Разбор", status: "active", price: "5 000", currency: "₽", description: "", link: "", createdDate: twoDaysAgo },
-  { id: 6, name: "Закрытый канал по подписке", typeId: "private", format: "Канал по подписке", status: "paused", price: "990/мес", currency: "₽", description: "Еженедельные разборы + шаблоны", link: "https://t.me/+secret", createdDate: twoDaysAgo },
+  { id: 1, name: "PDF-разбор «Как мы сделали 1,4 ляма»", typeId: "lead_magnet", format: "PDF-гайд", status: "active", price: "", currency: "₽", description: "Пошаговый разбор запуска с цифрами и скриншотами", link: "https://t.me/mybot?start=case", createdDate: today, publishDate: today },
+  { id: 2, name: "Мини-курс «5 воронок для эксперта»", typeId: "tripwire", format: "Мини-курс", status: "active", price: "2 990", currency: "₽", description: "5 видео-уроков + шаблоны воронок", link: "", createdDate: today, publishDate: "" },
+  { id: 3, name: "Интенсив по контент-воронкам", typeId: "mid_ticket", format: "Интенсив", status: "draft", price: "14 900", currency: "₽", description: "", link: "", createdDate: yesterday, publishDate: tomorrow },
+  { id: 4, name: "Наставничество 1 на 1", typeId: "flagship", format: "Наставничество", status: "active", price: "150 000", currency: "₽", description: "3 месяца работы, 12 созвонов, чат 24/7", link: "https://mysite.ru/mentoring", createdDate: yesterday, publishDate: "" },
+  { id: 5, name: "Разбор вашей воронки", typeId: "consultation", format: "Разбор", status: "active", price: "5 000", currency: "₽", description: "", link: "", createdDate: twoDaysAgo, publishDate: yesterday },
+  { id: 6, name: "Закрытый канал по подписке", typeId: "private", format: "Канал по подписке", status: "paused", price: "990/мес", currency: "₽", description: "Еженедельные разборы + шаблоны", link: "https://t.me/+secret", createdDate: twoDaysAgo, publishDate: "" },
 ];

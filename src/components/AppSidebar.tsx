@@ -3,6 +3,7 @@ import {
   GitBranch,
   Package,
   Map,
+  CalendarDays,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -22,6 +23,7 @@ const navItems = [
   { title: "Контент", url: "/content", icon: FileText },
   { title: "Воронки", url: "/", icon: GitBranch },
   { title: "Карта", url: "/map", icon: Map },
+  { title: "Календарь", url: "/calendar", icon: CalendarDays },
 ];
 
 export function AppSidebar() {

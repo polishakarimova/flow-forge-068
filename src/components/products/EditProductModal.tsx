@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { PRODUCT_TYPES, type Product, type ProductStatusKey } from "@/lib/productData";
+import { PRODUCT_TYPES, formatProductDateLabel, type Product, type ProductStatusKey } from "@/lib/productData";
 import { ProductStatusSelect } from "./ProductStatusSelect";
 import { FormatSelector } from "./FormatSelector";
 import { ProductTypeIcon } from "./ProductTypeIcon";
@@ -21,6 +21,7 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
   const [link, setLink] = useState(product.link || "");
   const [description, setDescription] = useState(product.description);
   const [status, setStatus] = useState<ProductStatusKey>(product.status);
+  const [publishDate, setPublishDate] = useState(product.publishDate || "");
 
   const type = PRODUCT_TYPES.find((t) => t.id === typeId);
 
@@ -144,6 +145,34 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
             />
           </div>
 
+          {/* Dates */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div>
+              <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">Создано</label>
+              <div className="px-4 py-2.5 rounded-xl border-[1.5px] border-border text-[13px] text-muted-foreground bg-muted/50">
+                {formatProductDateLabel(product.createdDate) || "—"}
+              </div>
+            </div>
+            <div>
+              <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">Дата публикации</label>
+              <input
+                type="date"
+                value={publishDate}
+                onChange={(e) => setPublishDate(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border-[1.5px] border-border text-[13px] outline-none transition-all duration-200"
+                style={{ color: publishDate ? "#334155" : "#94a3b8" }}
+                onFocus={(e) => {
+                  (e.target as HTMLElement).style.borderColor = type?.color || "hsl(var(--primary))";
+                  (e.target as HTMLElement).style.boxShadow = `0 0 0 3px ${(type?.color || "#6366f1")}15`;
+                }}
+                onBlur={(e) => {
+                  (e.target as HTMLElement).style.borderColor = "hsl(var(--border))";
+                  (e.target as HTMLElement).style.boxShadow = "none";
+                }}
+              />
+            </div>
+          </div>
+
           {/* Description */}
           <div className="mb-5">
             <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">Содержание</label>
@@ -173,7 +202,7 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
           {/* Save */}
           <button
             onClick={() => {
-              onSave({ ...product, name: name.trim(), typeId, format, price: price.trim(), description: description.trim(), link: link.trim(), status });
+              onSave({ ...product, name: name.trim(), typeId, format, price: price.trim(), description: description.trim(), link: link.trim(), status, publishDate });
               onClose();
             }}
             className="w-full py-3 rounded-2xl text-[15px] font-bold cursor-pointer text-white border-none transition-all duration-200 hover:shadow-lg"
