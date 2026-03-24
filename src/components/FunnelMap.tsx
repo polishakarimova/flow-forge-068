@@ -503,7 +503,8 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
       `}</style>
 
       <div className="flex items-start gap-0 overflow-x-auto pb-2 md:pb-3 scrollbar-thin">
-        {/* === Content Node === */}
+        {/* === Content Node (wrapped so it's not a direct flex child — resize works like products) === */}
+        <div className="shrink-0">
         <NodeCard
           delay={0}
           cardId={`${funnel.id}-content`}
@@ -537,11 +538,12 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
             </button>
           </div>
         </NodeCard>
+        </div>
 
         {/* === CTA Node (wrapped like products so resize handle isn't overlapped) === */}
         <div className="flex items-start">
           <SvgConnector delay={100} />
-          <NodeCard delay={200} cardId={`${funnel.id}-cta`}>
+          <NodeCard delay={200} cardId={`${funnel.id}-cta`} className="!min-w-0">
             <div className="flex items-center gap-1 md:gap-1.5 mb-1 md:mb-2">
               <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-primary/10 flex items-center justify-center">
                 <Send className="w-2 h-2 md:w-2.5 md:h-2.5 text-primary" />
