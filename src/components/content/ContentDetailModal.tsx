@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PLATFORMS, formatDateLabel, type ContentItemData, type ContentStatusKey } from "@/lib/contentData";
 import { StatusSelect } from "./StatusSelect";
+import { PlatformIcon } from "./PlatformIcon";
 
 interface ContentDetailModalProps {
   item: ContentItemData;
@@ -27,7 +28,7 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave }: Conten
           {/* Header */}
           <div className="flex justify-between items-center mb-5">
             <div className="flex items-center gap-2">
-              <span className="text-lg">{platform?.icon}</span>
+              {platform && <PlatformIcon src={platform.icon} alt={platform.label} size={20} />}
               <span className="text-[16px] font-bold" style={{ color: platform?.color }}>{platform?.label}</span>
               {topicTitle && <span className="text-[12px] text-muted-foreground">· {topicTitle}</span>}
             </div>

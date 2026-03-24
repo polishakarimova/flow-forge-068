@@ -1,5 +1,6 @@
 import { PLATFORMS, STATUSES, type Topic, type ContentItemData } from "@/lib/contentData";
 import { ContentCard } from "./ContentCard";
+import { PlatformIcon } from "./PlatformIcon";
 import { ChevronDown } from "lucide-react";
 
 interface TopicRowProps {
@@ -35,11 +36,11 @@ export function TopicRow({ topic, expanded, onToggle, onOpenContent }: TopicRowP
             return (
               <span
                 key={pid}
-                className="text-[11px] w-[22px] h-[22px] rounded-md flex items-center justify-center"
-                style={{ background: pl.color + "12", color: pl.color }}
+                className="w-[22px] h-[22px] rounded-md flex items-center justify-center"
+                style={{ background: pl.color + "12" }}
                 title={pl.label}
               >
-                {pl.icon}
+                <PlatformIcon src={pl.icon} alt={pl.label} size={14} />
               </span>
             );
           })}

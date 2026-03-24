@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { PlatformIcon } from "./PlatformIcon";
 
 export interface DropdownOption {
   value: string;
@@ -39,7 +40,7 @@ export function ContentDropdown({ value, onChange, options, placeholder, width =
         }`}
       >
         <span className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
-          {selected?.icon && <span className="text-[15px]">{selected.icon}</span>}
+          {selected?.icon && (selected.icon.startsWith("/") ? <PlatformIcon src={selected.icon} size={15} /> : <span className="text-[15px]">{selected.icon}</span>)}
           {selected?.dot && (
             <span className="w-2 h-2 rounded-full shrink-0" style={{ background: selected.dot }} />
           )}
@@ -71,7 +72,7 @@ export function ContentDropdown({ value, onChange, options, placeholder, width =
                 value === o.value ? "violet-surface text-primary" : "text-foreground hover:bg-muted/50"
               }`}
             >
-              {o.icon && <span className="text-[15px]">{o.icon}</span>}
+              {o.icon && (o.icon.startsWith("/") ? <PlatformIcon src={o.icon} size={15} /> : <span className="text-[15px]">{o.icon}</span>)}
               {o.dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: o.dot }} />}
               <span className="flex-1">{o.label}</span>
               {o.count != null && <span className="text-[12px] text-muted-foreground">{o.count}</span>}

@@ -118,6 +118,8 @@ const PLATFORM_COLOR: Record<string, string> = {
   Instagram: "#E1306C",
   Blog: "#34A853",
   YouTube: "#FF0000",
+  Threads: "#000000",
+  VK: "#4680C2",
 };
 
 const TIER_LABEL: Record<string, string> = {

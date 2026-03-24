@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { PlatformIcon } from "./PlatformIcon";
 
 export interface MultiDropdownOption {
   value: string;
@@ -49,7 +50,7 @@ export function ContentMultiDropdown({ values, onChange, options, placeholder, w
               selected.map((o, i) => (
                 <span key={o.value} className="flex items-center gap-1">
                   {i > 0 && <span className="text-muted-foreground/40">,</span>}
-                  <span>{o.icon}</span>
+                  {o.icon && (o.icon.startsWith("/") ? <PlatformIcon src={o.icon} size={14} /> : <span>{o.icon}</span>)}
                   <span>{o.label}</span>
                 </span>
               ))
@@ -100,7 +101,7 @@ export function ContentMultiDropdown({ values, onChange, options, placeholder, w
                 >
                   {checked ? "✓" : ""}
                 </span>
-                {o.icon && <span className="text-[15px]">{o.icon}</span>}
+                {o.icon && (o.icon.startsWith("/") ? <PlatformIcon src={o.icon} size={15} /> : <span className="text-[15px]">{o.icon}</span>)}
                 <span className="flex-1 text-foreground">{o.label}</span>
                 {o.count != null && <span className="text-[12px] text-muted-foreground">{o.count}</span>}
               </div>

@@ -53,6 +53,15 @@ export interface Funnel {
   conversions?: ConversionData[];
 }
 
+export const PLATFORM_COLOR: Record<string, string> = {
+  Telegram: "#2AABEE",
+  Instagram: "#E1306C",
+  Blog: "#34A853",
+  YouTube: "#FF0000",
+  Threads: "#000000",
+  VK: "#4680C2",
+};
+
 export const productTypeShort: Record<string, string> = {
   "Лид-магнит": "ЛМ",
   "Трипваер": "ТВ",

@@ -1,4 +1,5 @@
 import { PLATFORMS, STATUSES, type ContentItemData } from "@/lib/contentData";
+import { PlatformIcon } from "./PlatformIcon";
 
 interface ContentCardProps {
   item: ContentItemData;
@@ -25,8 +26,8 @@ export function ContentCard({ item, topicTitle, showTopic, onOpen }: ContentCard
       </span>
 
       {/* Platform badge */}
-      <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-[0.05em] bg-foreground/[0.06] text-muted-foreground shrink-0">
-        {platform?.icon}
+      <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-foreground/[0.06] shrink-0">
+        {platform && <PlatformIcon src={platform.icon} alt={platform.label} size={14} />}
       </span>
 
       {/* Content title — dark gray like funnel keywords */}
