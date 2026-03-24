@@ -1,25 +1,41 @@
 import { ExternalLink, GitBranch } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import type { FunnelProduct } from "@/lib/funnelData";
-import { funnelsData } from "@/lib/funnelData";
+import type { Product } from "@/lib/productData";
+import { PRODUCT_TYPES } from "@/lib/productData";
+import { useDataStore } from "@/lib/dataStore";
+import { getBadgeStyle } from "@/lib/badgeStyles";
 
-const tierLabels: Record<string, string> = {
-  "lead-magnet": "Лид-магнит",
-  "mid-ticket": "Средний чек",
-  "flagship": "Флагман",
+const TYPE_LABELS: Record<string, string> = {
+  lead_magnet: "Лид-магнит",
+  tripwire: "Трипвайер",
+  mid_ticket: "Среднечек",
+  flagship: "Флагман",
+  consultation: "Консультация",
+  private: "Личная работа",
 };
 
 interface ProductDrawerProps {
-  product: FunnelProduct | null;
+  product: Product | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 export function ProductDrawer({ product, open, onOpenChange }: ProductDrawerProps) {
+  const { funnels } = useDataStore();
+
   if (!product) return null;
 
-  const usedInFunnels = funnelsData.filter((f) =>
-    product.funnelIds?.includes(f.id)
+  const typeInfo = PRODUCT_TYPES.find((t) => t.id === product.typeId);
+  const tierLabel = TYPE_LABELS[product.typeId] || product.typeId;
+  const priceDisplay = product.price ? `${product.price} ${product.currency}` : "Бесплатно";
+
+  /* Find funnels that reference this product */
+  const usedInFunnels = funnels.filter((f) =>
+    f.leadMagnetId === product.id ||
+    f.tripwireId === product.id ||
+    f.midTicketId === product.id ||
+    f.flagshipId === product.id ||
+    f.consultationId === product.id
   );
 
   return (
@@ -33,7 +49,7 @@ export function ProductDrawer({ product, open, onOpenChange }: ProductDrawerProp
                   {product.name}
                 </SheetTitle>
                 <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-[11px] font-semibold uppercase tracking-wider">
-                  {tierLabels[product.tier] || product.tier}
+                  {tierLabel}
                 </span>
               </div>
             </div>
@@ -44,7 +60,21 @@ export function ProductDrawer({ product, open, onOpenChange }: ProductDrawerProp
               <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                 Тип
               </label>
-              <p className="mt-1 text-[13px] text-foreground">{product.type}</p>
+              <p className="mt-1 text-[13px] text-foreground">{typeInfo?.label || product.typeId}</p>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                Формат
+              </label>
+              <p className="mt-1 text-[13px] text-foreground">{product.format}</p>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                Цена
+              </label>
+              <p className="mt-1 text-[13px] text-foreground font-medium">{priceDisplay}</p>
             </div>
 
             {product.description && (
@@ -58,19 +88,19 @@ export function ProductDrawer({ product, open, onOpenChange }: ProductDrawerProp
               </div>
             )}
 
-            {product.offerUrl && (
+            {product.link && (
               <div>
                 <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                   Ссылка на оффер
                 </label>
                 <a
-                  href={product.offerUrl}
+                  href={product.link}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-1.5 flex items-center gap-1.5 text-[13px] text-primary hover:text-primary/80 transition-colors"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
-                  {product.offerUrl}
+                  {product.link}
                 </a>
               </div>
             )}
@@ -89,11 +119,7 @@ export function ProductDrawer({ product, open, onOpenChange }: ProductDrawerProp
                       <GitBranch className="w-3.5 h-3.5 text-muted-foreground" />
                       <span
                         className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase text-white"
-                        style={
-                          f.badgeColor === "violet"
-                            ? { background: "linear-gradient(135deg, #8B5CF6, #7C3AED)" }
-                            : { background: "linear-gradient(135deg, #D4A056, #C08B3F)" }
-                        }
+                        style={getBadgeStyle(f.badgeColor)}
                       >
                         {f.keyword}
                       </span>

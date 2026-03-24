@@ -2,12 +2,15 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
-import { type BadgeColor, type ContentItem, type FunnelProduct } from "@/lib/funnelData";
+import type { BadgeColor, Funnel } from "@/lib/funnelData";
+import { resolveFunnelContent, resolveFunnelProducts } from "@/lib/funnelData";
 import { useDataStore } from "@/lib/dataStore";
 import { PlatformIcon } from "@/components/content/PlatformIcon";
 import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
 import { ProductDrawer } from "@/components/ProductDrawer";
-import { ContentDrawer } from "@/components/ContentDrawer";
+import { ContentDetailModal } from "@/components/content/ContentDetailModal";
+import type { ContentItemData } from "@/lib/contentData";
+import type { Product } from "@/lib/productData";
 
 /* ── inline SVG icons (Lucide-style, stroke, 14×14) ─── */
 
@@ -71,15 +74,19 @@ const BADGE_HEX: Record<BadgeColor, string> = {
 };
 
 const TIER_LABEL: Record<string, string> = {
-  "lead-magnet": "ЛИД-МАГНИТ",
-  "mid-ticket": "СРЕДНИЙ ЧЕК",
+  lead_magnet: "ЛИД-МАГНИТ",
+  tripwire: "ТРИПВАЙЕР",
+  mid_ticket: "СРЕДНИЙ ЧЕК",
   flagship: "ФЛАГМАН",
+  consultation: "КОНСУЛЬТАЦИЯ",
 };
 
 const TIER_COLOR: Record<string, string> = {
-  "lead-magnet": "#8b5cf6",
-  "mid-ticket": "#6366f1",
+  lead_magnet: "#8b5cf6",
+  tripwire: "#f59e0b",
+  mid_ticket: "#6366f1",
   flagship: "#ef4444",
+  consultation: "#22c55e",
 };
 
 /* ── node / edge types ──────────────────────────────── */
@@ -96,8 +103,8 @@ interface MapNode {
   tier?: string;
   tierLabel?: string;
   platformId?: string;
-  contentItem?: ContentItem;
-  funnelProduct?: FunnelProduct;
+  contentItemData?: ContentItemData;
+  productData?: Product;
   funnelId?: string;
 }
 
@@ -118,54 +125,46 @@ const COL_HEADERS = [
   { x: 960, label: "ПРОДУКТ", w: 230 },
 ];
 
-/* ── build graph from funnelsList ───────────────────── */
+/* ── build graph from funnels + real data ───────────── */
 
-function buildGraph(funnelsList: typeof import("@/lib/funnelData").funnelsData) {
+function buildGraph(
+  funnelsList: Funnel[],
+  allContentItems: ContentItemData[],
+  allProducts: Product[],
+) {
   const nodes: MapNode[] = [];
   const edges: MapEdge[] = [];
-  const seenProducts = new Set<string>();
+  const seenProducts = new Set<number>();
 
-  const FUNNEL_PLATFORM_ID: Record<string, string> = {
-    "Telegram|Пост": "tg_post",
-    "Instagram|Stories": "stories",
-    "Instagram|Пост": "ig_post",
-    "Instagram|Reels": "reels",
-    "Instagram|Карусель": "carousel",
-    "Blog|Статья": "article",
-    "Threads|Тред": "threads",
-    "YouTube|Видео": "youtube",
-    "VK|Пост": "vk",
-  };
-
-  // collect all content items across funnels
-  const contentItems: { cId: string; label: string; platform: string; funnelId: string; platformId: string; ci: ContentItem }[] = [];
+  // collect all content items across funnels (resolved from store)
+  const contentEntries: { ci: ContentItemData; funnelId: string }[] = [];
   funnelsList.forEach((f) => {
-    f.contentItems.forEach((ci) => {
-      const platformId = FUNNEL_PLATFORM_ID[`${ci.platform}|${ci.format}`] || "";
-      contentItems.push({ cId: ci.id, label: ci.title, platform: ci.platform, funnelId: f.id, platformId, ci });
+    const items = resolveFunnelContent(f, allContentItems);
+    items.forEach((ci) => {
+      contentEntries.push({ ci, funnelId: f.id });
     });
   });
 
   // content nodes
   const NH = 40, NG = 8;
   let y = 70;
-  contentItems.forEach(({ cId, label, platformId, ci, funnelId }) => {
+  contentEntries.forEach(({ ci, funnelId }) => {
     nodes.push({
-      id: cId,
+      id: `ci-${ci.id}`,
       type: "content",
-      label,
+      label: ci.title,
       x: COL_X.content,
       y,
       w: 240,
       h: NH,
       color: "#C4B5FD",
-      platformId,
-      contentItem: ci,
+      platformId: ci.platformId,
+      contentItemData: ci,
       funnelId,
     });
     y += NH + NG;
   });
-  const totalContentH = contentItems.length * (NH + NG);
+  const totalContentH = contentEntries.length * (NH + NG);
 
   // keyword nodes
   const kwStartY = 70 + Math.max(0, (totalContentH - funnelsList.length * 60) / 2);
@@ -185,49 +184,53 @@ function buildGraph(funnelsList: typeof import("@/lib/funnelData").funnelsData) 
     ky += 60;
 
     // edges: content → keyword
-    f.contentItems.forEach((ci) => {
-      edges.push({ from: ci.id, to: kwId, color: "#C4B5FD" });
+    const items = resolveFunnelContent(f, allContentItems);
+    items.forEach((ci) => {
+      edges.push({ from: `ci-${ci.id}`, to: kwId, color: "#C4B5FD" });
     });
   });
 
   // lead-magnet nodes
-  const lmList = funnelsList.filter((f) => f.leadMagnet);
+  const lmList = funnelsList.filter((f) => f.leadMagnetId != null);
   const lmStartY = 70 + Math.max(0, (totalContentH - lmList.length * 56) / 2);
   let ly = lmStartY;
   lmList.forEach((f) => {
-    const lm = f.leadMagnet!;
-    const lmId = `lm-${lm.id}`;
+    const lmProduct = allProducts.find((p) => p.id === f.leadMagnetId);
+    if (!lmProduct) return;
+    const lmId = `lm-${lmProduct.id}`;
     if (!nodes.find((n) => n.id === lmId)) {
       nodes.push({
         id: lmId,
         type: "leadmagnet",
-        label: lm.name,
+        label: lmProduct.name,
         x: COL_X.leadmagnet,
         y: ly,
         w: 220,
         h: 46,
         color: "#8b5cf6",
-        funnelProduct: lm,
+        productData: lmProduct,
       });
       ly += 56;
     }
-    // edge: keyword → lead-magnet
     edges.push({ from: `kw-${f.id}`, to: lmId, color: "#C4B5FD" });
   });
 
-  // product nodes (midTicket + flagship, deduplicated)
-  const productEntries: { product: typeof funnelsList[0]["midTicket"]; fromLmId: string }[] = [];
+  // product nodes (non-lead-magnet tiers, deduplicated)
+  const productEntries: { product: Product; fromLmId: string }[] = [];
   funnelsList.forEach((f) => {
-    if (f.midTicket && f.leadMagnet) {
-      productEntries.push({ product: f.midTicket, fromLmId: `lm-${f.leadMagnet.id}` });
-    }
-    if (f.flagship && f.leadMagnet) {
-      productEntries.push({ product: f.flagship, fromLmId: `lm-${f.leadMagnet.id}` });
-    }
+    if (!f.leadMagnetId) return;
+    const fromLmId = `lm-${f.leadMagnetId}`;
+    const tierIds = [f.tripwireId, f.midTicketId, f.flagshipId, f.consultationId];
+    tierIds.forEach((pId) => {
+      if (pId != null) {
+        const p = allProducts.find((pr) => pr.id === pId);
+        if (p) productEntries.push({ product: p, fromLmId });
+      }
+    });
   });
 
   const uniqueProducts = productEntries.filter((pe) => {
-    if (!pe.product || seenProducts.has(pe.product.id)) return false;
+    if (seenProducts.has(pe.product.id)) return false;
     seenProducts.add(pe.product.id);
     return true;
   });
@@ -235,7 +238,6 @@ function buildGraph(funnelsList: typeof import("@/lib/funnelData").funnelsData) 
   const pStartY = 70 + Math.max(0, (totalContentH - uniqueProducts.length * 64) / 2);
   let py = pStartY;
   uniqueProducts.forEach(({ product }) => {
-    if (!product) return;
     const pId = `pr-${product.id}`;
     nodes.push({
       id: pId,
@@ -245,17 +247,16 @@ function buildGraph(funnelsList: typeof import("@/lib/funnelData").funnelsData) 
       y: py,
       w: 230,
       h: 52,
-      color: TIER_COLOR[product.tier] || "#6366f1",
-      tier: product.tier,
-      tierLabel: TIER_LABEL[product.tier] || product.type,
-      funnelProduct: product,
+      color: TIER_COLOR[product.typeId] || "#6366f1",
+      tier: product.typeId,
+      tierLabel: TIER_LABEL[product.typeId] || product.typeId,
+      productData: product,
     });
     py += 64;
   });
 
   // edges: lead-magnet → product
   productEntries.forEach(({ product, fromLmId }) => {
-    if (!product) return;
     const pId = `pr-${product.id}`;
     if (!edges.find((e) => e.from === fromLmId && e.to === pId)) {
       edges.push({ from: fromLmId, to: pId, color: "#C4B5FD" });
@@ -271,7 +272,6 @@ function getConnected(nodeId: string, edges: MapEdge[]) {
   const connNodes = new Set([nodeId]);
   const connEdges = new Set<string>();
 
-  // forward
   let frontier = [nodeId];
   while (frontier.length) {
     const next: string[] = [];
@@ -285,7 +285,6 @@ function getConnected(nodeId: string, edges: MapEdge[]) {
     frontier = next;
   }
 
-  // backward
   frontier = [nodeId];
   while (frontier.length) {
     const next: string[] = [];
@@ -299,7 +298,6 @@ function getConnected(nodeId: string, edges: MapEdge[]) {
     frontier = next;
   }
 
-  // all edges between connected nodes
   edges.forEach((e) => {
     if (connNodes.has(e.from) && connNodes.has(e.to)) {
       connEdges.add(`${e.from}->${e.to}`);
@@ -357,15 +355,9 @@ function LeadMagnetNode({ node }: { node: MapNode }) {
   );
 }
 
-const TIER_TYPE_ID: Record<string, string> = {
-  "lead-magnet": "lead_magnet",
-  "mid-ticket": "mid_ticket",
-  flagship: "flagship",
-};
-
 function ProductNode({ node }: { node: MapNode }) {
   const label = node.label.length > 24 ? node.label.slice(0, 24) + "…" : node.label;
-  const typeId = node.tier ? TIER_TYPE_ID[node.tier] : null;
+  const typeId = node.tier || null;
   return (
     <g>
       <rect x={0} y={0} width={node.w} height={node.h} rx={10} fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth={1.5} />
@@ -422,7 +414,7 @@ function getDist(e: TouchEvent | React.TouchEvent) {
 /* ── main component ─────────────────────────────────── */
 
 const FunnelMapPage = () => {
-  const { funnels } = useDataStore();
+  const { funnels, allContentItems, products, topics, updateContentItem } = useDataStore();
   const svgRef = useRef<SVGSVGElement>(null);
   const [pan, setPan] = useState({ x: 20, y: 10 });
   const [zoom, setZoom] = useState(1);
@@ -430,11 +422,13 @@ const FunnelMapPage = () => {
   const [selected, setSelected] = useState<string | null>(null);
   const [showHint, setShowHint] = useState(true);
 
-  const { nodes: initialNodes, edges } = useMemo(() => buildGraph(funnels), [funnels]);
+  const { nodes: initialNodes, edges } = useMemo(
+    () => buildGraph(funnels, allContentItems, products),
+    [funnels, allContentItems, products],
+  );
   const [nodes, setNodes] = useState<MapNode[]>(initialNodes);
-  const [drawerProduct, setDrawerProduct] = useState<FunnelProduct | null>(null);
-  const [drawerContent, setDrawerContent] = useState<ContentItem | null>(null);
-  const [drawerFunnel, setDrawerFunnel] = useState<typeof funnels[0] | null>(null);
+  const [drawerProduct, setDrawerProduct] = useState<Product | null>(null);
+  const [editingContent, setEditingContent] = useState<ContentItemData | null>(null);
   const dragMovedRef = useRef(false);
 
   const touchRef = useRef<TouchState>({ startX: 0, startY: 0, panX: 0, panY: 0, dist: 0, zoom: 1, nodeId: null, orig: [], moved: false });
@@ -447,24 +441,25 @@ const FunnelMapPage = () => {
 
   const highlighted = selected ? getConnected(selected, edges) : null;
 
-  /* wheel zoom */
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
     setZoom((z) => Math.min(2.5, Math.max(0.2, z * (e.deltaY > 0 ? 0.92 : 1.08))));
   }, []);
 
+  const getTopicTitle = useCallback((ci: ContentItemData) => {
+    const topic = topics.find((t) => t.contentItems.some((c) => c.id === ci.id));
+    return topic?.title || "";
+  }, [topics]);
+
   const handleNodeClick = useCallback((node: MapNode) => {
     if (node.type === "keyword") return;
-    if (node.type === "content" && node.contentItem) {
-      const f = funnels.find((fun) => fun.id === node.funnelId);
-      setDrawerFunnel(f || null);
-      setDrawerContent(node.contentItem);
-    } else if ((node.type === "leadmagnet" || node.type === "product") && node.funnelProduct) {
-      setDrawerProduct(node.funnelProduct);
+    if (node.type === "content" && node.contentItemData) {
+      setEditingContent(node.contentItemData);
+    } else if ((node.type === "leadmagnet" || node.type === "product") && node.productData) {
+      setDrawerProduct(node.productData);
     }
-  }, [funnels]);
+  }, []);
 
-  /* mouse desktop */
   const handleMouseDown = useCallback(
     (e: React.MouseEvent, nodeId?: string) => {
       dragMovedRef.current = false;
@@ -495,7 +490,6 @@ const FunnelMapPage = () => {
 
   const handleMouseUp = useCallback(() => setDragging(null), []);
 
-  /* touch mobile */
   const handleTouchStart = useCallback(
     (e: React.TouchEvent, nodeId?: string) => {
       const t = touchRef.current;
@@ -547,7 +541,6 @@ const FunnelMapPage = () => {
     if (!touchRef.current.moved) setSelected((s) => (s === nodeId ? null : nodeId));
   }, []);
 
-  /* attach non-passive listeners */
   useEffect(() => {
     const el = svgRef.current;
     if (!el) return;
@@ -559,7 +552,6 @@ const FunnelMapPage = () => {
     };
   }, [handleWheel, handleTouchMove]);
 
-  /* render a single node */
   const renderNode = (node: MapNode) => {
     const dimmed = highlighted && !highlighted.nodes.has(node.id);
     const isClickable = node.type !== "keyword";
@@ -599,7 +591,6 @@ const FunnelMapPage = () => {
         </div>
 
         <div className="flex-1 flex flex-col min-w-0" style={{ touchAction: "none" }}>
-          {/* ─── Header ─── */}
           <header className="sticky top-0 z-50 surface-glass border-b border-border">
             <div className="max-w-full mx-auto px-4 md:px-6">
               <div className="flex items-center justify-between h-[44px]">
@@ -640,7 +631,6 @@ const FunnelMapPage = () => {
             </div>
           </header>
 
-          {/* ─── Hint toast ─── */}
           {showHint && (
             <div
               className="fixed bottom-16 md:bottom-4 left-1/2 -translate-x-1/2 bg-foreground text-background px-3.5 py-2 rounded-lg text-[11px] font-medium z-[200] whitespace-nowrap animate-fade-in shadow-lg cursor-pointer"
@@ -652,7 +642,6 @@ const FunnelMapPage = () => {
             </div>
           )}
 
-          {/* ─── SVG Canvas ─── */}
           <svg
             ref={svgRef}
             className="flex-1 w-full"
@@ -665,7 +654,6 @@ const FunnelMapPage = () => {
             onTouchEnd={handleTouchEnd}
           >
             <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
-              {/* Column headers */}
               {COL_HEADERS.map((h, i) => {
                 const Icon = COL_SVG_ICON[i];
                 return (
@@ -687,7 +675,6 @@ const FunnelMapPage = () => {
                 );
               })}
 
-              {/* Edges */}
               {edges.map((e, i) => {
                 const dimmed = highlighted && !highlighted.edges.has(`${e.from}->${e.to}`);
                 return (
@@ -702,7 +689,6 @@ const FunnelMapPage = () => {
                 );
               })}
 
-              {/* Nodes */}
               {nodes.map(renderNode)}
             </g>
           </svg>
@@ -716,12 +702,15 @@ const FunnelMapPage = () => {
         open={!!drawerProduct}
         onOpenChange={(open) => !open && setDrawerProduct(null)}
       />
-      <ContentDrawer
-        content={drawerContent}
-        funnel={drawerFunnel}
-        open={!!drawerContent}
-        onOpenChange={(open) => { if (!open) { setDrawerContent(null); setDrawerFunnel(null); } }}
-      />
+
+      {editingContent && (
+        <ContentDetailModal
+          item={editingContent}
+          topicTitle={getTopicTitle(editingContent)}
+          onClose={() => setEditingContent(null)}
+          onSave={(updated) => { updateContentItem(updated); setEditingContent(null); }}
+        />
+      )}
     </SidebarProvider>
   );
 };
