@@ -38,13 +38,13 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-card rounded-3xl w-full max-w-[520px] max-h-[90vh] overflow-auto animate-in slide-in-from-bottom-3 duration-300" style={{ boxShadow: "0 24px 60px rgba(0,0,0,.15)" }}>
-        <div className="h-[4px] rounded-t-3xl" style={{ background: type?.color || "hsl(var(--primary))" }} />
+        <div className="h-[4px] rounded-t-3xl bg-primary" />
         <div className="px-7 py-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-5">
             <div className="flex items-center gap-2">
               {type && <ProductTypeIcon typeId={type.id} size={22} />}
-              <span className="text-[16px] font-bold" style={{ color: type?.color }}>{type?.label}</span>
+              <span className="text-[16px] font-bold text-foreground uppercase">{type?.label}</span>
             </div>
             <div className="flex items-center gap-2.5">
               <ProductStatusSelect value={status} onChange={setStatus} />
@@ -87,13 +87,13 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
                     onClick={() => setTypeId(t.id)}
                     className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-normal cursor-pointer transition-all duration-200"
                     style={{
-                      border: sel ? `1.5px solid ${t.color}` : "1.5px solid hsl(var(--border))",
-                      background: sel ? t.color + "10" : "transparent",
-                      color: sel ? t.color : "#4b5563",
+                      border: sel ? "1.5px solid hsl(var(--primary))" : "1.5px solid hsl(var(--border))",
+                      background: sel ? "hsl(var(--primary) / 0.08)" : "transparent",
+                      color: sel ? "hsl(var(--primary))" : "#4b5563",
                     }}
                   >
                     <ProductTypeIcon typeId={t.id} size={14} />
-                    {t.label}
+                    <span className="uppercase">{t.label}</span>
                     {sel && <span>✓</span>}
                   </button>
                 );
@@ -115,8 +115,8 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
                 placeholder="бесплатно"
                 className="w-full px-4 py-2.5 rounded-xl border-[1.5px] border-border text-[13px] outline-none transition-all duration-200"
                 onFocus={(e) => {
-                  (e.target as HTMLElement).style.borderColor = type?.color || "hsl(var(--primary))";
-                  (e.target as HTMLElement).style.boxShadow = `0 0 0 3px ${(type?.color || "#6366f1")}15`;
+                  (e.target as HTMLElement).style.borderColor = "hsl(var(--primary))";
+                  (e.target as HTMLElement).style.boxShadow = "0 0 0 3px hsl(var(--primary) / 0.08)";
                 }}
                 onBlur={(e) => {
                   (e.target as HTMLElement).style.borderColor = "hsl(var(--border))";
@@ -162,8 +162,8 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
                 className="w-full px-4 py-2.5 rounded-xl border-[1.5px] border-border text-[13px] outline-none transition-all duration-200"
                 style={{ color: publishDate ? "#334155" : "#94a3b8" }}
                 onFocus={(e) => {
-                  (e.target as HTMLElement).style.borderColor = type?.color || "hsl(var(--primary))";
-                  (e.target as HTMLElement).style.boxShadow = `0 0 0 3px ${(type?.color || "#6366f1")}15`;
+                  (e.target as HTMLElement).style.borderColor = "hsl(var(--primary))";
+                  (e.target as HTMLElement).style.boxShadow = "0 0 0 3px hsl(var(--primary) / 0.08)";
                 }}
                 onBlur={(e) => {
                   (e.target as HTMLElement).style.borderColor = "hsl(var(--border))";
@@ -206,7 +206,7 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
               onClose();
             }}
             className="w-full py-3 rounded-2xl text-[15px] font-bold cursor-pointer text-white border-none transition-all duration-200 hover:shadow-lg"
-            style={{ background: `linear-gradient(135deg, ${type?.color || "hsl(var(--primary))"}, ${type?.color || "hsl(var(--primary))"}dd)` }}
+            style={{ background: "hsl(var(--primary))" }}
           >
             Сохранить
           </button>

@@ -62,13 +62,13 @@ export function CreateProductModal({ onClose, onCreate, formats, onAddFormat, on
                     onClick={() => setTypeId(sel ? "" : t.id)}
                     className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-normal cursor-pointer transition-all duration-200"
                     style={{
-                      border: sel ? `1.5px solid ${t.color}` : "1.5px solid hsl(var(--border))",
-                      background: sel ? t.color + "10" : "transparent",
-                      color: sel ? t.color : "#4b5563",
+                      border: sel ? "1.5px solid hsl(var(--primary))" : "1.5px solid hsl(var(--border))",
+                      background: sel ? "hsl(var(--primary) / 0.08)" : "transparent",
+                      color: sel ? "hsl(var(--primary))" : "#4b5563",
                     }}
                   >
                     <ProductTypeIcon typeId={t.id} size={14} />
-                    {t.label}
+                    <span className="uppercase">{t.label}</span>
                     {sel && <span>✓</span>}
                   </button>
                 );
