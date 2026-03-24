@@ -6,65 +6,173 @@ interface PlatformIconProps {
 
 const ICONS: Record<string, (size: number) => JSX.Element> = {
   stories: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="9" stroke="#8B5CF6" strokeWidth="2" />
-      <circle cx="12" cy="12" r="5" stroke="#8B5CF6" strokeWidth="1.5" />
-      <polygon points="10.5,9 15,12 10.5,15" fill="#8B5CF6" />
+    <svg width={s} height={s} viewBox="0 0 32 32" fill="none">
+      <defs>
+        <linearGradient id="st_g1" x1="0" y1="0" x2="32" y2="32">
+          <stop offset="0%" stopColor="#A78BFA" />
+          <stop offset="100%" stopColor="#7C3AED" />
+        </linearGradient>
+        <radialGradient id="st_g2" cx="40%" cy="35%">
+          <stop offset="0%" stopColor="#C4B5FD" stopOpacity="0.6" />
+          <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle cx="16" cy="16" r="14" fill="url(#st_g1)" />
+      <circle cx="16" cy="16" r="14" fill="url(#st_g2)" />
+      <circle cx="16" cy="16" r="6.5" stroke="white" strokeWidth="2" fill="none" />
+      <polygon points="14,12.5 20,16 14,19.5" fill="white" />
     </svg>
   ),
   tg_post: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none">
-      <path d="M3 11L21 4L17 21L11 15L3 11Z" fill="#2AABEE" />
-      <path d="M11 15L21 4" stroke="white" strokeWidth="1" />
-      <path d="M11 15L13 21" stroke="white" strokeWidth="1" />
+    <svg width={s} height={s} viewBox="0 0 32 32" fill="none">
+      <defs>
+        <linearGradient id="tg_g1" x1="0" y1="0" x2="32" y2="32">
+          <stop offset="0%" stopColor="#A78BFA" />
+          <stop offset="100%" stopColor="#7C3AED" />
+        </linearGradient>
+        <radialGradient id="tg_g2" cx="40%" cy="35%">
+          <stop offset="0%" stopColor="#C4B5FD" stopOpacity="0.6" />
+          <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#tg_g1)" />
+      <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#tg_g2)" />
+      <path d="M7.5 15.2L23.5 9L20.5 23L15 18L7.5 15.2Z" fill="white" opacity="0.95" />
+      <path d="M15 18L23.5 9" stroke="#8B5CF6" strokeWidth="0.8" opacity="0.4" />
+      <path d="M15 18L16.8 22.5" stroke="#8B5CF6" strokeWidth="0.8" opacity="0.4" />
     </svg>
   ),
   ig_post: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none">
-      <rect x="3" y="3" width="18" height="18" rx="5" stroke="#E1306C" strokeWidth="2" />
-      <circle cx="12" cy="12" r="4.5" stroke="#E1306C" strokeWidth="1.5" />
-      <circle cx="17.5" cy="6.5" r="1.2" fill="#E1306C" />
+    <svg width={s} height={s} viewBox="0 0 32 32" fill="none">
+      <defs>
+        <linearGradient id="ig_g1" x1="0" y1="0" x2="32" y2="32">
+          <stop offset="0%" stopColor="#A78BFA" />
+          <stop offset="100%" stopColor="#7C3AED" />
+        </linearGradient>
+        <radialGradient id="ig_g2" cx="40%" cy="35%">
+          <stop offset="0%" stopColor="#C4B5FD" stopOpacity="0.6" />
+          <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#ig_g1)" />
+      <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#ig_g2)" />
+      <rect x="7" y="7" width="18" height="18" rx="5" stroke="white" strokeWidth="1.8" fill="none" />
+      <circle cx="16" cy="16" r="4.5" stroke="white" strokeWidth="1.5" fill="none" />
+      <circle cx="21.5" cy="10.5" r="1.3" fill="white" />
     </svg>
   ),
   carousel: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none">
-      <rect x="4" y="5" width="12" height="14" rx="2" stroke="#F77737" strokeWidth="1.8" />
-      <rect x="8" y="3" width="12" height="14" rx="2" stroke="#F77737" strokeWidth="1.8" fill="white" />
-      <circle cx="12" cy="9" r="1.5" fill="#F77737" />
-      <path d="M8 14L11 11L13 13L16 10L20 14" stroke="#F77737" strokeWidth="1.2" strokeLinejoin="round" />
+    <svg width={s} height={s} viewBox="0 0 32 32" fill="none">
+      <defs>
+        <linearGradient id="cr_g1" x1="0" y1="0" x2="32" y2="32">
+          <stop offset="0%" stopColor="#A78BFA" />
+          <stop offset="100%" stopColor="#7C3AED" />
+        </linearGradient>
+        <radialGradient id="cr_g2" cx="40%" cy="35%">
+          <stop offset="0%" stopColor="#C4B5FD" stopOpacity="0.6" />
+          <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#cr_g1)" />
+      <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#cr_g2)" />
+      <rect x="5" y="9" width="12" height="14" rx="2" stroke="white" strokeWidth="1.5" fill="none" opacity="0.5" />
+      <rect x="9" y="7" width="12" height="14" rx="2" stroke="white" strokeWidth="1.5" fill="rgba(255,255,255,0.15)" />
+      <rect x="13" y="9" width="12" height="14" rx="2" stroke="white" strokeWidth="1.5" fill="rgba(255,255,255,0.1)" />
+      <circle cx="17" cy="14" r="1.5" fill="white" opacity="0.8" />
+      <path d="M13 20L16 17L18 19L21 16L25 20" stroke="white" strokeWidth="1" strokeLinejoin="round" opacity="0.7" />
     </svg>
   ),
   reels: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none">
-      <rect x="3" y="3" width="18" height="18" rx="4" stroke="#FF0069" strokeWidth="2" />
-      <polygon points="10,8 17,12 10,16" fill="#FF0069" />
-      <line x1="3" y1="9" x2="21" y2="9" stroke="#FF0069" strokeWidth="1" />
+    <svg width={s} height={s} viewBox="0 0 32 32" fill="none">
+      <defs>
+        <linearGradient id="rl_g1" x1="0" y1="0" x2="32" y2="32">
+          <stop offset="0%" stopColor="#A78BFA" />
+          <stop offset="100%" stopColor="#7C3AED" />
+        </linearGradient>
+        <radialGradient id="rl_g2" cx="40%" cy="35%">
+          <stop offset="0%" stopColor="#C4B5FD" stopOpacity="0.6" />
+          <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#rl_g1)" />
+      <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#rl_g2)" />
+      <rect x="7" y="7" width="18" height="18" rx="3" stroke="white" strokeWidth="1.5" fill="none" />
+      <line x1="7" y1="12" x2="25" y2="12" stroke="white" strokeWidth="1.2" opacity="0.6" />
+      <line x1="14" y1="7" x2="18" y2="12" stroke="white" strokeWidth="1.2" opacity="0.6" />
+      <polygon points="13.5,15 21,19.5 13.5,24" fill="white" opacity="0.95" />
     </svg>
   ),
   threads: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none">
-      <path d="M12 3C7 3 4 6.5 4 10.5C4 13.5 5.5 15.5 8 16.5L8 20L11 17H12C17 17 20 13.5 20 10C20 6.5 17 3 12 3Z" stroke="#666" strokeWidth="2" fill="none" />
-      <path d="M14.5 9.5C14.5 9.5 13.5 8.5 12 8.5C10.5 8.5 9.5 9.5 9.5 10.5C9.5 11.5 10.5 12 12 12.5C13.5 13 14.5 13.5 14.5 14.5C14.5 15.5 13.5 16 12 16C10.5 16 9.5 15 9.5 15" stroke="#666" strokeWidth="1.5" strokeLinecap="round" />
+    <svg width={s} height={s} viewBox="0 0 32 32" fill="none">
+      <defs>
+        <linearGradient id="th_g1" x1="0" y1="0" x2="32" y2="32">
+          <stop offset="0%" stopColor="#A78BFA" />
+          <stop offset="100%" stopColor="#7C3AED" />
+        </linearGradient>
+        <radialGradient id="th_g2" cx="40%" cy="35%">
+          <stop offset="0%" stopColor="#C4B5FD" stopOpacity="0.6" />
+          <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#th_g1)" />
+      <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#th_g2)" />
+      <path d="M18.5 12.5C18.5 12.5 17.2 11 15.5 11C13.5 11 12 12.5 12 14C12 15.5 13.5 16.2 15.5 16.8C17.5 17.4 19 18.2 19 20C19 21.8 17.5 23 15.5 23C13.5 23 12 21.5 12 21.5" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none" />
+      <path d="M19.5 14.5C20.5 15.3 21 16.5 21 18C21 21.5 18.5 24 15.5 24C12.5 24 10 21.5 10 18C10 14 12.5 11 16 9" stroke="white" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.5" />
     </svg>
   ),
   youtube: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none">
-      <rect x="2" y="5" width="20" height="14" rx="4" fill="#FF0000" />
-      <polygon points="10,8.5 16,12 10,15.5" fill="white" />
+    <svg width={s} height={s} viewBox="0 0 32 32" fill="none">
+      <defs>
+        <linearGradient id="yt_g1" x1="0" y1="0" x2="32" y2="32">
+          <stop offset="0%" stopColor="#A78BFA" />
+          <stop offset="100%" stopColor="#7C3AED" />
+        </linearGradient>
+        <radialGradient id="yt_g2" cx="40%" cy="35%">
+          <stop offset="0%" stopColor="#C4B5FD" stopOpacity="0.6" />
+          <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#yt_g1)" />
+      <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#yt_g2)" />
+      <rect x="5" y="8" width="22" height="16" rx="4" stroke="white" strokeWidth="1.5" fill="none" />
+      <polygon points="13,11.5 21,16 13,20.5" fill="white" opacity="0.95" />
     </svg>
   ),
   article: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none">
-      <rect x="4" y="3" width="16" height="18" rx="2" stroke="#34A853" strokeWidth="2" />
-      <line x1="7" y1="8" x2="17" y2="8" stroke="#34A853" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="7" y1="12" x2="17" y2="12" stroke="#34A853" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="7" y1="16" x2="13" y2="16" stroke="#34A853" strokeWidth="1.5" strokeLinecap="round" />
+    <svg width={s} height={s} viewBox="0 0 32 32" fill="none">
+      <defs>
+        <linearGradient id="ar_g1" x1="0" y1="0" x2="32" y2="32">
+          <stop offset="0%" stopColor="#A78BFA" />
+          <stop offset="100%" stopColor="#7C3AED" />
+        </linearGradient>
+        <radialGradient id="ar_g2" cx="40%" cy="35%">
+          <stop offset="0%" stopColor="#C4B5FD" stopOpacity="0.6" />
+          <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#ar_g1)" />
+      <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#ar_g2)" />
+      <rect x="7" y="6" width="18" height="20" rx="2" stroke="white" strokeWidth="1.5" fill="none" />
+      <line x1="10" y1="11" x2="22" y2="11" stroke="white" strokeWidth="1.5" strokeLinecap="round" opacity="0.9" />
+      <line x1="10" y1="15" x2="22" y2="15" stroke="white" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
+      <line x1="10" y1="19" x2="18" y2="19" stroke="white" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
     </svg>
   ),
   vk: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none">
-      <rect x="2" y="2" width="20" height="20" rx="5" fill="#4680C2" />
-      <path d="M6.5 8.5H8.5C8.5 8.5 8.5 12 10 13.5C11 12 12.5 8.5 12.5 8.5H14.5C14.5 8.5 12.5 13 11.5 14.5C13 16 15 17 15 17H12.5C12.5 17 11 16 10 14.5C9 16 7.5 17 7.5 17H6C6 17 8 15.5 9.5 14C8 12.5 6.5 8.5 6.5 8.5Z" fill="white" />
+    <svg width={s} height={s} viewBox="0 0 32 32" fill="none">
+      <defs>
+        <linearGradient id="vk_g1" x1="0" y1="0" x2="32" y2="32">
+          <stop offset="0%" stopColor="#A78BFA" />
+          <stop offset="100%" stopColor="#7C3AED" />
+        </linearGradient>
+        <radialGradient id="vk_g2" cx="40%" cy="35%">
+          <stop offset="0%" stopColor="#C4B5FD" stopOpacity="0.6" />
+          <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#vk_g1)" />
+      <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#vk_g2)" />
+      <path d="M8 12H10.5C10.5 12 10.8 16.5 12.8 18C14 16.5 15.5 12 15.5 12H18C18 12 15.8 17.5 14.5 19.5C16.2 21.5 18.5 23 18.5 23H15.5C15.5 23 13.8 21.5 12.8 19.8C11.5 21.5 9.5 23 9.5 23H7.5C7.5 23 10 21 11.8 19C10 17 8 12 8 12Z" fill="white" opacity="0.95" />
     </svg>
   ),
 };
