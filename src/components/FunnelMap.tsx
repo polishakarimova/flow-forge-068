@@ -82,18 +82,21 @@ const NodeCard = ({
   const widthRef = useRef(width);
   widthRef.current = width;
   const dragRef = useRef<{ startX: number; startW: number } | null>(null);
+  const didDragRef = useRef(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!dragRef.current) return;
       e.preventDefault();
+      didDragRef.current = true;
       const newW = Math.max(80, dragRef.current.startW + e.clientX - dragRef.current.startX);
       setWidth(newW);
     };
     const onTouchMove = (e: TouchEvent) => {
       if (!dragRef.current) return;
       e.preventDefault();
+      didDragRef.current = true;
       const touch = e.touches[0];
       const newW = Math.max(80, dragRef.current.startW + touch.clientX - dragRef.current.startX);
       setWidth(newW);
@@ -119,6 +122,7 @@ const NodeCard = ({
   const handleResizeStart = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    didDragRef.current = false;
     const el = cardRef.current;
     if (el) dragRef.current = { startX: e.clientX, startW: el.offsetWidth };
   };
@@ -126,15 +130,25 @@ const NodeCard = ({
   const handleTouchStart = (e: React.TouchEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    didDragRef.current = false;
     const touch = e.touches[0];
     const el = cardRef.current;
     if (el) dragRef.current = { startX: touch.clientX, startW: el.offsetWidth };
   };
 
+  const handleClick = (e: React.MouseEvent) => {
+    if (didDragRef.current) {
+      e.stopPropagation();
+      didDragRef.current = false;
+      return;
+    }
+    onClick?.();
+  };
+
   return (
     <div
       ref={cardRef}
-      onClick={onClick}
+      onClick={handleClick}
       className={`relative rounded-2xl border border-border bg-card p-2 md:p-3 shadow-sm min-w-[100px] md:min-w-[120px] transition-shadow duration-200
         hover:-translate-y-0.5 hover:shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.15)] hover:border-primary/30
         ${flagship ? "ring-2 ring-primary/30 border-primary/40 bg-gradient-to-br from-card to-[hsl(var(--violet-soft))] hover:-translate-y-1 hover:shadow-[0_8px_30px_-8px_hsl(var(--primary)/0.25)] hover:ring-primary/50" : ""}
