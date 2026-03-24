@@ -62,7 +62,7 @@ function SelectDropdown({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full flex items-center justify-between gap-1.5 px-3 py-2 rounded-xl border-[1.5px] border-border bg-card text-[13px] font-medium cursor-pointer transition-all duration-200 hover:border-primary/40 ${
+        className={`w-full flex items-center justify-between gap-1.5 px-3 py-2 rounded-xl border-[1.5px] border-border bg-card text-[12px] font-light tracking-wide cursor-pointer transition-all duration-200 hover:border-primary/40 ${
           selected ? "text-foreground" : "text-muted-foreground"
         }`}
       >
@@ -80,7 +80,7 @@ function SelectDropdown({
           {/* None option */}
           <div
             onClick={() => { onChange(null); setOpen(false); }}
-            className={`px-3 py-2 rounded-xl text-[13px] font-medium cursor-pointer transition-all duration-150 ${
+            className={`px-3 py-2 rounded-xl text-[12px] font-light tracking-wide cursor-pointer transition-all duration-150 ${
               value === null ? "violet-surface text-primary" : "text-muted-foreground hover:bg-muted/50"
             }`}
           >
@@ -90,8 +90,8 @@ function SelectDropdown({
           {options.map((o) => (
             <div
               key={o.value}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] cursor-pointer transition-all duration-150 ${
-                value === o.value ? "violet-surface text-primary font-semibold" : "text-foreground hover:bg-muted/50"
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-light tracking-wide cursor-pointer transition-all duration-150 ${
+                value === o.value ? "violet-surface text-primary !font-medium" : "text-foreground hover:bg-muted/50"
               }`}
             >
               <span
@@ -416,9 +416,6 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
                             <PlatformIcon platformId={ci.platformId} size={14} />
                           )}
                           <span className="text-foreground font-medium flex-1 truncate">{ci.title}</span>
-                          <span className="text-[10px] text-muted-foreground shrink-0 max-w-[80px] truncate">
-                            {ci.topicTitle}
-                          </span>
                         </button>
                       );
                     })

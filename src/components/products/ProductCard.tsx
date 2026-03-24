@@ -12,7 +12,7 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
 
   return (
     <div
-      className="card-elevated flex items-center gap-1.5 px-3 py-1 cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)]"
+      className="card-elevated flex items-center gap-1.5 px-3 py-1.5 rounded-2xl cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)]"
       onClick={() => onOpen(product)}
     >
       {/* Status dot — gray is static, others pulse */}

@@ -43,7 +43,7 @@ export function ContentMultiDropdown({ values, onChange, options, placeholder, w
     <div ref={ref} className="relative" style={{ width }}>
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full flex items-center justify-between gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-card text-[12px] font-medium cursor-pointer transition-all duration-200 hover:border-primary/40 hover:shadow-sm ${
+        className={`w-full flex items-center justify-between gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-card text-[11px] font-light tracking-wide cursor-pointer transition-all duration-200 hover:border-primary/40 hover:shadow-sm ${
           has ? "text-foreground" : "text-muted-foreground"
         }`}
       >
@@ -81,7 +81,7 @@ export function ContentMultiDropdown({ values, onChange, options, placeholder, w
           {has && (
             <div
               onClick={() => onChange([])}
-              className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium cursor-pointer text-muted-foreground border-b border-border mb-0.5 hover:bg-muted/50 transition-all duration-150"
+              className="px-2.5 py-1.5 rounded-lg text-[10px] font-light tracking-wide cursor-pointer text-muted-foreground border-b border-border mb-0.5 hover:bg-muted/50 transition-all duration-150"
             >
               Сбросить все
             </div>
@@ -92,7 +92,7 @@ export function ContentMultiDropdown({ values, onChange, options, placeholder, w
               <div
                 key={o.value}
                 onClick={() => toggle(o.value)}
-                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[12px] font-medium cursor-pointer transition-all duration-150 ${
+                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-light tracking-wide cursor-pointer transition-all duration-150 ${
                   checked ? "violet-surface" : "hover:bg-muted/50"
                 }`}
               >
@@ -108,7 +108,7 @@ export function ContentMultiDropdown({ values, onChange, options, placeholder, w
                 {o.platformId ? <PlatformIcon platformId={o.platformId} size={14} /> : o.iconNode ? o.iconNode : o.icon ? <span className="text-[13px]">{o.icon}</span> : null}
                 {o.dot && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: o.dot }} />}
                 <span className="flex-1 text-foreground">{o.label}</span>
-                {o.count != null && <span className="text-[11px] text-muted-foreground">{o.count}</span>}
+                {o.count != null && <span className="text-[10px] text-muted-foreground/60">{o.count}</span>}
               </div>
             );
           })}

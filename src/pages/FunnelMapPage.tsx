@@ -129,10 +129,14 @@ function buildGraph(
   // Build dynamic column positions
   const COL_W = 230;
   const COL_GAP = 36;
+  const CONTENT_W = 200;
   const contentX = 60;
-  const keywordX = contentX + 240 + COL_GAP;
+  const keywordX = contentX + CONTENT_W + COL_GAP;
   const tierColumns: { tier: string; x: number }[] = [];
-  let nextX = keywordX + 160 + COL_GAP;
+  // Calculate max keyword width for column sizing
+  const maxKwLen = Math.max(...funnelsList.map((f) => f.keyword.length), 4);
+  const kwColW = Math.max(80, maxKwLen * 10 + 28);
+  let nextX = keywordX + kwColW + COL_GAP;
   TIER_ORDER.forEach((tier) => {
     if (usedTiers.has(tier)) {
       tierColumns.push({ tier, x: nextX });
@@ -142,8 +146,8 @@ function buildGraph(
 
   // Build column headers
   const headers: ColHeader[] = [
-    { x: contentX, label: "КОНТЕНТ", w: 240, icon: SvgIconFileText },
-    { x: keywordX, label: "CTA", w: 160, icon: SvgIconCta },
+    { x: contentX, label: "КОНТЕНТ", w: CONTENT_W, icon: SvgIconFileText },
+    { x: keywordX, label: "CTA", w: kwColW, icon: SvgIconCta },
   ];
   tierColumns.forEach(({ tier, x }) => {
     headers.push({
@@ -191,7 +195,7 @@ function buildGraph(
         label: ci.title,
         x: contentX,
         y,
-        w: 240,
+        w: CONTENT_W,
         h: 40,
         color: "#C4B5FD",
         platformId: ci.platformId,
@@ -208,7 +212,7 @@ function buildGraph(
         label: topicTitle,
         x: contentX,
         y,
-        w: 240,
+        w: CONTENT_W,
         h: NH_TOPIC,
         color: "#C4B5FD",
         funnelId,
@@ -225,17 +229,18 @@ function buildGraph(
   let ky = kwStartY;
   funnelsList.forEach((f) => {
     const kwId = `kw-${f.id}`;
+    const kwW = Math.max(80, f.keyword.length * 10 + 28);
     nodes.push({
       id: kwId,
       type: "keyword",
       label: f.keyword,
       x: keywordX,
       y: ky,
-      w: 160,
-      h: 48,
+      w: kwW,
+      h: 36,
       color: BADGE_HEX[f.badgeColor],
     });
-    ky += 60;
+    ky += 48;
 
     // Edges: content/topic → keyword
     const funnelNodes = nodes.filter((n) => n.funnelId === f.id && (n.type === "content" || n.type === "topic"));
@@ -368,7 +373,8 @@ function getConnected(nodeId: string, edges: MapEdge[]) {
 /* ── SVG node renderers ─────────────────────────────── */
 
 function ContentNode({ node }: { node: MapNode }) {
-  const label = node.label.length > 24 ? node.label.slice(0, 24) + "…" : node.label;
+  const maxChars = Math.floor((node.w - 40) / 6.5);
+  const label = node.label.length > maxChars ? node.label.slice(0, maxChars) + "…" : node.label;
   return (
     <g>
       <rect x={0} y={0} width={node.w} height={node.h} rx={8} fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth={1.5} />
@@ -387,8 +393,8 @@ function ContentNode({ node }: { node: MapNode }) {
 function KeywordNode({ node }: { node: MapNode }) {
   return (
     <g>
-      <rect x={0} y={0} width={node.w} height={node.h} rx={12} fill={node.color} />
-      <text x={node.w / 2} y={node.h / 2 + 1} fontSize={14} fontWeight={800} fill="#fff" textAnchor="middle" dominantBaseline="middle" fontFamily="Inter, system-ui, sans-serif" letterSpacing="0.05em">
+      <rect x={0} y={0} width={node.w} height={node.h} rx={node.h / 2} fill={node.color} />
+      <text x={node.w / 2} y={node.h / 2 + 1} fontSize={11} fontWeight={700} fill="#fff" textAnchor="middle" dominantBaseline="middle" fontFamily="Inter, system-ui, sans-serif" letterSpacing="0.05em">
         {node.label}
       </text>
     </g>
@@ -396,7 +402,8 @@ function KeywordNode({ node }: { node: MapNode }) {
 }
 
 function TopicNode({ node }: { node: MapNode }) {
-  const label = node.label.length > 22 ? node.label.slice(0, 22) + "…" : node.label;
+  const maxChars = Math.floor((node.w - 36) / 6.5);
+  const label = node.label.length > maxChars ? node.label.slice(0, maxChars) + "…" : node.label;
   const count = node.itemCount || 0;
   return (
     <g>
@@ -558,12 +565,11 @@ function ContentPickerModalMap({
           ) : (
             filtered.map((ci) => {
               const status = STATUSES[ci.status];
-              const topic = allTopics.find((t) => t.contentItems.some((c) => c.id === ci.id));
               return (
                 <div
                   key={ci.id}
                   onClick={() => onSelect(ci.id)}
-                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)] border border-transparent hover:border-primary/20"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)] border border-transparent hover:border-primary/20"
                 >
                   <span className="relative shrink-0 w-2 h-2">
                     {status.color !== "#94a3b8" && (
@@ -574,9 +580,8 @@ function ContentPickerModalMap({
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-foreground/[0.06] shrink-0">
                     <PlatformIcon platformId={ci.platformId} size={16} />
                   </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-medium text-foreground truncate">{ci.title || "Не заполнено"}</div>
-                    {topic && <div className="text-[10px] text-muted-foreground truncate">{topic.title}</div>}
+                  <div className="flex-1 min-w-0 text-[12px] text-muted-foreground truncate">
+                    {ci.title || "Не заполнено"}
                   </div>
                 </div>
               );
@@ -923,7 +928,7 @@ const FunnelMapPage = () => {
                   <div
                     key={item.id}
                     onClick={() => { setExpandedTopic(null); setEditingContent(item); }}
-                    className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)] border border-transparent hover:border-primary/20"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)] border border-transparent hover:border-primary/20"
                   >
                     <span className="relative shrink-0 w-2 h-2">
                       {status.color !== "#94a3b8" && (
@@ -934,9 +939,8 @@ const FunnelMapPage = () => {
                     <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-foreground/[0.06] shrink-0">
                       <PlatformIcon platformId={item.platformId} size={16} />
                     </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[13px] md:text-[12px] font-medium text-foreground truncate">{item.title || "Не заполнено"}</div>
-                      <div className="text-[11px] md:text-[10px] text-muted-foreground">{status.label}</div>
+                    <div className="flex-1 min-w-0 text-[12px] text-muted-foreground truncate">
+                      {item.title || "Не заполнено"}
                     </div>
                   </div>
                 );
