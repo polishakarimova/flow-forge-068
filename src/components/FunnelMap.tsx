@@ -491,27 +491,6 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
           );
         })}
 
-        {/* Gray + button to add a product at the end */}
-        <AddProductButton
-          delay={300 + productChain.length * 150 + 100}
-          onClick={() => setShowAddProductPicker(true)}
-        />
-
-        {/* If no products at all, also show a placeholder hint */}
-        {productChain.length === 0 && (
-          <div
-            className="rounded-2xl border-2 border-dashed border-border p-4 min-w-[160px] flex items-center justify-center text-center
-              hover:-translate-y-0.5 hover:shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.15)] hover:border-primary/30
-              transition-all duration-200 cursor-pointer ml-1 mt-0"
-            style={{ animation: `fadeSlideIn 0.4s ease-out 400ms both` }}
-            onClick={() => setShowAddProductPicker(true)}
-          >
-            <div className="flex items-center gap-1 text-[12px] text-muted-foreground">
-              <Plus className="w-3.5 h-3.5" />
-              <span>Продукт</span>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Expanded content list */}
