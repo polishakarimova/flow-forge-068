@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
@@ -30,6 +30,10 @@ const MONTH_NAMES = [
   "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
   "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
 ];
+const MONTH_NAMES_SHORT = [
+  "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
+  "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек",
+];
 const DAY_NAMES_SHORT = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const DAY_NAMES_FULL = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"];
 
@@ -39,7 +43,7 @@ function toDateStr(d: Date): string {
 
 function startOfWeek(d: Date): Date {
   const day = d.getDay();
-  const diff = (day === 0 ? -6 : 1) - day; // Monday
+  const diff = (day === 0 ? -6 : 1) - day;
   const r = new Date(d);
   r.setDate(r.getDate() + diff);
   return r;
@@ -57,7 +61,6 @@ function getMonthGrid(year: number, month: number): Date[][] {
       current.setDate(current.getDate() + 1);
     }
     weeks.push(week);
-    // Stop if we've passed the month and completed the row
     if (current.getMonth() !== month && w >= 3) break;
   }
   return weeks;
@@ -79,6 +82,63 @@ function formatShortDate(d: Date): string {
   return `${d.getDate()} ${months[d.getMonth()]}`;
 }
 
+function daysInMonth(year: number, month: number): number {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+/* ── Picker dropdown ── */
+
+function PickerDropdown({
+  value,
+  options,
+  onChange,
+}: {
+  value: string | number;
+  options: { value: number; label: string }[];
+  onChange: (v: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[13px] font-semibold text-foreground hover:bg-muted/60 transition-colors border-none bg-transparent cursor-pointer"
+      >
+        {selected?.label ?? value}
+        <ChevronDown className="w-3 h-3 text-muted-foreground" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+      </button>
+
+      {open && (
+        <div className="absolute top-[calc(100%+4px)] left-0 bg-card border border-border/60 rounded-2xl z-50 p-1 animate-in fade-in slide-in-from-top-2 duration-200 shadow-[0_12px_40px_rgba(0,0,0,.08)] max-h-[240px] overflow-auto min-w-[100px]">
+          {options.map((o) => (
+            <div
+              key={o.value}
+              onClick={() => { onChange(o.value); setOpen(false); }}
+              className={`px-3 py-1.5 rounded-xl text-[13px] font-medium cursor-pointer transition-all duration-150 ${
+                o.value === value ? "violet-surface text-primary font-semibold" : "text-foreground hover:bg-muted/50"
+              }`}
+            >
+              {o.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Main component ── */
 
 const Calendar = () => {
@@ -87,11 +147,56 @@ const Calendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const todayStr = toDateStr(new Date());
 
+  const curYear = currentDate.getFullYear();
+  const curMonth = currentDate.getMonth();
+  const curDay = currentDate.getDate();
+
+  /* Year / month / day options */
+  const yearOptions = useMemo(() => {
+    const base = new Date().getFullYear();
+    const years: { value: number; label: string }[] = [];
+    for (let y = base - 2; y <= base + 3; y++) {
+      years.push({ value: y, label: String(y) });
+    }
+    return years;
+  }, []);
+
+  const monthOptions = useMemo(
+    () => MONTH_NAMES.map((m, i) => ({ value: i, label: m })),
+    []
+  );
+
+  const dayOptions = useMemo(() => {
+    const count = daysInMonth(curYear, curMonth);
+    return Array.from({ length: count }, (_, i) => ({ value: i + 1, label: String(i + 1) }));
+  }, [curYear, curMonth]);
+
+  const setYear = (y: number) => {
+    const d = new Date(currentDate);
+    d.setFullYear(y);
+    // clamp day
+    const max = daysInMonth(y, d.getMonth());
+    if (d.getDate() > max) d.setDate(max);
+    setCurrentDate(d);
+  };
+
+  const setMonth = (m: number) => {
+    const d = new Date(currentDate);
+    d.setMonth(m);
+    const max = daysInMonth(d.getFullYear(), m);
+    if (d.getDate() > max) d.setDate(max);
+    setCurrentDate(d);
+  };
+
+  const setDay = (day: number) => {
+    const d = new Date(currentDate);
+    d.setDate(day);
+    setCurrentDate(d);
+  };
+
   /* Build events from content + products */
   const events = useMemo(() => {
     const list: CalendarEvent[] = [];
-
-    // Content items with publishDate
     topics.forEach((topic) => {
       topic.contentItems.forEach((ci) => {
         if (ci.publishDate) {
@@ -110,8 +215,6 @@ const Calendar = () => {
         }
       });
     });
-
-    // Products with publishDate
     products.forEach((p) => {
       if (p.publishDate) {
         const type = PRODUCT_TYPES.find((t) => t.id === p.typeId);
@@ -128,11 +231,9 @@ const Calendar = () => {
         });
       }
     });
-
     return list;
   }, [topics, products]);
 
-  /* Group events by date */
   const eventsByDate = useMemo(() => {
     const map: Record<string, CalendarEvent[]> = {};
     events.forEach((e) => {
@@ -142,7 +243,7 @@ const Calendar = () => {
     return map;
   }, [events]);
 
-  /* Navigation */
+  /* Navigation arrows */
   const navigate = (dir: -1 | 1) => {
     const d = new Date(currentDate);
     if (viewMode === "month") d.setMonth(d.getMonth() + dir);
@@ -150,21 +251,6 @@ const Calendar = () => {
     else d.setDate(d.getDate() + dir);
     setCurrentDate(d);
   };
-
-  const goToday = () => setCurrentDate(new Date());
-
-  /* Header title */
-  const headerTitle = useMemo(() => {
-    if (viewMode === "month") {
-      return `${MONTH_NAMES[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
-    }
-    if (viewMode === "week") {
-      const days = getWeekDays(currentDate);
-      return `${formatShortDate(days[0])} — ${formatShortDate(days[6])}`;
-    }
-    const dayIdx = (currentDate.getDay() + 6) % 7;
-    return `${DAY_NAMES_FULL[dayIdx]}, ${formatShortDate(currentDate)}`;
-  }, [currentDate, viewMode]);
 
   return (
     <SidebarProvider>
@@ -204,8 +290,8 @@ const Calendar = () => {
                 </div>
               </div>
 
-              {/* Navigation */}
-              <div className="flex items-center gap-2 pb-3">
+              {/* Navigation + Date pickers */}
+              <div className="flex items-center gap-1 pb-3">
                 <button
                   onClick={() => navigate(-1)}
                   className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors border-none bg-transparent cursor-pointer"
@@ -218,13 +304,16 @@ const Calendar = () => {
                 >
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </button>
-                <span className="text-[14px] font-semibold text-foreground">{headerTitle}</span>
-                <button
-                  onClick={goToday}
-                  className="ml-2 px-3 py-1 rounded-lg text-[12px] font-medium border border-border bg-transparent cursor-pointer text-muted-foreground hover:bg-muted transition-colors"
-                >
-                  Сегодня
-                </button>
+
+                {/* Date selectors */}
+                <div className="flex items-center gap-0.5 ml-1">
+                  <PickerDropdown value={curYear} options={yearOptions} onChange={setYear} />
+                  <PickerDropdown value={curMonth} options={monthOptions} onChange={setMonth} />
+                  {(viewMode === "week" || viewMode === "day") && (
+                    <PickerDropdown value={curDay} options={dayOptions} onChange={setDay} />
+                  )}
+                </div>
+
                 <span className="ml-auto text-[11px] text-muted-foreground">
                   {events.length} запланировано
                 </span>
@@ -236,8 +325,8 @@ const Calendar = () => {
           <main className="flex-1 max-w-6xl w-full mx-auto py-3 md:py-4 px-4 md:px-6 pb-20 md:pb-6">
             {viewMode === "month" && (
               <MonthView
-                year={currentDate.getFullYear()}
-                month={currentDate.getMonth()}
+                year={curYear}
+                month={curMonth}
                 eventsByDate={eventsByDate}
                 todayStr={todayStr}
                 onSelectDate={(d) => { setCurrentDate(d); setViewMode("day"); }}
@@ -305,7 +394,11 @@ function MonthView({
                 <div
                   key={dateStr}
                   onClick={() => onSelectDate(day)}
-                  className="bg-card min-h-[80px] md:min-h-[100px] p-1.5 cursor-pointer transition-colors duration-150 hover:bg-primary/[0.02]"
+                  className={`min-h-[80px] md:min-h-[100px] p-1.5 cursor-pointer transition-colors duration-150 ${
+                    isToday
+                      ? "bg-primary/[0.06] ring-1 ring-inset ring-primary/20"
+                      : "bg-card hover:bg-primary/[0.02]"
+                  }`}
                 >
                   {/* Day number */}
                   <div className="flex justify-end mb-0.5">
@@ -367,7 +460,9 @@ function WeekView({
           <div
             key={dateStr}
             className={`rounded-2xl border p-2 min-h-[200px] md:min-h-[320px] transition-all duration-200 ${
-              isToday ? "border-primary/40 bg-primary/[0.02]" : "border-border bg-card"
+              isToday
+                ? "border-primary/40 bg-primary/[0.05] shadow-[0_0_0_1px_hsl(var(--primary)/0.1)]"
+                : "border-border bg-card"
             }`}
           >
             {/* Day header */}
@@ -375,7 +470,7 @@ function WeekView({
               className="text-center mb-2 cursor-pointer"
               onClick={() => onSelectDate(day)}
             >
-              <div className="text-[10px] font-semibold text-muted-foreground uppercase">
+              <div className={`text-[10px] font-semibold uppercase ${isToday ? "text-primary" : "text-muted-foreground"}`}>
                 {DAY_NAMES_SHORT[dayIdx]}
               </div>
               <div
@@ -413,27 +508,37 @@ function DayView({
   todayStr: string;
 }) {
   const isToday = toDateStr(date) === todayStr;
+  const dayIdx = (date.getDay() + 6) % 7;
 
   const contentEvents = events.filter((e) => e.type === "content");
   const productEvents = events.filter((e) => e.type === "product");
 
   return (
     <div className="max-w-2xl mx-auto">
-      {isToday && (
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-[12px] font-semibold mb-4">
-          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-          Сегодня
+      {/* Date card */}
+      <div className={`rounded-2xl p-4 mb-5 ${isToday ? "bg-primary/[0.06] border border-primary/20" : "bg-card border border-border"}`}>
+        <div className="flex items-center gap-3">
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-[20px] font-bold ${isToday ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
+            {date.getDate()}
+          </div>
+          <div>
+            <div className={`text-[14px] font-semibold ${isToday ? "text-primary" : "text-foreground"}`}>
+              {DAY_NAMES_FULL[dayIdx]}
+            </div>
+            <div className="text-[12px] text-muted-foreground">
+              {formatShortDate(date)} {date.getFullYear()}
+              {isToday && <span className="ml-2 text-primary font-semibold">· Сегодня</span>}
+            </div>
+          </div>
         </div>
-      )}
+      </div>
 
       {events.length === 0 ? (
-        <div className="text-center py-20">
-          <div className="text-[40px] mb-3 opacity-30">📅</div>
+        <div className="text-center py-16">
           <div className="text-[14px] text-muted-foreground">Нет запланированного контента на этот день</div>
         </div>
       ) : (
         <>
-          {/* Content section */}
           {contentEvents.length > 0 && (
             <div className="mb-6">
               <h3 className="text-[13px] font-semibold text-muted-foreground mb-2">
@@ -447,7 +552,6 @@ function DayView({
             </div>
           )}
 
-          {/* Product section */}
           {productEvents.length > 0 && (
             <div>
               <h3 className="text-[13px] font-semibold text-muted-foreground mb-2">
@@ -493,7 +597,6 @@ function DayEventCard({ event }: { event: CalendarEvent }) {
       className="flex items-center gap-3 px-4 py-3 rounded-xl card-elevated transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)]"
       style={{ borderLeft: `3px solid ${event.color}` }}
     >
-      {/* Status dot */}
       <span className="relative shrink-0 w-2 h-2">
         {event.statusColor !== "#94a3b8" && (
           <span className="absolute inset-0 rounded-full animate-ping opacity-75" style={{ background: event.statusColor }} />
@@ -501,12 +604,10 @@ function DayEventCard({ event }: { event: CalendarEvent }) {
         <span className="absolute inset-0 rounded-full" style={{ background: event.statusColor }} />
       </span>
 
-      {/* Icon */}
       <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-foreground/[0.06] shrink-0">
         {event.icon}
       </span>
 
-      {/* Title */}
       <div className="flex-1 min-w-0">
         <div className="text-[13px] font-medium text-foreground truncate">{event.title}</div>
         <div className="text-[10px] text-muted-foreground capitalize">
@@ -514,7 +615,6 @@ function DayEventCard({ event }: { event: CalendarEvent }) {
         </div>
       </div>
 
-      {/* Color accent */}
       <span
         className="px-2 py-0.5 rounded-lg text-[10px] font-semibold"
         style={{ background: event.color + "15", color: event.color }}
