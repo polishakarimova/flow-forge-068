@@ -92,10 +92,12 @@ function PickerDropdown({
   value,
   options,
   onChange,
+  badge,
 }: {
   value: string | number;
   options: { value: number; label: string }[];
   onChange: (v: number) => void;
+  badge?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -114,7 +116,11 @@ function PickerDropdown({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[13px] font-semibold text-foreground hover:bg-muted/60 transition-colors border-none bg-transparent cursor-pointer"
+        className={`flex items-center gap-1 cursor-pointer transition-colors border-none ${
+          badge
+            ? "px-3 py-1 rounded-full bg-primary/[0.08] text-[12px] font-light tracking-wide text-primary hover:bg-primary/[0.15]"
+            : "px-2.5 py-1.5 rounded-xl text-[12px] font-light tracking-wide text-foreground hover:bg-muted/60 bg-transparent"
+        }`}
       >
         {selected?.label ?? value}
         <ChevronDown className="w-3 h-3 text-muted-foreground" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
@@ -126,8 +132,8 @@ function PickerDropdown({
             <div
               key={o.value}
               onClick={() => { onChange(o.value); setOpen(false); }}
-              className={`px-3 py-1.5 rounded-xl text-[13px] font-medium cursor-pointer transition-all duration-150 ${
-                o.value === value ? "violet-surface text-primary font-semibold" : "text-foreground hover:bg-muted/50"
+              className={`px-3 py-1.5 rounded-xl text-[12px] font-light tracking-wide cursor-pointer transition-all duration-150 ${
+                o.value === value ? "violet-surface text-primary !font-medium" : "text-foreground hover:bg-muted/50"
               }`}
             >
               {o.label}
@@ -291,30 +297,32 @@ const Calendar = () => {
               </div>
 
               {/* Navigation + Date pickers */}
-              <div className="flex items-center gap-1 pb-3">
-                <button
-                  onClick={() => navigate(-1)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors border-none bg-transparent cursor-pointer"
-                >
-                  <ChevronLeft className="w-4 h-4 text-muted-foreground" />
-                </button>
-                <button
-                  onClick={() => navigate(1)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors border-none bg-transparent cursor-pointer"
-                >
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                </button>
+              <div className="flex items-center gap-2 pb-3">
+                {/* Date selectors with arrows on sides */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => navigate(-1)}
+                    className="w-7 h-7 rounded-full flex items-center justify-center bg-primary/[0.08] hover:bg-primary/[0.15] transition-colors border-none cursor-pointer"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5 text-primary/70" />
+                  </button>
 
-                {/* Date selectors */}
-                <div className="flex items-center gap-0.5 ml-1">
-                  <PickerDropdown value={curYear} options={yearOptions} onChange={setYear} />
-                  <PickerDropdown value={curMonth} options={monthOptions} onChange={setMonth} />
+                  <PickerDropdown value={curMonth} options={monthOptions} onChange={setMonth} badge />
+
+                  <button
+                    onClick={() => navigate(1)}
+                    className="w-7 h-7 rounded-full flex items-center justify-center bg-primary/[0.08] hover:bg-primary/[0.15] transition-colors border-none cursor-pointer"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5 text-primary/70" />
+                  </button>
+
+                  <PickerDropdown value={curYear} options={yearOptions} onChange={setYear} badge />
                   {(viewMode === "week" || viewMode === "day") && (
                     <PickerDropdown value={curDay} options={dayOptions} onChange={setDay} />
                   )}
                 </div>
 
-                <span className="ml-auto text-[11px] text-muted-foreground">
+                <span className="ml-auto text-[11px] text-muted-foreground font-light tracking-wide">
                   {events.length} запланировано
                 </span>
               </div>

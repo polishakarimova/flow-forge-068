@@ -212,6 +212,7 @@ const Content = () => {
                       expanded={!!expandedTopics[topic.id]}
                       onToggle={() => setExpandedTopics((p) => ({ ...p, [topic.id]: !p[topic.id] }))}
                       onOpenContent={(ci) => { setEditingContent(ci); setEditingTopicTitle(topic.title); }}
+                      onTopicRename={(newTitle) => updateTopic({ ...topic, title: newTitle })}
                     />
                   ))
                 )}
@@ -267,6 +268,10 @@ const Content = () => {
                             topicTitle={ci.topicTitle}
                             showTopic
                             onOpen={(c) => { setEditingContent(c); setEditingTopicTitle(ci.topicTitle); }}
+                            onTopicRename={(newTitle) => {
+                              const topic = topics.find((t) => t.id === ci.topicId);
+                              if (topic) updateTopic({ ...topic, title: newTitle });
+                            }}
                           />
                         ))}
                       </div>
