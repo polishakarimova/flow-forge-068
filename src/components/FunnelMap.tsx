@@ -53,15 +53,28 @@ function toContentItemData(item: ContentItem): ContentItemData {
 
 const tierLabel: Record<string, string> = {
   "lead-magnet": "Лид-магнит",
+  tripwire: "Трипвайер",
   "mid-ticket": "Средний чек",
-  "flagship": "Флагман",
+  flagship: "Флагман",
+  consultation: "Консультация",
 };
 
 const TIER_TYPE_ID: Record<string, string> = {
   "lead-magnet": "lead_magnet",
+  tripwire: "tripwire",
   "mid-ticket": "mid_ticket",
   flagship: "flagship",
+  consultation: "consultation",
 };
+
+/* Ordered product tiers for sequential chain */
+const PRODUCT_CHAIN_ORDER: { key: keyof Pick<Funnel, "leadMagnet" | "tripwire" | "midTicket" | "flagship" | "consultation">; tier: string }[] = [
+  { key: "leadMagnet", tier: "lead-magnet" },
+  { key: "tripwire", tier: "tripwire" },
+  { key: "midTicket", tier: "mid-ticket" },
+  { key: "flagship", tier: "flagship" },
+  { key: "consultation", tier: "consultation" },
+];
 
 const NodeCard = ({
   children,
@@ -218,30 +231,6 @@ function ContentItemRow({
   );
 }
 
-/* ── Product row (icon + name) ── */
-function ProductItemRow({
-  product,
-  typeId,
-  onClick,
-}: {
-  product: FunnelProduct;
-  typeId: string;
-  onClick: () => void;
-}) {
-  return (
-    <div
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
-      className="flex items-center gap-2 text-[12px] cursor-pointer rounded-lg px-1.5 py-1 -mx-1.5
-        transition-all duration-150 hover:bg-primary/5 hover:ring-1 hover:ring-primary/20 active:scale-[0.98]"
-    >
-      <ProductTypeIcon typeId={typeId} size={16} />
-      <span className="text-foreground/80 truncate">
-        {product.name.length > 22 ? product.name.slice(0, 22) + "…" : product.name}
-      </span>
-    </div>
-  );
-}
-
 /* ── Expanded list modal overlay ── */
 function ExpandedListModal({
   title,
@@ -282,18 +271,24 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
   const [drawerProduct, setDrawerProduct] = useState<FunnelProduct | null>(null);
   const [editingContent, setEditingContent] = useState<ContentItem | null>(null);
   const [expandedContent, setExpandedContent] = useState(false);
-  const [expandedProducts, setExpandedProducts] = useState(false);
 
-  const allProducts: { product: FunnelProduct; typeId: string }[] = [];
-  if (funnel.leadMagnet) allProducts.push({ product: funnel.leadMagnet, typeId: "lead_magnet" });
-  if (funnel.midTicket) allProducts.push({ product: funnel.midTicket, typeId: "mid_ticket" });
-  if (funnel.flagship) allProducts.push({ product: funnel.flagship, typeId: "flagship" });
+  /* Build sequential product chain from funnel fields */
+  const productChain: { product: FunnelProduct; tier: string; typeId: string; label: string }[] = [];
+  for (const { key, tier } of PRODUCT_CHAIN_ORDER) {
+    const product = funnel[key];
+    if (product) {
+      productChain.push({
+        product,
+        tier,
+        typeId: TIER_TYPE_ID[tier] || tier,
+        label: tierLabel[tier] || tier,
+      });
+    }
+  }
 
   const PREVIEW_COUNT = 2;
   const contentPreview = funnel.contentItems.slice(0, PREVIEW_COUNT);
   const hasMoreContent = funnel.contentItems.length > PREVIEW_COUNT;
-  const productPreview = allProducts.slice(0, PREVIEW_COUNT);
-  const hasMoreProducts = allProducts.length > PREVIEW_COUNT;
 
   return (
     <div className="py-5 px-4 md:px-6 border-t border-border bg-muted/30">
@@ -362,40 +357,37 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
           </div>
         </NodeCard>
 
-        <SvgConnector delay={300} />
-
-        {/* === Products Node (combined) === */}
-        {allProducts.length > 0 ? (
-          <NodeCard delay={400}>
-            <div className="flex items-center gap-2 mb-3">
-              <ProductTypeIcon typeId={allProducts[0].typeId} size={24} />
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Продукты
-              </span>
-              <span className="text-[10px] text-muted-foreground/60">({allProducts.length})</span>
-            </div>
-            <div className="space-y-1.5">
-              {productPreview.map(({ product, typeId }) => (
-                <ProductItemRow
-                  key={product.id}
-                  product={product}
-                  typeId={typeId}
-                  onClick={() => setDrawerProduct(product)}
-                />
-              ))}
-              {hasMoreProducts && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); setExpandedProducts(true); }}
-                  className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground mt-1 transition-colors rounded-lg px-1.5 py-1 -mx-1.5 hover:bg-muted/50"
-                >
-                  <MoreHorizontal className="w-3.5 h-3.5" />
-                  <span>ещё {allProducts.length - PREVIEW_COUNT}</span>
-                </button>
+        {/* === Sequential Product Chain === */}
+        {productChain.map(({ product, tier, typeId, label }, idx) => (
+          <div key={product.id} className="flex items-start">
+            <SvgConnector delay={300 + idx * 150} />
+            <NodeCard
+              delay={350 + idx * 150}
+              flagship={tier === "flagship"}
+              onClick={() => setDrawerProduct(product)}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <ProductTypeIcon typeId={typeId} size={22} />
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  {label}
+                </span>
+              </div>
+              <p className="text-[12px] text-foreground/80 truncate max-w-[160px]">
+                {product.name}
+              </p>
+              {product.price && (
+                <p className="text-[11px] text-primary font-medium mt-1">{product.price} ₽</p>
               )}
-            </div>
-          </NodeCard>
-        ) : (
-          <PlaceholderCard label="Продукт" tier="lead-magnet" delay={400} />
+            </NodeCard>
+          </div>
+        ))}
+
+        {/* If no products at all, show placeholder */}
+        {productChain.length === 0 && (
+          <>
+            <SvgConnector delay={300} />
+            <PlaceholderCard label="Продукт" tier="lead-magnet" delay={400} />
+          </>
         )}
       </div>
 
@@ -404,20 +396,6 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
         <ExpandedListModal title="Контент" onClose={() => setExpandedContent(false)}>
           {funnel.contentItems.map((item) => (
             <ContentItemRow key={item.id} item={item} onClick={() => { setExpandedContent(false); setEditingContent(item); }} />
-          ))}
-        </ExpandedListModal>
-      )}
-
-      {/* Expanded products list */}
-      {expandedProducts && (
-        <ExpandedListModal title="Продукты" onClose={() => setExpandedProducts(false)}>
-          {allProducts.map(({ product, typeId }) => (
-            <ProductItemRow
-              key={product.id}
-              product={product}
-              typeId={typeId}
-              onClick={() => { setExpandedProducts(false); setDrawerProduct(product); }}
-            />
           ))}
         </ExpandedListModal>
       )}
