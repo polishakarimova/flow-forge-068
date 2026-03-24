@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { PlatformIcon } from "./PlatformIcon";
 
 export interface DropdownOption {
@@ -6,6 +6,7 @@ export interface DropdownOption {
   label: string;
   icon?: string;
   iconSrc?: string;
+  iconNode?: ReactNode;
   platformId?: string;
   dot?: string;
   count?: number;
@@ -42,7 +43,7 @@ export function ContentDropdown({ value, onChange, options, placeholder, width =
         }`}
       >
         <span className="flex items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: "#4b5563" }}>
-          {selected?.platformId ? <PlatformIcon platformId={selected.platformId} size={15} /> : selected?.iconSrc ? <img src={selected.iconSrc} alt="" width={15} height={15} className="shrink-0" /> : selected?.icon ? <span className="text-[15px]">{selected.icon}</span> : null}
+          {selected?.platformId ? <PlatformIcon platformId={selected.platformId} size={15} /> : selected?.iconNode ? selected.iconNode : selected?.iconSrc ? <img src={selected.iconSrc} alt="" width={15} height={15} className="shrink-0" /> : selected?.icon ? <span className="text-[15px]">{selected.icon}</span> : null}
           {selected?.dot && (
             <span className="w-2 h-2 rounded-full shrink-0" style={{ background: selected.dot }} />
           )}
@@ -76,7 +77,7 @@ export function ContentDropdown({ value, onChange, options, placeholder, width =
               }`}
               style={{ color: value === o.value ? undefined : "#4b5563" }}
             >
-              {o.platformId ? <PlatformIcon platformId={o.platformId} size={15} /> : o.iconSrc ? <img src={o.iconSrc} alt="" width={15} height={15} className="shrink-0" /> : o.icon ? <span className="text-[15px]">{o.icon}</span> : null}
+              {o.platformId ? <PlatformIcon platformId={o.platformId} size={15} /> : o.iconNode ? o.iconNode : o.iconSrc ? <img src={o.iconSrc} alt="" width={15} height={15} className="shrink-0" /> : o.icon ? <span className="text-[15px]">{o.icon}</span> : null}
               {o.dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: o.dot }} />}
               <span className="flex-1">{o.label}</span>
               {o.count != null && <span className="text-[12px] text-muted-foreground">{o.count}</span>}

@@ -15,15 +15,7 @@ import { ProductCard } from "@/components/products/ProductCard";
 import { CreateProductModal } from "@/components/products/CreateProductModal";
 import { EditProductModal } from "@/components/products/EditProductModal";
 import { ContentDropdown } from "@/components/content/ContentDropdown";
-
-const TYPE_ICON_SRC: Record<string, string> = {
-  lead_magnet: "/icons/magnet.svg",
-  tripwire: "/icons/lightning.svg",
-  mid_ticket: "/icons/coin.svg",
-  flagship: "/icons/diamond.svg",
-  consultation: "/icons/chat.svg",
-  private: "/icons/crown.svg",
-};
+import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
 
 const Products = () => {
   const { products, addProduct, updateProduct, formats, addFormat, deleteFormat } = useDataStore();
@@ -61,7 +53,7 @@ const Products = () => {
     const counts: Record<string, number> = {};
     products.forEach((p) => { counts[p.typeId] = (counts[p.typeId] || 0) + 1; });
     return PRODUCT_TYPES.filter((t) => counts[t.id]).map((t) => ({
-      value: t.id, label: t.label, iconSrc: TYPE_ICON_SRC[t.id], count: counts[t.id],
+      value: t.id, label: t.label, iconNode: <ProductTypeIcon typeId={t.id} size={15} />, count: counts[t.id],
     }));
   }, [products]);
 
