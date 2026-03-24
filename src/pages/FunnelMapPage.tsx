@@ -37,26 +37,6 @@ function SvgIconKey({ x, y }: { x: number; y: number }) {
   );
 }
 
-function SvgIconMagnet({ x, y }: { x: number; y: number }) {
-  return (
-    <g transform={`translate(${x}, ${y})`} fill="none" stroke={ICON_COLOR} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 1v5a4 4 0 008 0V1" />
-      <line x1="2" y1="1" x2="6" y2="1" />
-      <line x1="10" y1="1" x2="14" y2="1" />
-    </g>
-  );
-}
-
-function SvgIconCoin({ x, y }: { x: number; y: number }) {
-  return (
-    <g transform={`translate(${x}, ${y})`} fill="none" stroke={ICON_COLOR} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="7" cy="7" r="6" />
-      <path d="M5 5.5C5.3 4.6 6 4 7 4s2 .8 2 1.8c0 1.4-2 1.4-2 2.7" />
-      <circle cx="7" cy="10.5" r="0.3" fill={ICON_COLOR} />
-    </g>
-  );
-}
-
 /* ── colour helpers ─────────────────────────────────── */
 
 const BADGE_HEX: Record<BadgeColor, string> = {
@@ -122,6 +102,7 @@ interface ColHeader {
   label: string;
   w: number;
   icon: ((props: { x: number; y: number }) => JSX.Element) | null;
+  tierTypeId?: string; // if set, use ProductTypeIcon instead of icon
 }
 
 /* ── build graph — full chain per funnel ───────────── */
@@ -163,12 +144,13 @@ function buildGraph(
     { x: contentX, label: "КОНТЕНТ", w: 240, icon: SvgIconFileText },
     { x: keywordX, label: "КОДОВОЕ СЛОВО", w: 160, icon: SvgIconKey },
   ];
-  tierColumns.forEach(({ tier, x }, idx) => {
+  tierColumns.forEach(({ tier, x }) => {
     headers.push({
       x,
       label: TIER_LABEL[tier] || tier,
       w: COL_W,
-      icon: idx === 0 ? SvgIconMagnet : SvgIconCoin,
+      icon: null,
+      tierTypeId: tier,
     });
   });
 
@@ -699,9 +681,15 @@ const FunnelMapPage = () => {
             <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
               {headers.map((h) => (
                 <g key={h.label}>
-                  {h.icon && <h.icon x={h.x + 8} y={22} />}
+                  {h.tierTypeId ? (
+                    <foreignObject x={h.x + 4} y={20} width={18} height={18}>
+                      <ProductTypeIcon typeId={h.tierTypeId} size={18} />
+                    </foreignObject>
+                  ) : (
+                    h.icon && <h.icon x={h.x + 8} y={22} />
+                  )}
                   <text
-                    x={h.x + (h.icon ? 26 : 8)}
+                    x={h.x + (h.tierTypeId || h.icon ? 26 : 8)}
                     y={36}
                     fontSize={10}
                     fontWeight={800}
