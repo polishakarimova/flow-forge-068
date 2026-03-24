@@ -38,9 +38,9 @@ const NodeCard = ({
 }) => (
   <div
     onClick={onClick}
-    className={`rounded-2xl border border-border bg-card p-4 shadow-sm min-w-[180px] transition-all duration-200
+    className={`rounded-2xl border border-border bg-card p-3 shadow-sm min-w-[140px] transition-all duration-200
       hover:-translate-y-0.5 hover:shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.15)] hover:border-primary/30
-      ${flagship ? "ring-2 ring-primary/30 border-primary/40 bg-gradient-to-br from-card to-[hsl(var(--violet-soft))] min-w-[200px] hover:-translate-y-1 hover:shadow-[0_8px_30px_-8px_hsl(var(--primary)/0.25)] hover:ring-primary/50" : ""}
+      ${flagship ? "ring-2 ring-primary/30 border-primary/40 bg-gradient-to-br from-card to-[hsl(var(--violet-soft))] min-w-[160px] hover:-translate-y-1 hover:shadow-[0_8px_30px_-8px_hsl(var(--primary)/0.25)] hover:ring-primary/50" : ""}
       ${onClick ? "cursor-pointer" : ""}
       ${className}`}
     style={{
@@ -419,11 +419,11 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
           delay={0}
           onClick={hasMoreContent ? () => setExpandedContent(true) : undefined}
         >
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-              <FileText className="w-3.5 h-3.5 text-primary" />
+          <div className="flex items-center gap-1.5 mb-2">
+            <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
+              <FileText className="w-2.5 h-2.5 text-primary" />
             </div>
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
               Контент
             </span>
             <span className="text-[10px] text-muted-foreground/60">({contentItems.length})</span>
@@ -452,16 +452,16 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
 
         {/* === CTA Node === */}
         <NodeCard delay={200}>
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Send className="w-3.5 h-3.5 text-primary" />
+          <div className="flex items-center gap-1.5 mb-2">
+            <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
+              <Send className="w-2.5 h-2.5 text-primary" />
             </div>
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
               CTA
             </span>
           </div>
           <div
-            className="inline-flex items-center px-3 py-1.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.05em] transition-transform duration-200 hover:scale-105"
+            className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-[0.05em]"
             style={getBadgeStyle(funnel.badgeColor)}
           >
             {funnel.keyword}
@@ -482,17 +482,17 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
                 flagship={isFlagship}
                 onClick={() => setEditingProduct(product)}
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <ProductTypeIcon typeId={typeId} size={22} />
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <ProductTypeIcon typeId={typeId} size={18} />
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                     {label}
                   </span>
                 </div>
-                <p className="text-[12px] text-foreground/80 truncate max-w-[160px]">
+                <p className="text-[11px] text-foreground/80 truncate max-w-[140px]">
                   {product.name}
                 </p>
                 {product.price && (
-                  <p className="text-[11px] text-primary font-medium mt-1">
+                  <p className="text-[10px] text-primary font-medium mt-0.5">
                     {product.price} {product.currency}
                   </p>
                 )}
