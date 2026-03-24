@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { PLATFORMS, type Topic } from "@/lib/contentData";
+import { PlatformIcon } from "./PlatformIcon";
 
 interface EditIdeaModalProps {
   topic: Topic;
@@ -94,7 +95,7 @@ export function EditIdeaModal({ topic, onClose, onSave, onRealize }: EditIdeaMod
                           color: isSelected ? p.color : "#64748b",
                         }}
                       >
-                        <span>{p.icon}</span>
+                        <PlatformIcon src={p.icon} alt={p.label} size={16} />
                         {p.label}
                         {isSelected && <span>✓</span>}
                       </button>

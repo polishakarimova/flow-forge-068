@@ -31,6 +31,7 @@ const PLATFORM_MAP: Record<string, { platform: string; format: string }> = {
   threads: { platform: "Threads", format: "Тред" },
   youtube: { platform: "YouTube", format: "Видео" },
   article: { platform: "Blog", format: "Статья" },
+  vk: { platform: "VK", format: "Пост" },
 };
 
 const STATUS_MAP: Record<string, "published" | "ready" | "draft"> = {
@@ -452,10 +453,13 @@ export function CreateFunnelModal({ onClose }: CreateFunnelModalProps) {
                             ✓
                           </span>
                           {plat && (
-                            <span
-                              className="w-1.5 h-4 rounded-full shrink-0"
-                              style={{ background: plat.color }}
-                              title={plat.label}
+                            <img
+                              src={plat.icon}
+                              alt={plat.label}
+                              width={14}
+                              height={14}
+                              className="shrink-0"
+                              style={{ objectFit: "contain" }}
                             />
                           )}
                           <span className="text-foreground font-medium flex-1 truncate">{ci.title}</span>

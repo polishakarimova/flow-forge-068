@@ -33,14 +33,15 @@ export interface Topic {
 }
 
 export const PLATFORMS: Platform[] = [
-  { id: "stories", label: "Сторис", icon: "◎", color: "#E1306C" },
-  { id: "tg_post", label: "Пост ТГ", icon: "✈", color: "#2AABEE" },
-  { id: "ig_post", label: "Пост Инста", icon: "📸", color: "#C13584" },
-  { id: "carousel", label: "Карусель", icon: "▦", color: "#F77737" },
-  { id: "reels", label: "Рилс", icon: "▶", color: "#FF0069" },
-  { id: "threads", label: "Тредс", icon: "@", color: "#000000" },
-  { id: "youtube", label: "Ютуб", icon: "▷", color: "#FF0000" },
-  { id: "article", label: "Статья", icon: "✎", color: "#34A853" },
+  { id: "stories", label: "Сторис", icon: "/icons/stories.svg", color: "#E1306C" },
+  { id: "tg_post", label: "Пост ТГ", icon: "/icons/telegram.svg", color: "#2AABEE" },
+  { id: "ig_post", label: "Пост Инста", icon: "/icons/instagram.svg", color: "#C13584" },
+  { id: "carousel", label: "Карусель", icon: "/icons/carousel.svg", color: "#F77737" },
+  { id: "reels", label: "Reels", icon: "/icons/reels.svg", color: "#FF0069" },
+  { id: "threads", label: "Тредс", icon: "/icons/threads.svg", color: "#000000" },
+  { id: "youtube", label: "Ютуб", icon: "/icons/youtube.svg", color: "#FF0000" },
+  { id: "article", label: "Статья", icon: "/icons/article.svg", color: "#34A853" },
+  { id: "vk", label: "ВК", icon: "/icons/vk.svg", color: "#4680C2" },
 ];
 
 export const STATUSES: Record<ContentStatusKey, StatusInfo> = {

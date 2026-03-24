@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { PLATFORMS } from "@/lib/contentData";
+import { PlatformIcon } from "./PlatformIcon";
 
 interface CreateTopicModalProps {
   onClose: () => void;
@@ -84,7 +85,7 @@ export function CreateTopicModal({ onClose, onCreate }: CreateTopicModalProps) {
                       color: isSelected ? p.color : "#64748b",
                     }}
                   >
-                    <span>{p.icon}</span>
+                    <PlatformIcon src={p.icon} alt={p.label} size={16} />
                     {p.label}
                     {isSelected && <span>✓</span>}
                   </button>

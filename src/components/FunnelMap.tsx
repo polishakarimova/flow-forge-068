@@ -1,6 +1,22 @@
 import { useState } from "react";
 import { Plus, Send, FileText, Gift, DollarSign, Crown } from "lucide-react";
 import type { Funnel, ContentStatus, FunnelProduct, ContentItem } from "@/lib/funnelData";
+
+const FUNNEL_PLATFORM_ICON: Record<string, string> = {
+  "Telegram|Пост": "/icons/telegram.svg",
+  "Instagram|Stories": "/icons/stories.svg",
+  "Instagram|Пост": "/icons/instagram.svg",
+  "Instagram|Reels": "/icons/reels.svg",
+  "Instagram|Карусель": "/icons/carousel.svg",
+  "Blog|Статья": "/icons/article.svg",
+  "Threads|Тред": "/icons/threads.svg",
+  "YouTube|Видео": "/icons/youtube.svg",
+  "VK|Пост": "/icons/vk.svg",
+};
+
+function getFunnelItemIcon(item: ContentItem): string | null {
+  return FUNNEL_PLATFORM_ICON[`${item.platform}|${item.format}`] || null;
+}
 import { productsCatalog } from "@/lib/funnelData";
 import { ProductDrawer } from "@/components/ProductDrawer";
 import { ContentDrawer } from "@/components/ContentDrawer";
@@ -190,11 +206,15 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
                 title="Нажми чтобы открыть"
               >
                 <span className={`w-2 h-2 rounded-full shrink-0 ${statusColor[item.status]}`} title={statusLabel[item.status]} />
-                <span className="text-muted-foreground font-medium shrink-0">
-                  {item.platform}
-                </span>
+                {getFunnelItemIcon(item) ? (
+                  <img src={getFunnelItemIcon(item)!} alt={`${item.platform} ${item.format}`} width={14} height={14} className="shrink-0" style={{ objectFit: "contain" }} />
+                ) : (
+                  <span className="text-muted-foreground font-medium shrink-0">
+                    {item.platform}
+                  </span>
+                )}
                 <span className="text-foreground/60 truncate">
-                  {item.format}
+                  {item.title.length > 25 ? item.title.slice(0, 25) + "…" : item.title}
                 </span>
               </div>
             ))}
