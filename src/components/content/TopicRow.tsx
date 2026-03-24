@@ -8,10 +8,9 @@ interface TopicRowProps {
   expanded: boolean;
   onToggle: () => void;
   onOpenContent: (item: ContentItemData) => void;
-  onTopicRename?: (newTitle: string) => void;
 }
 
-export function TopicRow({ topic, expanded, onToggle, onOpenContent, onTopicRename }: TopicRowProps) {
+export function TopicRow({ topic, expanded, onToggle, onOpenContent }: TopicRowProps) {
   const platformIds = [...new Set(topic.contentItems.map((c) => c.platformId))];
 
   return (
@@ -62,14 +61,7 @@ export function TopicRow({ topic, expanded, onToggle, onOpenContent, onTopicRena
       {expanded && topic.contentItems.length > 0 && (
         <div className="animate-fade-in border-t border-border bg-muted/30 p-1.5 pl-5 flex flex-col gap-0.5">
           {topic.contentItems.map((ci) => (
-            <ContentCard
-              key={ci.id}
-              item={ci}
-              topicTitle={topic.title}
-              showTopic
-              onOpen={onOpenContent}
-              onTopicRename={onTopicRename}
-            />
+            <ContentCard key={ci.id} item={ci} onOpen={onOpenContent} showTopic={false} />
           ))}
         </div>
       )}
