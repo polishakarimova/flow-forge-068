@@ -33,7 +33,7 @@ export const PRODUCT_TYPES: ProductType[] = [
   { id: "mid_ticket", label: "среднечек", short: "СЧ", icon: "💎", color: "#6366f1" },
   { id: "flagship", label: "флагман", short: "ФГ", icon: "🚀", color: "#ef4444" },
   { id: "consultation", label: "консультация", short: "КС", icon: "🎯", color: "#22c55e" },
-  { id: "private", label: "личка", short: "ЛК", icon: "🔒", color: "#0ea5e9" },
+  { id: "private", label: "личная работа", short: "ЛР", icon: "🔒", color: "#0ea5e9" },
 ];
 
 export const PRODUCT_STATUSES: Record<ProductStatusKey, ProductStatusInfo> = {
