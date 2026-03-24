@@ -68,7 +68,6 @@ const NodeCard = ({
   style,
   delay = 0,
   cardId,
-  onDelete,
 }: {
   children: React.ReactNode;
   className?: string;
@@ -77,20 +76,17 @@ const NodeCard = ({
   style?: React.CSSProperties;
   delay?: number;
   cardId?: string;
-  onDelete?: () => void;
 }) => {
   const savedW = cardId ? loadCardWidths()[cardId] : undefined;
   const [width, setWidth] = useState<number | undefined>(savedW);
-  const [showDelete, setShowDelete] = useState(false);
   const dragRef = useRef<{ startX: number; startW: number } | null>(null);
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!dragRef.current) return;
       e.preventDefault();
-      const newW = Math.max(120, dragRef.current.startW + e.clientX - dragRef.current.startX);
+      const newW = Math.max(80, dragRef.current.startW + e.clientX - dragRef.current.startX);
       setWidth(newW);
     };
     const onUp = () => {
@@ -110,14 +106,10 @@ const NodeCard = ({
       if (!dragRef.current) return;
       e.preventDefault();
       const touch = e.touches[0];
-      const newW = Math.max(120, dragRef.current.startW + touch.clientX - dragRef.current.startX);
+      const newW = Math.max(80, dragRef.current.startW + touch.clientX - dragRef.current.startX);
       setWidth(newW);
     };
     const onTouchEnd = () => {
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = null;
-      }
       if (dragRef.current && cardId && width) {
         saveCardWidth(cardId, width);
       }
@@ -137,32 +129,10 @@ const NodeCard = ({
 
   const handleTouchStart = (e: React.TouchEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     const touch = e.touches[0];
     const el = cardRef.current;
-    const startX = touch.clientX;
-
-    /* Long press → show delete */
-    longPressTimer.current = setTimeout(() => {
-      longPressTimer.current = null;
-      if (onDelete) {
-        setShowDelete(true);
-        // vibrate if supported
-        if (navigator.vibrate) navigator.vibrate(30);
-      }
-    }, 600);
-
-    /* Short touch → start resize immediately after small movement */
-    if (el) {
-      dragRef.current = { startX, startW: el.offsetWidth };
-    }
-  };
-
-  const handleTouchMove = () => {
-    /* Cancel long press if user moves finger (they're resizing) */
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
+    if (el) dragRef.current = { startX: touch.clientX, startW: el.offsetWidth };
   };
 
   return (
@@ -173,7 +143,6 @@ const NodeCard = ({
         hover:-translate-y-0.5 hover:shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.15)] hover:border-primary/30
         ${flagship ? "ring-2 ring-primary/30 border-primary/40 bg-gradient-to-br from-card to-[hsl(var(--violet-soft))] hover:-translate-y-1 hover:shadow-[0_8px_30px_-8px_hsl(var(--primary)/0.25)] hover:ring-primary/50" : ""}
         ${onClick ? "cursor-pointer" : ""}
-        ${showDelete ? "ring-2 ring-destructive/50 border-destructive/40" : ""}
         ${className}`}
       style={{
         animation: `fadeSlideIn 0.4s ease-out ${delay}ms both`,
@@ -182,33 +151,13 @@ const NodeCard = ({
       }}
     >
       {children}
-      {/* Delete overlay after long press */}
-      {showDelete && onDelete && (
-        <div className="absolute inset-0 rounded-2xl bg-destructive/10 backdrop-blur-[2px] flex items-center justify-center z-20 animate-in fade-in duration-150">
-          <div className="flex gap-2">
-            <button
-              onClick={(e) => { e.stopPropagation(); onDelete(); setShowDelete(false); }}
-              className="px-3 py-1.5 rounded-xl bg-destructive text-destructive-foreground text-[11px] font-semibold border-none cursor-pointer hover:bg-destructive/90 transition-colors"
-            >
-              <Trash2 className="w-3 h-3 inline mr-1" />
-              Удалить
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowDelete(false); }}
-              className="px-3 py-1.5 rounded-xl bg-card text-foreground text-[11px] font-semibold border border-border cursor-pointer hover:bg-muted transition-colors"
-            >
-              Отмена
-            </button>
-          </div>
-        </div>
-      )}
       {cardId && (
         <div
           onMouseDown={handleResizeStart}
           onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          className="absolute top-0 -right-2 w-7 h-full cursor-col-resize group/handle z-10 flex items-center justify-center"
-          style={{ touchAction: "none" }}
+          onClick={(e) => e.stopPropagation()}
+          className="absolute top-0 -right-3 w-8 h-full cursor-col-resize group/handle z-10 flex items-center justify-center select-none"
+          style={{ touchAction: "none", WebkitUserSelect: "none", userSelect: "none" }}
         >
           <div className="w-1 h-8 rounded-full bg-primary/20 group-hover/handle:bg-primary/50 transition-colors" />
         </div>
@@ -546,19 +495,6 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
     ));
   }, [funnel.id, setFunnels]);
 
-  const removeProductFromFunnel = useCallback((product: Product) => {
-    setFunnels((prev) => prev.map((f) => {
-      if (f.id !== funnel.id) return f;
-      const updated = { ...f };
-      if (updated.leadMagnetId === product.id) updated.leadMagnetId = undefined;
-      if (updated.tripwireId === product.id) updated.tripwireId = undefined;
-      if (updated.midTicketId === product.id) updated.midTicketId = undefined;
-      if (updated.flagshipId === product.id) updated.flagshipId = undefined;
-      if (updated.consultationId === product.id) updated.consultationId = undefined;
-      return updated;
-    }));
-  }, [funnel.id, setFunnels]);
-
   /* Products not already in this funnel (for picker) */
   const availableProducts = useMemo(() => {
     const usedIds = new Set(productChain.map(({ product }) => product.id));
@@ -590,12 +526,6 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
           delay={0}
           cardId={`${funnel.id}-content`}
           onClick={hasMoreContent ? () => setExpandedContent(true) : undefined}
-          onDelete={contentItems.length > 0 ? () => {
-            /* Remove all content from funnel */
-            setFunnels((prev) => prev.map((f) =>
-              f.id === funnel.id ? { ...f, contentItemIds: [], contentCount: 0 } : f
-            ));
-          } : undefined}
         >
           <div className="flex items-center gap-1 md:gap-1.5 mb-1 md:mb-2">
             <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-primary/10 flex items-center justify-center">
@@ -660,7 +590,6 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
                 cardId={`${funnel.id}-product-${product.id}`}
                 flagship={isFlagship}
                 onClick={() => setEditingProduct(product)}
-                onDelete={() => removeProductFromFunnel(product)}
               >
                 <div className="flex items-center gap-1 md:gap-1.5 mb-1 md:mb-1.5">
                   <ProductTypeIcon typeId={typeId} size={16} />
