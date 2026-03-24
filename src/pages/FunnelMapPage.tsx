@@ -524,6 +524,7 @@ const FunnelMapPage = () => {
   const dragMovedRef = useRef(false);
 
   const touchRef = useRef<TouchState>({ startX: 0, startY: 0, panX: 0, panY: 0, dist: 0, zoom: 1, nodeId: null, orig: [], moved: false });
+  const lastTapRef = useRef<{ nodeId: string; time: number }>({ nodeId: "", time: 0 });
   const isMobile = typeof window !== "undefined" && "ontouchstart" in window;
 
   // Sync nodes when graph changes
@@ -660,9 +661,7 @@ const FunnelMapPage = () => {
         transform={`translate(${node.x}, ${node.y})`}
         style={{ cursor: isClickable ? "pointer" : "grab", opacity: dimmed ? 0.12 : 1, transition: "opacity .2s" }}
         onMouseDown={(e) => handleMouseDown(e, node.id)}
-        onMouseUp={() => {
-          if (!dragMovedRef.current && isClickable) handleNodeClick(node);
-        }}
+        onDoubleClick={() => { if (isClickable) handleNodeClick(node); }}
         onMouseEnter={() => !isMobile && setSelected(node.id)}
         onMouseLeave={() => !isMobile && setSelected(null)}
         onTouchStart={(e) => {
@@ -670,7 +669,16 @@ const FunnelMapPage = () => {
           handleTap(node.id);
         }}
         onTouchEnd={() => {
-          if (!touchRef.current.moved && isClickable) handleNodeClick(node);
+          if (!touchRef.current.moved && isClickable) {
+            const now = Date.now();
+            const last = lastTapRef.current;
+            if (last.nodeId === node.id && now - last.time < 350) {
+              handleNodeClick(node);
+              lastTapRef.current = { nodeId: "", time: 0 };
+            } else {
+              lastTapRef.current = { nodeId: node.id, time: now };
+            }
+          }
         }}
       >
         {isMobile && <rect x={-6} y={-6} width={node.w + 12} height={node.h + 12} fill="transparent" />}
@@ -736,8 +744,8 @@ const FunnelMapPage = () => {
               onClick={() => setShowHint(false)}
             >
               {isMobile
-                ? "двигай · щипком зумь · тап = цепочка"
-                : "scroll = zoom · drag = двигать · hover = цепочка"}
+                ? "двигай · щипком зумь · 2× тап = открыть"
+                : "scroll = zoom · drag = двигать · 2× клик = открыть"}
             </div>
           )}
 
