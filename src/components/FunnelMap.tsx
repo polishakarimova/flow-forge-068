@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { Plus, Send, FileText, MoreHorizontal, Trash2 } from "lucide-react";
 import type { Funnel } from "@/lib/funnelData";
 import { resolveFunnelContent, resolveFunnelProducts } from "@/lib/funnelData";
@@ -21,6 +21,21 @@ const TIER_LABEL: Record<string, string> = {
   consultation: "Консультация",
 };
 
+const CARD_WIDTHS_KEY = "funnel-card-widths";
+
+function loadCardWidths(): Record<string, number> {
+  try {
+    const raw = localStorage.getItem(CARD_WIDTHS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveCardWidth(cardId: string, width: number) {
+  const all = loadCardWidths();
+  all[cardId] = width;
+  localStorage.setItem(CARD_WIDTHS_KEY, JSON.stringify(all));
+}
+
 const NodeCard = ({
   children,
   className = "",
@@ -28,6 +43,7 @@ const NodeCard = ({
   onClick,
   style,
   delay = 0,
+  cardId,
 }: {
   children: React.ReactNode;
   className?: string;
@@ -35,22 +51,64 @@ const NodeCard = ({
   onClick?: () => void;
   style?: React.CSSProperties;
   delay?: number;
-}) => (
-  <div
-    onClick={onClick}
-    className={`rounded-2xl border border-border bg-card p-3 shadow-sm min-w-[140px] transition-all duration-200
-      hover:-translate-y-0.5 hover:shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.15)] hover:border-primary/30
-      ${flagship ? "ring-2 ring-primary/30 border-primary/40 bg-gradient-to-br from-card to-[hsl(var(--violet-soft))] min-w-[160px] hover:-translate-y-1 hover:shadow-[0_8px_30px_-8px_hsl(var(--primary)/0.25)] hover:ring-primary/50" : ""}
-      ${onClick ? "cursor-pointer" : ""}
-      ${className}`}
-    style={{
-      animation: `fadeSlideIn 0.4s ease-out ${delay}ms both`,
-      ...style,
-    }}
-  >
-    {children}
-  </div>
-);
+  cardId?: string;
+}) => {
+  const savedW = cardId ? loadCardWidths()[cardId] : undefined;
+  const [width, setWidth] = useState<number | undefined>(savedW);
+  const dragRef = useRef<{ startX: number; startW: number } | null>(null);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!dragRef.current) return;
+      e.preventDefault();
+      const newW = Math.max(120, dragRef.current.startW + e.clientX - dragRef.current.startX);
+      setWidth(newW);
+    };
+    const onUp = () => {
+      if (dragRef.current && cardId && width) {
+        saveCardWidth(cardId, width);
+      }
+      dragRef.current = null;
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, [cardId, width]);
+
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const el = (e.target as HTMLElement).parentElement!;
+    dragRef.current = { startX: e.clientX, startW: el.offsetWidth };
+  };
+
+  return (
+    <div
+      onClick={onClick}
+      className={`relative rounded-2xl border border-border bg-card p-3 shadow-sm min-w-[120px] transition-shadow duration-200
+        hover:-translate-y-0.5 hover:shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.15)] hover:border-primary/30
+        ${flagship ? "ring-2 ring-primary/30 border-primary/40 bg-gradient-to-br from-card to-[hsl(var(--violet-soft))] hover:-translate-y-1 hover:shadow-[0_8px_30px_-8px_hsl(var(--primary)/0.25)] hover:ring-primary/50" : ""}
+        ${onClick ? "cursor-pointer" : ""}
+        ${className}`}
+      style={{
+        animation: `fadeSlideIn 0.4s ease-out ${delay}ms both`,
+        width: width ? `${width}px` : undefined,
+        ...style,
+      }}
+    >
+      {children}
+      {cardId && (
+        <div
+          onMouseDown={handleResizeStart}
+          className="absolute top-0 right-0 w-2 h-full cursor-col-resize group/handle"
+          style={{ touchAction: "none" }}
+        >
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-full bg-border opacity-0 group-hover/handle:opacity-100 transition-opacity" />
+        </div>
+      )}
+    </div>
+  );
+};
 
 const SvgConnector = ({ delay = 0 }: { delay?: number }) => (
   <div
@@ -410,6 +468,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
         {/* === Content Node === */}
         <NodeCard
           delay={0}
+          cardId={`${funnel.id}-content`}
           onClick={hasMoreContent ? () => setExpandedContent(true) : undefined}
         >
           <div className="flex items-center gap-1.5 mb-2">
@@ -444,7 +503,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
         <SvgConnector delay={100} />
 
         {/* === CTA Node === */}
-        <NodeCard delay={200} className="!min-w-0 !p-2">
+        <NodeCard delay={200} cardId={`${funnel.id}-cta`} className="!min-w-0 !p-2">
           <div className="flex items-center gap-1.5 mb-1.5">
             <div className="w-4 h-4 rounded-md bg-primary/10 flex items-center justify-center">
               <Send className="w-2 h-2 text-primary" />
@@ -472,6 +531,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
               <SvgConnector delay={300 + idx * 150} />
               <NodeCard
                 delay={350 + idx * 150}
+                cardId={`${funnel.id}-product-${product.id}`}
                 flagship={isFlagship}
                 onClick={() => setEditingProduct(product)}
               >
@@ -481,7 +541,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
                     {label}
                   </span>
                 </div>
-                <p className="text-[11px] text-foreground/80 truncate max-w-[140px]">
+                <p className="text-[11px] text-foreground/80 truncate">
                   {product.name}
                 </p>
               </NodeCard>
