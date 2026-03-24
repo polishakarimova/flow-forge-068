@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { Plus, Send, FileText, MoreHorizontal, Trash2 } from "lucide-react";
+import { Plus, Send, FileText, MoreHorizontal } from "lucide-react";
 import type { Funnel } from "@/lib/funnelData";
 import { resolveFunnelContent, resolveFunnelProducts } from "@/lib/funnelData";
 import { useDataStore } from "@/lib/dataStore";
@@ -79,6 +79,8 @@ const NodeCard = ({
 }) => {
   const savedW = cardId ? loadCardWidths()[cardId] : undefined;
   const [width, setWidth] = useState<number | undefined>(savedW);
+  const widthRef = useRef(width);
+  widthRef.current = width;
   const dragRef = useRef<{ startX: number; startW: number } | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -89,19 +91,6 @@ const NodeCard = ({
       const newW = Math.max(80, dragRef.current.startW + e.clientX - dragRef.current.startX);
       setWidth(newW);
     };
-    const onUp = () => {
-      if (dragRef.current && cardId && width) {
-        saveCardWidth(cardId, width);
-      }
-      dragRef.current = null;
-    };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
-  }, [cardId, width]);
-
-  /* Touch resize support */
-  useEffect(() => {
     const onTouchMove = (e: TouchEvent) => {
       if (!dragRef.current) return;
       e.preventDefault();
@@ -109,16 +98,23 @@ const NodeCard = ({
       const newW = Math.max(80, dragRef.current.startW + touch.clientX - dragRef.current.startX);
       setWidth(newW);
     };
-    const onTouchEnd = () => {
-      if (dragRef.current && cardId && width) {
-        saveCardWidth(cardId, width);
+    const onEnd = () => {
+      if (dragRef.current && cardId && widthRef.current) {
+        saveCardWidth(cardId, widthRef.current);
       }
       dragRef.current = null;
     };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onEnd);
     window.addEventListener("touchmove", onTouchMove, { passive: false });
-    window.addEventListener("touchend", onTouchEnd);
-    return () => { window.removeEventListener("touchmove", onTouchMove); window.removeEventListener("touchend", onTouchEnd); };
-  }, [cardId, width]);
+    window.addEventListener("touchend", onEnd);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onEnd);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onEnd);
+    };
+  }, [cardId]);
 
   const handleResizeStart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -191,40 +187,20 @@ const SvgConnector = ({ delay = 0 }: { delay?: number }) => (
   </div>
 );
 
-/* ── Gray plus button between blocks ── */
-const AddProductButton = ({ delay = 0, onClick }: { delay?: number; onClick: () => void }) => (
-  <div
-    className="flex flex-col items-center justify-center shrink-0 px-0.5 mt-4"
-    style={{ animation: `fadeSlideIn 0.3s ease-out ${delay}ms both` }}
-  >
-    <button
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
-      className="w-6 h-6 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center
-        text-muted-foreground/40 hover:border-primary/50 hover:text-primary hover:bg-primary/5
-        transition-all duration-200 cursor-pointer"
-      title="Добавить продукт"
-    >
-      <Plus className="w-3 h-3" />
-    </button>
-  </div>
-);
-
 /* ── Content item row ── */
 function ContentItemRow({
   item,
   onClick,
-  onDelete,
 }: {
   item: ContentItemData;
   onClick: () => void;
-  onDelete?: () => void;
 }) {
   const status = STATUSES[item.status];
 
   return (
     <div
       onClick={(e) => { e.stopPropagation(); onClick(); }}
-      className="card-elevated flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)] group/row"
+      className="card-elevated flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)]"
     >
       <span className="relative shrink-0 w-1.5 h-1.5 md:w-2 md:h-2">
         {status.color !== "#94a3b8" && (
@@ -238,14 +214,6 @@ function ContentItemRow({
       <div className="flex-1 min-w-0 text-[10px] md:text-[11px] text-muted-foreground truncate">
         {item.title || "Не заполнено"}
       </div>
-      {onDelete && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="opacity-0 group-hover/row:opacity-100 shrink-0 w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
-        >
-          <Trash2 className="w-3 h-3" />
-        </button>
-      )}
     </div>
   );
 }
@@ -604,6 +572,24 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
             </div>
           );
         })}
+
+        {/* Add product button at end of chain */}
+        {availableProducts.length > 0 && (
+          <div
+            className="flex flex-col items-center justify-center shrink-0 px-1 mt-4"
+            style={{ animation: `fadeSlideIn 0.3s ease-out ${300 + productChain.length * 150}ms both` }}
+          >
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowAddProductPicker(true); }}
+              className="w-6 h-6 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center
+                text-muted-foreground/40 hover:border-primary/50 hover:text-primary hover:bg-primary/5
+                transition-all duration-200 cursor-pointer"
+              title="Добавить продукт"
+            >
+              <Plus className="w-3 h-3" />
+            </button>
+          </div>
+        )}
 
       </div>
 
