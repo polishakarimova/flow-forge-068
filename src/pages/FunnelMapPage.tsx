@@ -595,11 +595,40 @@ function ContentPickerModalMap({
 
 /* ── main component ─────────────────────────────────── */
 
+const STORAGE_KEY_POSITIONS = "funnel-map-positions";
+const STORAGE_KEY_VIEW = "funnel-map-view";
+
+function loadSavedPositions(): Record<string, { x: number; y: number }> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_POSITIONS);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function savePositions(nodes: MapNode[]) {
+  const map: Record<string, { x: number; y: number }> = {};
+  nodes.forEach((n) => { map[n.id] = { x: n.x, y: n.y }; });
+  localStorage.setItem(STORAGE_KEY_POSITIONS, JSON.stringify(map));
+}
+
+function loadSavedView(): { pan: { x: number; y: number }; zoom: number } | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_VIEW);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function applyCustomPositions(nodes: MapNode[], saved: Record<string, { x: number; y: number }>): MapNode[] {
+  if (Object.keys(saved).length === 0) return nodes;
+  return nodes.map((n) => saved[n.id] ? { ...n, x: saved[n.id].x, y: saved[n.id].y } : n);
+}
+
 const FunnelMapPage = () => {
   const { funnels, allContentItems, products, topics, updateContentItem, updateProduct, updateTopic, formats, addFormat, deleteFormat, setFunnels } = useDataStore();
   const svgRef = useRef<SVGSVGElement>(null);
-  const [pan, setPan] = useState({ x: 20, y: 10 });
-  const [zoom, setZoom] = useState(1);
+  const savedView = useRef(loadSavedView());
+  const [pan, setPan] = useState(savedView.current?.pan ?? { x: 20, y: 10 });
+  const [zoom, setZoom] = useState(savedView.current?.zoom ?? 1);
   const [dragging, setDragging] = useState<{ type: "pan" | "node"; startX: number; startY: number; nodeId?: string; orig?: MapNode[] } | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [showHint, setShowHint] = useState(true);
@@ -619,10 +648,19 @@ const FunnelMapPage = () => {
   const lastTapRef = useRef<{ nodeId: string; time: number }>({ nodeId: "", time: 0 });
   const isMobile = typeof window !== "undefined" && "ontouchstart" in window;
 
-  // Sync nodes when graph changes
+  // Sync nodes when graph changes, preserving user-positioned nodes
   useEffect(() => {
-    setNodes(initialNodes);
+    const saved = loadSavedPositions();
+    setNodes(applyCustomPositions(initialNodes, saved));
   }, [initialNodes]);
+
+  // Persist pan/zoom
+  useEffect(() => {
+    const t = setTimeout(() => {
+      localStorage.setItem(STORAGE_KEY_VIEW, JSON.stringify({ pan, zoom }));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [pan, zoom]);
 
   useEffect(() => {
     const t = setTimeout(() => setShowHint(false), 4000);
@@ -680,7 +718,12 @@ const FunnelMapPage = () => {
     [dragging, zoom],
   );
 
-  const handleMouseUp = useCallback(() => setDragging(null), []);
+  const handleMouseUp = useCallback(() => {
+    if (dragging?.type === "node" && dragMovedRef.current) {
+      setNodes((cur) => { savePositions(cur); return cur; });
+    }
+    setDragging(null);
+  }, [dragging]);
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent, nodeId?: string) => {
@@ -726,6 +769,9 @@ const FunnelMapPage = () => {
   );
 
   const handleTouchEnd = useCallback(() => {
+    if (touchRef.current.nodeId && touchRef.current.moved) {
+      setNodes((cur) => { savePositions(cur); return cur; });
+    }
     touchRef.current.nodeId = null;
   }, []);
 
@@ -820,6 +866,9 @@ const FunnelMapPage = () => {
                     onClick={() => {
                       setPan({ x: 20, y: 10 });
                       setZoom(1);
+                      localStorage.removeItem(STORAGE_KEY_POSITIONS);
+                      localStorage.removeItem(STORAGE_KEY_VIEW);
+                      setNodes(initialNodes);
                     }}
                     className="px-2 py-1 rounded-md bg-muted text-[11px] font-semibold text-muted-foreground hover:bg-muted/80 transition-colors"
                   >
