@@ -83,10 +83,10 @@ export const initialTopics: Topic[] = [
     thesisPlan: "— Что было до\n— Что сделали\n— Результат в цифрах\n— Вывод и CTA",
     isIdeaBank: false,
     contentItems: [
-      { id: 101, platformId: "tg_post", status: "published", title: "Кейс 1,4 ляма: как мы это сделали", body: "Расскажу как мы с ученицей сделали 1,4 млн за один запуск.\n\nДо работы со мной: хаотичный контент, 0 системы.\nПосле: чёткая воронка, 47 заявок, 12 продаж.\n\nГлавный инсайт — дело не в количестве подписчиков.", createdDate: threeDaysAgo, publishDate: yesterday },
-      { id: 102, platformId: "stories", status: "ready", title: "Кейс 1,4 ляма: как мы это сделали", body: "Слайд 1: Цифра 1,4 млн крупно\nСлайд 2: Что было до\nСлайд 3: Что поменяли\nСлайд 4: CTA", createdDate: threeDaysAgo, publishDate: today },
-      { id: 103, platformId: "reels", status: "in_progress", title: "Рилс 60с — результат кейса", body: "", createdDate: twoDaysAgo, publishDate: "" },
-      { id: 104, platformId: "carousel", status: "idea", title: "Кейс 1,4 ляма: как мы это сделали", body: "", createdDate: twoDaysAgo, publishDate: "" },
+      { id: 101, platformId: "tg_post", status: "published", title: "Как мы сделали 1,4 млн за один запуск", body: "Расскажу как мы с ученицей сделали 1,4 млн за один запуск.\n\nДо работы со мной: хаотичный контент, 0 системы.\nПосле: чёткая воронка, 47 заявок, 12 продаж.\n\nГлавный инсайт — дело не в количестве подписчиков.", createdDate: threeDaysAgo, publishDate: yesterday },
+      { id: 102, platformId: "stories", status: "ready", title: "До/После: путь к 1,4 млн", body: "Слайд 1: Цифра 1,4 млн крупно\nСлайд 2: Что было до\nСлайд 3: Что поменяли\nСлайд 4: CTA", createdDate: threeDaysAgo, publishDate: today },
+      { id: 103, platformId: "reels", status: "in_progress", title: "60 секунд — результат ученицы", body: "", createdDate: twoDaysAgo, publishDate: "" },
+      { id: 104, platformId: "carousel", status: "idea", title: "3 шага к запуску на 1,4 млн", body: "", createdDate: twoDaysAgo, publishDate: "" },
     ],
   },
   {
@@ -95,10 +95,10 @@ export const initialTopics: Topic[] = [
     thesisPlan: "— Ошибка 1: нет сегментации\n— Ошибка 2: рано продавать\n— Ошибка 3: нет кейсов",
     isIdeaBank: false,
     contentItems: [
-      { id: 201, platformId: "ig_post", status: "ready", title: "5 ошибок прогрева перед запуском", body: "Ошибка №1 — начинаете продавать в первый же день прогрева.\n\nЛюди ещё не понимают зачем им ваш продукт.", createdDate: yesterday, publishDate: today },
-      { id: 202, platformId: "carousel", status: "in_progress", title: "5 ошибок прогрева перед запуском", body: "", createdDate: yesterday, publishDate: "" },
-      { id: 203, platformId: "tg_post", status: "idea", title: "5 ошибок прогрева перед запуском", body: "", createdDate: today, publishDate: "" },
-      { id: 204, platformId: "reels", status: "idea", title: "5 ошибок прогрева перед запуском", body: "", createdDate: today, publishDate: "" },
+      { id: 201, platformId: "ig_post", status: "ready", title: "Не начинай продавать в первый день", body: "Ошибка №1 — начинаете продавать в первый же день прогрева.\n\nЛюди ещё не понимают зачем им ваш продукт.", createdDate: yesterday, publishDate: today },
+      { id: 202, platformId: "carousel", status: "in_progress", title: "Чек-лист: проверь свой прогрев", body: "", createdDate: yesterday, publishDate: "" },
+      { id: 203, platformId: "tg_post", status: "idea", title: "Почему аудитория молчит после прогрева", body: "", createdDate: today, publishDate: "" },
+      { id: 204, platformId: "reels", status: "idea", title: "Ошибка №1 которая убивает запуск", body: "", createdDate: today, publishDate: "" },
     ],
   },
   {
@@ -107,9 +107,9 @@ export const initialTopics: Topic[] = [
     thesisPlan: "— Источники трафика\n— Что работает в 2025\n— Мой фреймворк",
     isIdeaBank: false,
     contentItems: [
-      { id: 301, platformId: "youtube", status: "in_progress", title: "Как я строю контент-воронку на холодный трафик", body: "", createdDate: today, publishDate: "" },
-      { id: 302, platformId: "article", status: "idea", title: "Как я строю контент-воронку на холодный трафик", body: "", createdDate: today, publishDate: "" },
-      { id: 303, platformId: "tg_post", status: "idea", title: "Как я строю контент-воронку на холодный трафик", body: "", createdDate: today, publishDate: "" },
+      { id: 301, platformId: "youtube", status: "in_progress", title: "Моя система: от рилса до продажи", body: "", createdDate: today, publishDate: "" },
+      { id: 302, platformId: "article", status: "idea", title: "Фреймворк контент-воронки 2025", body: "", createdDate: today, publishDate: "" },
+      { id: 303, platformId: "tg_post", status: "idea", title: "3 источника трафика которые работают сейчас", body: "", createdDate: today, publishDate: "" },
     ],
   },
   {
