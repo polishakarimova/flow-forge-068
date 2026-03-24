@@ -538,25 +538,26 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
           </div>
         </NodeCard>
 
-        <SvgConnector delay={100} />
-
-        {/* === CTA Node === */}
-        <NodeCard delay={200} cardId={`${funnel.id}-cta`}>
-          <div className="flex items-center gap-1 md:gap-1.5 mb-1 md:mb-2">
-            <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-primary/10 flex items-center justify-center">
-              <Send className="w-2 h-2 md:w-2.5 md:h-2.5 text-primary" />
+        {/* === CTA Node (wrapped like products so resize handle isn't overlapped) === */}
+        <div className="flex items-start">
+          <SvgConnector delay={100} />
+          <NodeCard delay={200} cardId={`${funnel.id}-cta`}>
+            <div className="flex items-center gap-1 md:gap-1.5 mb-1 md:mb-2">
+              <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-primary/10 flex items-center justify-center">
+                <Send className="w-2 h-2 md:w-2.5 md:h-2.5 text-primary" />
+              </div>
+              <span className="text-[9px] md:text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                CTA
+              </span>
             </div>
-            <span className="text-[9px] md:text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              CTA
-            </span>
-          </div>
-          <div
-            className="inline-flex items-center px-2 py-0.5 md:px-2.5 md:py-1 rounded-lg text-[10px] md:text-[11px] font-bold uppercase tracking-[0.05em]"
-            style={getBadgeStyle(funnel.badgeColor)}
-          >
-            {funnel.keyword}
-          </div>
-        </NodeCard>
+            <div
+              className="inline-flex items-center px-2 py-0.5 md:px-2.5 md:py-1 rounded-lg text-[10px] md:text-[11px] font-bold uppercase tracking-[0.05em]"
+              style={getBadgeStyle(funnel.badgeColor)}
+            >
+              {funnel.keyword}
+            </div>
+          </NodeCard>
+        </div>
 
         {/* === Sequential Product Chain — always each product separately === */}
         {productChain.map(({ product }, idx) => {
