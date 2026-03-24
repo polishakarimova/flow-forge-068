@@ -21,11 +21,35 @@ const TIER_LABEL: Record<string, string> = {
   consultation: "Консультация",
 };
 
-const CARD_WIDTHS_KEY = "funnel-card-widths";
+const CARD_WIDTHS_KEY_DESKTOP = "funnel-card-widths-desktop";
+const CARD_WIDTHS_KEY_MOBILE = "funnel-card-widths-mobile";
+const CARD_WIDTHS_KEY_LEGACY = "funnel-card-widths";
+
+function isMobileDevice(): boolean {
+  return window.innerWidth < 768;
+}
+
+function getCardWidthsKey(): string {
+  return isMobileDevice() ? CARD_WIDTHS_KEY_MOBILE : CARD_WIDTHS_KEY_DESKTOP;
+}
+
+/* Migrate legacy data to desktop key on first load */
+function migrateLegacyWidths() {
+  try {
+    const legacy = localStorage.getItem(CARD_WIDTHS_KEY_LEGACY);
+    if (legacy) {
+      if (!localStorage.getItem(CARD_WIDTHS_KEY_DESKTOP)) {
+        localStorage.setItem(CARD_WIDTHS_KEY_DESKTOP, legacy);
+      }
+      localStorage.removeItem(CARD_WIDTHS_KEY_LEGACY);
+    }
+  } catch { /* noop */ }
+}
+migrateLegacyWidths();
 
 function loadCardWidths(): Record<string, number> {
   try {
-    const raw = localStorage.getItem(CARD_WIDTHS_KEY);
+    const raw = localStorage.getItem(getCardWidthsKey());
     return raw ? JSON.parse(raw) : {};
   } catch { return {}; }
 }
@@ -33,7 +57,7 @@ function loadCardWidths(): Record<string, number> {
 function saveCardWidth(cardId: string, width: number) {
   const all = loadCardWidths();
   all[cardId] = width;
-  localStorage.setItem(CARD_WIDTHS_KEY, JSON.stringify(all));
+  localStorage.setItem(getCardWidthsKey(), JSON.stringify(all));
 }
 
 const NodeCard = ({
@@ -44,6 +68,7 @@ const NodeCard = ({
   style,
   delay = 0,
   cardId,
+  onDelete,
 }: {
   children: React.ReactNode;
   className?: string;
@@ -52,10 +77,14 @@ const NodeCard = ({
   style?: React.CSSProperties;
   delay?: number;
   cardId?: string;
+  onDelete?: () => void;
 }) => {
   const savedW = cardId ? loadCardWidths()[cardId] : undefined;
   const [width, setWidth] = useState<number | undefined>(savedW);
+  const [showDelete, setShowDelete] = useState(false);
   const dragRef = useRef<{ startX: number; startW: number } | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -75,7 +104,29 @@ const NodeCard = ({
     return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
   }, [cardId, width]);
 
-  const cardRef = useRef<HTMLDivElement>(null);
+  /* Touch resize support */
+  useEffect(() => {
+    const onTouchMove = (e: TouchEvent) => {
+      if (!dragRef.current) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const newW = Math.max(120, dragRef.current.startW + touch.clientX - dragRef.current.startX);
+      setWidth(newW);
+    };
+    const onTouchEnd = () => {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+      if (dragRef.current && cardId && width) {
+        saveCardWidth(cardId, width);
+      }
+      dragRef.current = null;
+    };
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("touchend", onTouchEnd);
+    return () => { window.removeEventListener("touchmove", onTouchMove); window.removeEventListener("touchend", onTouchEnd); };
+  }, [cardId, width]);
 
   const handleResizeStart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -84,14 +135,45 @@ const NodeCard = ({
     if (el) dragRef.current = { startX: e.clientX, startW: el.offsetWidth };
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    const touch = e.touches[0];
+    const el = cardRef.current;
+    const startX = touch.clientX;
+
+    /* Long press → show delete */
+    longPressTimer.current = setTimeout(() => {
+      longPressTimer.current = null;
+      if (onDelete) {
+        setShowDelete(true);
+        // vibrate if supported
+        if (navigator.vibrate) navigator.vibrate(30);
+      }
+    }, 600);
+
+    /* Short touch → start resize immediately after small movement */
+    if (el) {
+      dragRef.current = { startX, startW: el.offsetWidth };
+    }
+  };
+
+  const handleTouchMove = () => {
+    /* Cancel long press if user moves finger (they're resizing) */
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
   return (
     <div
       ref={cardRef}
       onClick={onClick}
-      className={`relative rounded-2xl border border-border bg-card p-3 shadow-sm min-w-[120px] transition-shadow duration-200
+      className={`relative rounded-2xl border border-border bg-card p-2 md:p-3 shadow-sm min-w-[100px] md:min-w-[120px] transition-shadow duration-200
         hover:-translate-y-0.5 hover:shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.15)] hover:border-primary/30
         ${flagship ? "ring-2 ring-primary/30 border-primary/40 bg-gradient-to-br from-card to-[hsl(var(--violet-soft))] hover:-translate-y-1 hover:shadow-[0_8px_30px_-8px_hsl(var(--primary)/0.25)] hover:ring-primary/50" : ""}
         ${onClick ? "cursor-pointer" : ""}
+        ${showDelete ? "ring-2 ring-destructive/50 border-destructive/40" : ""}
         ${className}`}
       style={{
         animation: `fadeSlideIn 0.4s ease-out ${delay}ms both`,
@@ -100,10 +182,32 @@ const NodeCard = ({
       }}
     >
       {children}
+      {/* Delete overlay after long press */}
+      {showDelete && onDelete && (
+        <div className="absolute inset-0 rounded-2xl bg-destructive/10 backdrop-blur-[2px] flex items-center justify-center z-20 animate-in fade-in duration-150">
+          <div className="flex gap-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); setShowDelete(false); }}
+              className="px-3 py-1.5 rounded-xl bg-destructive text-destructive-foreground text-[11px] font-semibold border-none cursor-pointer hover:bg-destructive/90 transition-colors"
+            >
+              <Trash2 className="w-3 h-3 inline mr-1" />
+              Удалить
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowDelete(false); }}
+              className="px-3 py-1.5 rounded-xl bg-card text-foreground text-[11px] font-semibold border border-border cursor-pointer hover:bg-muted transition-colors"
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      )}
       {cardId && (
         <div
           onMouseDown={handleResizeStart}
-          className="absolute top-0 -right-2 w-5 h-full cursor-col-resize group/handle z-10 flex items-center justify-center"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          className="absolute top-0 -right-2 w-7 h-full cursor-col-resize group/handle z-10 flex items-center justify-center"
           style={{ touchAction: "none" }}
         >
           <div className="w-1 h-8 rounded-full bg-primary/20 group-hover/handle:bg-primary/50 transition-colors" />
@@ -171,18 +275,18 @@ function ContentItemRow({
   return (
     <div
       onClick={(e) => { e.stopPropagation(); onClick(); }}
-      className="card-elevated flex items-center gap-2 px-3 py-1.5 cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)] group/row"
+      className="card-elevated flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)] group/row"
     >
-      <span className="relative shrink-0 w-2 h-2">
+      <span className="relative shrink-0 w-1.5 h-1.5 md:w-2 md:h-2">
         {status.color !== "#94a3b8" && (
           <span className="absolute inset-0 rounded-full animate-ping opacity-75" style={{ background: status.color }} />
         )}
         <span className="absolute inset-0 rounded-full" style={{ background: status.color }} />
       </span>
-      <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-foreground/[0.06] shrink-0">
-        <PlatformIcon platformId={item.platformId} size={16} />
+      <span className="inline-flex items-center px-1 md:px-1.5 py-px md:py-0.5 rounded-md bg-foreground/[0.06] shrink-0">
+        <PlatformIcon platformId={item.platformId} size={13} />
       </span>
-      <div className="flex-1 min-w-0 text-[12px] md:text-[10px] text-muted-foreground truncate">
+      <div className="flex-1 min-w-0 text-[10px] md:text-[11px] text-muted-foreground truncate">
         {item.title || "Не заполнено"}
       </div>
       {onDelete && (
@@ -442,6 +546,19 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
     ));
   }, [funnel.id, setFunnels]);
 
+  const removeProductFromFunnel = useCallback((product: Product) => {
+    setFunnels((prev) => prev.map((f) => {
+      if (f.id !== funnel.id) return f;
+      const updated = { ...f };
+      if (updated.leadMagnetId === product.id) updated.leadMagnetId = undefined;
+      if (updated.tripwireId === product.id) updated.tripwireId = undefined;
+      if (updated.midTicketId === product.id) updated.midTicketId = undefined;
+      if (updated.flagshipId === product.id) updated.flagshipId = undefined;
+      if (updated.consultationId === product.id) updated.consultationId = undefined;
+      return updated;
+    }));
+  }, [funnel.id, setFunnels]);
+
   /* Products not already in this funnel (for picker) */
   const availableProducts = useMemo(() => {
     const usedIds = new Set(productChain.map(({ product }) => product.id));
@@ -453,7 +570,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
   const hasMoreContent = contentItems.length > PREVIEW_COUNT;
 
   return (
-    <div className="py-5 px-4 md:px-6 border-t border-border bg-muted/30">
+    <div className="py-3 md:py-5 px-3 md:px-6 border-t border-border bg-muted/30">
       <style>{`
         @keyframes fadeSlideIn {
           from { opacity: 0; transform: translateX(-12px); }
@@ -467,35 +584,41 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
         }
       `}</style>
 
-      <div className="flex items-start gap-0 overflow-x-auto pb-3 scrollbar-thin">
+      <div className="flex items-start gap-0 overflow-x-auto pb-2 md:pb-3 scrollbar-thin">
         {/* === Content Node === */}
         <NodeCard
           delay={0}
           cardId={`${funnel.id}-content`}
           onClick={hasMoreContent ? () => setExpandedContent(true) : undefined}
+          onDelete={contentItems.length > 0 ? () => {
+            /* Remove all content from funnel */
+            setFunnels((prev) => prev.map((f) =>
+              f.id === funnel.id ? { ...f, contentItemIds: [], contentCount: 0 } : f
+            ));
+          } : undefined}
         >
-          <div className="flex items-center gap-1.5 mb-2">
-            <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
-              <FileText className="w-2.5 h-2.5 text-primary" />
+          <div className="flex items-center gap-1 md:gap-1.5 mb-1 md:mb-2">
+            <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-primary/10 flex items-center justify-center">
+              <FileText className="w-2 h-2 md:w-2.5 md:h-2.5 text-primary" />
             </div>
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[9px] md:text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
               Контент
             </span>
-            <span className="text-[10px] text-muted-foreground/60">({contentItems.length})</span>
+            <span className="text-[9px] md:text-[10px] text-muted-foreground/60">({contentItems.length})</span>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-0.5 md:space-y-1.5">
             {contentPreview.map((item) => (
               <ContentItemRow key={item.id} item={item} onClick={() => setEditingContent(item)} />
             ))}
             {hasMoreContent && (
-              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground mt-1 transition-colors rounded-lg px-1.5 py-1 -mx-1.5 hover:bg-muted/50 cursor-pointer">
-                <MoreHorizontal className="w-3.5 h-3.5" />
+              <div className="flex items-center gap-1 text-[10px] md:text-[11px] text-muted-foreground hover:text-foreground mt-0.5 transition-colors rounded-lg px-1 py-0.5 -mx-1 hover:bg-muted/50 cursor-pointer">
+                <MoreHorizontal className="w-3 h-3 md:w-3.5 md:h-3.5" />
                 <span>ещё {contentItems.length - PREVIEW_COUNT}</span>
               </div>
             )}
             <button
               onClick={(e) => { e.stopPropagation(); setShowContentPicker(true); }}
-              className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 mt-2 transition-colors cursor-pointer"
+              className="flex items-center gap-1 text-[10px] md:text-[11px] text-primary hover:text-primary/80 mt-1 md:mt-2 transition-colors cursor-pointer"
             >
               <Plus className="w-3 h-3" />
               Добавить
@@ -507,16 +630,16 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
 
         {/* === CTA Node === */}
         <NodeCard delay={200} cardId={`${funnel.id}-cta`}>
-          <div className="flex items-center gap-1.5 mb-2">
-            <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
-              <Send className="w-2.5 h-2.5 text-primary" />
+          <div className="flex items-center gap-1 md:gap-1.5 mb-1 md:mb-2">
+            <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-primary/10 flex items-center justify-center">
+              <Send className="w-2 h-2 md:w-2.5 md:h-2.5 text-primary" />
             </div>
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[9px] md:text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
               CTA
             </span>
           </div>
           <div
-            className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-[0.05em]"
+            className="inline-flex items-center px-2 py-0.5 md:px-2.5 md:py-1 rounded-lg text-[10px] md:text-[11px] font-bold uppercase tracking-[0.05em]"
             style={getBadgeStyle(funnel.badgeColor)}
           >
             {funnel.keyword}
@@ -537,14 +660,15 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
                 cardId={`${funnel.id}-product-${product.id}`}
                 flagship={isFlagship}
                 onClick={() => setEditingProduct(product)}
+                onDelete={() => removeProductFromFunnel(product)}
               >
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <ProductTypeIcon typeId={typeId} size={18} />
-                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                <div className="flex items-center gap-1 md:gap-1.5 mb-1 md:mb-1.5">
+                  <ProductTypeIcon typeId={typeId} size={16} />
+                  <span className="text-[9px] md:text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                     {label}
                   </span>
                 </div>
-                <p className="text-[11px] text-foreground/80 truncate">
+                <p className="text-[10px] md:text-[11px] text-foreground/80 truncate">
                   {product.name}
                 </p>
               </NodeCard>

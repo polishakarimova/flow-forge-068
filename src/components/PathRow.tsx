@@ -83,13 +83,13 @@ export function PathRow({ funnel, defaultExpanded = false, onToggleActive, onEdi
 
   return (
     <div
-      className={`card-elevated mb-3 overflow-hidden transition-all duration-200 ${
+      className={`card-elevated mb-2 md:mb-3 overflow-hidden transition-all duration-200 ${
         inactive ? "opacity-50 grayscale" : ""
       } ${expanded ? "border-l-[3px] border-l-primary" : ""}`}
     >
       {/* Main row */}
       <div
-        className={`flex items-center gap-2 px-3 py-3 md:px-5 md:gap-3 cursor-pointer group transition-colors duration-200 ${
+        className={`flex items-center gap-1 px-2 py-2 md:px-5 md:py-3 md:gap-3 cursor-pointer group transition-colors duration-200 ${
           inactive
             ? "hover:bg-muted/40"
             : "hover:bg-[hsl(var(--primary)/0.04)]"
@@ -101,9 +101,9 @@ export function PathRow({ funnel, defaultExpanded = false, onToggleActive, onEdi
           <DropdownMenuTrigger asChild>
             <button
               onClick={(e) => e.stopPropagation()}
-              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-muted transition-colors shrink-0"
+              className="w-6 h-6 md:w-7 md:h-7 rounded-lg flex items-center justify-center hover:bg-muted transition-colors shrink-0"
             >
-              <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+              <MoreHorizontal className="w-3.5 h-3.5 md:w-4 md:h-4 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-48">
@@ -142,17 +142,17 @@ export function PathRow({ funnel, defaultExpanded = false, onToggleActive, onEdi
 
         {/* Status dot */}
         {funnel.active ? (
-          <span className="relative shrink-0 w-2 h-2">
+          <span className="relative shrink-0 w-1.5 h-1.5 md:w-2 md:h-2">
             <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
             <span className="absolute inset-0 rounded-full bg-emerald-400" />
           </span>
         ) : (
-          <span className="shrink-0 w-2 h-2 rounded-full bg-red-400" />
+          <span className="shrink-0 w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-red-400" />
         )}
 
         {/* Keyword badge */}
         <span
-          className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase tracking-[0.05em] ${
+          className={`shrink-0 inline-flex items-center px-2 py-0.5 md:px-2.5 md:py-1 rounded-xl text-[10px] md:text-[11px] font-bold uppercase tracking-[0.05em] ${
             inactive ? "bg-muted text-muted-foreground" : ""
           }`}
           style={!inactive ? getBadgeStyle(funnel.badgeColor) : undefined}
@@ -161,15 +161,15 @@ export function PathRow({ funnel, defaultExpanded = false, onToggleActive, onEdi
         </span>
 
         {/* Path steps as mini badges, no arrows */}
-        <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
+        <div className="flex-1 min-w-0 flex items-center gap-0.5 md:gap-1 overflow-hidden">
           {pathSteps.map((step, i) => (
-            <span key={i} className="flex items-center gap-1 shrink-0">
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-[0.05em] bg-foreground/[0.06] text-muted-foreground">
-                {shortToTypeId[step.short] && <ProductTypeIcon typeId={shortToTypeId[step.short]} size={13} />}
+            <span key={i} className="flex items-center gap-0.5 shrink-0">
+              <span className="inline-flex items-center gap-0.5 px-1 py-px md:px-1.5 md:py-0.5 rounded-md text-[9px] md:text-[10px] font-bold uppercase tracking-[0.05em] bg-foreground/[0.06] text-muted-foreground">
+                {shortToTypeId[step.short] && <ProductTypeIcon typeId={shortToTypeId[step.short]} size={12} />}
                 {step.short}
               </span>
               {i === 0 && step.name && (
-                <span className="text-[10px] text-muted-foreground/60 truncate max-w-[60px]">
+                <span className="text-[9px] md:text-[10px] text-muted-foreground/60 truncate max-w-[50px] md:max-w-[60px]">
                   "{truncate(step.name, 6)}"
                 </span>
               )}
@@ -179,7 +179,7 @@ export function PathRow({ funnel, defaultExpanded = false, onToggleActive, onEdi
 
         {/* Expand chevron */}
         <ChevronDown
-          className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-300 ${
+          className={`w-3.5 h-3.5 md:w-4 md:h-4 text-muted-foreground shrink-0 transition-transform duration-300 ${
             expanded ? "rotate-180" : ""
           }`}
         />
