@@ -19,6 +19,16 @@ import { FunnelMap } from "@/components/FunnelMap";
 import type { Funnel } from "@/lib/funnelData";
 import { productTypeShort } from "@/lib/funnelData";
 import { getBadgeStyle } from "@/lib/badgeStyles";
+import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
+
+const shortToTypeId: Record<string, string> = {
+  "ЛМ": "lead_magnet",
+  "ТВ": "tripwire",
+  "СЧ": "mid_ticket",
+  "ФГ": "flagship",
+  "КС": "consultation",
+  "ЛК": "private",
+};
 
 interface PathRowProps {
   funnel: Funnel;
@@ -137,7 +147,8 @@ export function PathRow({ funnel, defaultExpanded = false, onToggleActive }: Pat
         <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
           {pathSteps.map((step, i) => (
             <span key={i} className="flex items-center gap-1 shrink-0">
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-[0.05em] bg-foreground/[0.06] text-muted-foreground">
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-[0.05em] bg-foreground/[0.06] text-muted-foreground">
+                {shortToTypeId[step.short] && <ProductTypeIcon typeId={shortToTypeId[step.short]} size={13} />}
                 {step.short}
               </span>
               {i === 0 && step.name && (
