@@ -341,7 +341,7 @@ function ContentPickerModal({
 }
 
 export function FunnelMap({ funnel }: { funnel: Funnel }) {
-  const { allContentItems, products, topics, updateContentItem, updateProduct, addProduct, formats, addFormat, deleteFormat, setFunnels } = useDataStore();
+  const { allContentItems, products, topics, updateContentItem, updateProduct, updateTopic, addProduct, formats, addFormat, deleteFormat, setFunnels } = useDataStore();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingContent, setEditingContent] = useState<ContentItemData | null>(null);
   const [expandedContent, setExpandedContent] = useState(false);
@@ -444,12 +444,12 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
         <SvgConnector delay={100} />
 
         {/* === CTA Node === */}
-        <NodeCard delay={200} className="!min-w-0">
-          <div className="flex items-center gap-1.5 mb-2">
-            <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
-              <Send className="w-2.5 h-2.5 text-primary" />
+        <NodeCard delay={200} className="!min-w-0 !p-2">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <div className="w-4 h-4 rounded-md bg-primary/10 flex items-center justify-center">
+              <Send className="w-2 h-2 text-primary" />
             </div>
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">
               CTA
             </span>
           </div>
@@ -567,6 +567,10 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
           topicTitle={getTopicTitle(editingContent)}
           onClose={() => setEditingContent(null)}
           onSave={(updated) => { updateContentItem(updated); setEditingContent(null); }}
+          onTopicRename={(newTitle) => {
+            const topic = topics.find((t) => t.contentItems.some((ci) => ci.id === editingContent.id));
+            if (topic) updateTopic({ ...topic, title: newTitle });
+          }}
         />
       )}
     </div>

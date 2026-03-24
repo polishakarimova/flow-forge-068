@@ -26,7 +26,6 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave, onTopicR
   useEffect(() => {
     if (editingTopic && topicInputRef.current) {
       topicInputRef.current.focus();
-      topicInputRef.current.select();
     }
   }, [editingTopic]);
 
@@ -65,9 +64,9 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave, onTopicR
             </div>
           </div>
 
-          {/* Topic title — thin gray row, non-editable by default */}
+          {/* Topic title — bordered block, non-editable by default */}
           {topicTitle && (
-            <div className="flex items-center gap-2 mb-3 px-1">
+            <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-xl border border-border/60 bg-muted/20">
               {editingTopic ? (
                 <input
                   ref={topicInputRef}
@@ -78,7 +77,7 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave, onTopicR
                     if (e.key === "Enter") commitTopicEdit();
                     if (e.key === "Escape") { setTopicDraft(topicTitle); setEditingTopic(false); }
                   }}
-                  className="flex-1 min-w-0 text-[12px] font-light tracking-wide text-muted-foreground bg-transparent border-b border-muted-foreground/30 outline-none py-0.5"
+                  className="flex-1 min-w-0 text-[12px] font-light tracking-wide text-muted-foreground bg-transparent border-none outline-none py-0"
                 />
               ) : (
                 <span className="flex-1 min-w-0 text-[12px] font-light tracking-wide text-muted-foreground/60 truncate select-none">
