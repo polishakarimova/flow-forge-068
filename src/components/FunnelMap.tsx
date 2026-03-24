@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { Plus, Send, FileText, MoreHorizontal, ChevronDown } from "lucide-react";
+import { Plus, Send, FileText, MoreHorizontal } from "lucide-react";
 import type { Funnel, ContentStatus, FunnelProduct, ContentItem } from "@/lib/funnelData";
 import { PlatformIcon } from "@/components/content/PlatformIcon";
 import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
+import { STATUSES, type ContentItemData, type ContentStatusKey } from "@/lib/contentData";
+import { ContentDetailModal } from "@/components/content/ContentDetailModal";
 
 const FUNNEL_PLATFORM_ID: Record<string, string> = {
   "Telegram|Пост": "tg_post",
@@ -21,7 +23,6 @@ function getFunnelPlatformId(item: ContentItem): string | null {
 }
 import { productsCatalog } from "@/lib/funnelData";
 import { ProductDrawer } from "@/components/ProductDrawer";
-import { ContentDrawer } from "@/components/ContentDrawer";
 import { getBadgeStyle } from "@/lib/badgeStyles";
 import {
   Popover,
@@ -29,17 +30,26 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-const statusColor: Record<ContentStatus, string> = {
-  published: "bg-emerald-400",
-  ready: "bg-amber-400",
-  draft: "bg-muted-foreground/40",
+/* Map funnel ContentStatus → contentData ContentStatusKey */
+const FUNNEL_STATUS_MAP: Record<ContentStatus, ContentStatusKey> = {
+  published: "published",
+  ready: "ready",
+  draft: "in_progress",
 };
 
-const statusLabel: Record<ContentStatus, string> = {
-  published: "Опубликован",
-  ready: "Готов",
-  draft: "Черновик",
-};
+/* Convert funnel ContentItem → ContentItemData for the detail modal */
+function toContentItemData(item: ContentItem): ContentItemData {
+  const platformId = FUNNEL_PLATFORM_ID[`${item.platform}|${item.format}`] || "";
+  return {
+    id: parseInt(item.id.replace(/\D/g, "")) || 0,
+    platformId,
+    status: FUNNEL_STATUS_MAP[item.status] || "in_progress",
+    title: item.title,
+    body: "",
+    createdDate: "",
+    publishDate: "",
+  };
+}
 
 const tierLabel: Record<string, string> = {
   "lead-magnet": "Лид-магнит",
@@ -170,7 +180,7 @@ const PlaceholderCard = ({
   );
 };
 
-/* ── Content item row (icon + truncated title) ── */
+/* ── Content item row — matches ContentCard from Content screen ── */
 function ContentItemRow({
   item,
   onClick,
@@ -179,21 +189,31 @@ function ContentItemRow({
   onClick: () => void;
 }) {
   const platformId = getFunnelPlatformId(item);
+  const statusKey = FUNNEL_STATUS_MAP[item.status] || "in_progress";
+  const status = STATUSES[statusKey];
+
   return (
     <div
       onClick={(e) => { e.stopPropagation(); onClick(); }}
-      className="flex items-center gap-2 text-[12px] cursor-pointer rounded-lg px-1.5 py-1 -mx-1.5
-        transition-all duration-150 hover:bg-primary/5 hover:ring-1 hover:ring-primary/20 active:scale-[0.98]"
+      className="card-elevated flex items-center gap-2 px-3 py-1.5 cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)]"
     >
-      <span className={`w-2 h-2 rounded-full shrink-0 ${statusColor[item.status]}`} title={statusLabel[item.status]} />
-      {platformId ? (
-        <PlatformIcon platformId={platformId} size={14} />
-      ) : (
-        <span className="text-muted-foreground font-medium shrink-0">{item.platform}</span>
-      )}
-      <span className="text-foreground/60 truncate">
-        {item.title.length > 22 ? item.title.slice(0, 22) + "…" : item.title}
+      {/* Status dot — gray is static, others pulse */}
+      <span className="relative shrink-0 w-2 h-2">
+        {status.color !== "#94a3b8" && (
+          <span className="absolute inset-0 rounded-full animate-ping opacity-75" style={{ background: status.color }} />
+        )}
+        <span className="absolute inset-0 rounded-full" style={{ background: status.color }} />
       </span>
+
+      {/* Platform badge */}
+      <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-foreground/[0.06] shrink-0">
+        {platformId && <PlatformIcon platformId={platformId} size={14} />}
+      </span>
+
+      {/* Content title */}
+      <div className="flex-1 min-w-0 text-[10px] text-muted-foreground truncate">
+        {item.title || "Не заполнено"}
+      </div>
     </div>
   );
 }
@@ -260,7 +280,7 @@ function ExpandedListModal({
 
 export function FunnelMap({ funnel }: { funnel: Funnel }) {
   const [drawerProduct, setDrawerProduct] = useState<FunnelProduct | null>(null);
-  const [drawerContent, setDrawerContent] = useState<ContentItem | null>(null);
+  const [editingContent, setEditingContent] = useState<ContentItem | null>(null);
   const [expandedContent, setExpandedContent] = useState(false);
   const [expandedProducts, setExpandedProducts] = useState(false);
 
@@ -304,7 +324,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
           </div>
           <div className="space-y-1.5">
             {contentPreview.map((item) => (
-              <ContentItemRow key={item.id} item={item} onClick={() => setDrawerContent(item)} />
+              <ContentItemRow key={item.id} item={item} onClick={() => setEditingContent(item)} />
             ))}
             {hasMoreContent && (
               <button
@@ -383,7 +403,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
       {expandedContent && (
         <ExpandedListModal title="Контент" onClose={() => setExpandedContent(false)}>
           {funnel.contentItems.map((item) => (
-            <ContentItemRow key={item.id} item={item} onClick={() => { setExpandedContent(false); setDrawerContent(item); }} />
+            <ContentItemRow key={item.id} item={item} onClick={() => { setExpandedContent(false); setEditingContent(item); }} />
           ))}
         </ExpandedListModal>
       )}
@@ -409,13 +429,15 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
         onOpenChange={(open) => !open && setDrawerProduct(null)}
       />
 
-      {/* Content Drawer */}
-      <ContentDrawer
-        content={drawerContent}
-        funnel={funnel}
-        open={!!drawerContent}
-        onOpenChange={(open) => !open && setDrawerContent(null)}
-      />
+      {/* Content Detail Modal — same as Content screen */}
+      {editingContent && (
+        <ContentDetailModal
+          item={toContentItemData(editingContent)}
+          topicTitle=""
+          onClose={() => setEditingContent(null)}
+          onSave={() => setEditingContent(null)}
+        />
+      )}
     </div>
   );
 }
