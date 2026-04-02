@@ -1,19 +1,19 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <script>
-      // Redirect all 404s to index.html for SPA routing on GitHub Pages
-      var pathSegmentsToKeep = 1;
-      var l = window.location;
-      l.replace(
-        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-        l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
-        l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
-        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
-        l.hash
-      );
-    </script>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/flow-forge-068/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Карта воронок</title>
+    <script type="module" crossorigin src="/flow-forge-068/assets/index-CnbdHhq9.js"></script>
+    <link rel="stylesheet" crossorigin href="/flow-forge-068/assets/index-B-QI2nH4.css">
   </head>
-  <body></body>
+  <body>
+    <div id="root"></div>
+    <script>
+      // GitHub Pages SPA fix
+      sessionStorage.redirect = location.href;
+    </script>
+    <script type="module" crossorigin src="/flow-forge-068/assets/index-CnbdHhq9.js"></script>
+  </body>
 </html>

@@ -68,15 +68,15 @@ const Index = () => {
 
                 <button
                   onClick={() => setShowCreate(true)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary/90 transition-colors shadow-sm"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-[14px] font-medium hover:bg-primary/90 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4" />
                   <span className="hidden sm:inline">Новая воронка</span>
                 </button>
               </div>
 
               {/* Dropdown filters */}
-              <div className="flex items-center gap-2 pb-3">
+              <div className="flex items-center gap-3 pb-4">
                 <ContentMultiDropdown
                   values={keywordFilters}
                   onChange={setKeywordFilters}

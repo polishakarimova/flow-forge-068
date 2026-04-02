@@ -32,7 +32,7 @@ export function AppSidebar() {
   const location = useLocation();
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
+    <Sidebar collapsible="icon" className="border-r border-border min-w-[240px] w-[240px]">
       <SidebarContent className="pt-4">
         {!collapsed && (
           <div className="px-4 pb-4">
@@ -52,14 +52,14 @@ export function AppSidebar() {
                       <NavLink
                         to={item.url}
                         end
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-colors ${
+                        className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[14px] font-medium transition-colors ${
                           active
                             ? "bg-primary/10 text-primary"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                         }`}
                         activeClassName="bg-primary/10 text-primary"
                       >
-                        <item.icon className="h-[18px] w-[18px] shrink-0" />
+                        <item.icon className="h-[20px] w-[20px] shrink-0" />
                         {!collapsed && <span>{item.title}</span>}
                       </NavLink>
                     </SidebarMenuButton>
