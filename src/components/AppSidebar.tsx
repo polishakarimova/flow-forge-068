@@ -34,7 +34,7 @@ export function AppSidebar() {
   const location = useLocation();
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border min-w-[200px] sm:min-w-[240px] w-[200px] sm:w-[240px]">
+    <Sidebar collapsible="icon" className="border-r border-border">
       <SidebarContent className="pt-3 sm:pt-4">
         {!collapsed && (
           <div className="px-3 sm:px-4 pb-3 sm:pb-4">

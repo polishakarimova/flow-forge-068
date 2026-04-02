@@ -41,7 +41,7 @@ export default function Profile() {
 
         <div className="flex-1 flex flex-col min-w-0">
           <header className="sticky top-0 z-50 surface-glass border-b border-border">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="w-full px-4 sm:px-6 max-w-[1400px] mx-auto">
               <div className="flex items-center justify-between h-14 sm:h-16">
                 <div className="flex items-center gap-3">
                   <SidebarTrigger className="hidden md:flex" />
@@ -53,7 +53,7 @@ export default function Profile() {
             </div>
           </header>
 
-          <main className="flex-1 max-w-6xl w-full mx-auto py-4 sm:py-6 px-4 sm:px-6 pb-20 md:pb-6">
+          <main className="flex-1 w-full mx-auto py-4 sm:py-6 px-4 sm:px-6 pb-20 md:pb-6 max-w-[1400px]">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 mb-6 sm:mb-8">
               <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
                 <User className="w-8 h-8 sm:w-10 sm:h-10 text-white" />

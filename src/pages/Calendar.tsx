@@ -268,7 +268,7 @@ const Calendar = () => {
         <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
           <header className="sticky top-0 z-50 surface-glass border-b border-border">
-            <div className="max-w-6xl mx-auto px-4 md:px-6">
+            <div className="w-full px-4 md:px-6 max-w-[1400px] mx-auto">
               <div className="flex items-center justify-between h-14 md:h-16">
                 <div className="flex items-center gap-3">
                   <SidebarTrigger className="hidden md:flex" />
@@ -330,7 +330,7 @@ const Calendar = () => {
           </header>
 
           {/* Calendar body */}
-          <main className="flex-1 max-w-6xl w-full mx-auto py-3 md:py-4 px-4 md:px-6 pb-20 md:pb-6">
+          <main className="flex-1 w-full mx-auto py-3 md:py-4 px-4 md:px-6 pb-20 md:pb-6 max-w-[1400px]">
             {viewMode === "month" && (
               <MonthView
                 year={curYear}

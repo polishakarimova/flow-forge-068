@@ -100,7 +100,7 @@ const Products = () => {
         <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
           <header className="sticky top-0 z-50 surface-glass border-b border-border">
-            <div className="max-w-5xl mx-auto px-4 md:px-6">
+            <div className="w-full px-4 md:px-6 max-w-[1400px] mx-auto">
               <div className="flex items-center justify-between h-14 md:h-16">
                 <div className="flex items-center gap-3">
                   <SidebarTrigger className="hidden md:flex" />
@@ -125,7 +125,7 @@ const Products = () => {
           </header>
 
           {/* Content */}
-          <main className="flex-1 max-w-5xl w-full mx-auto py-5 md:py-6 px-4 md:px-6 pb-20 md:pb-6">
+          <main className="flex-1 w-full mx-auto py-5 md:py-6 px-4 md:px-6 pb-20 md:pb-6 max-w-[1400px]">
             {/* Filters */}
             <div className="flex gap-2 mb-3 items-center flex-wrap">
               <ContentMultiDropdown
