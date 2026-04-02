@@ -9,6 +9,8 @@ import Content from "./pages/Content.tsx";
 import Products from "./pages/Products.tsx";
 import FunnelMapPage from "./pages/FunnelMapPage.tsx";
 import Calendar from "./pages/Calendar.tsx";
+import Welcome from "./pages/Welcome.tsx";
+import Profile from "./pages/Profile.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -21,11 +23,13 @@ const App = () => (
       <DataStoreProvider>
         <BrowserRouter basename="/flow-forge-068">
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Welcome />} />
+            <Route path="/dashboard" element={<Index />} />
             <Route path="/content" element={<Content />} />
             <Route path="/products" element={<Products />} />
             <Route path="/map" element={<FunnelMapPage />} />
             <Route path="/calendar" element={<Calendar />} />
+            <Route path="/profile" element={<Profile />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

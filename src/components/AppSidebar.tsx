@@ -4,6 +4,7 @@ import {
   Package,
   Map,
   CalendarDays,
+  User,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -21,9 +22,10 @@ import {
 const navItems = [
   { title: "Продукты", url: "/products", icon: Package },
   { title: "Контент", url: "/content", icon: FileText },
-  { title: "Воронки", url: "/", icon: GitBranch },
+  { title: "Воронки", url: "/dashboard", icon: GitBranch },
   { title: "Карта", url: "/map", icon: Map },
   { title: "Календарь", url: "/calendar", icon: CalendarDays },
+  { title: "Профиль", url: "/profile", icon: User },
 ];
 
 export function AppSidebar() {
