@@ -41,11 +41,11 @@ export default function Profile() {
 
         <div className="flex-1 flex flex-col min-w-0">
           <header className="sticky top-0 z-50 surface-glass border-b border-border">
-            <div className="max-w-6xl mx-auto px-4 md:px-6">
-              <div className="flex items-center justify-between h-14 md:h-16">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6">
+              <div className="flex items-center justify-between h-14 sm:h-16">
                 <div className="flex items-center gap-3">
                   <SidebarTrigger className="hidden md:flex" />
-                  <h1 className="text-[15px] md:text-base font-semibold text-foreground tracking-tight">
+                  <h1 className="text-sm sm:text-base font-semibold text-foreground tracking-tight">
                     Личный кабинет
                   </h1>
                 </div>
@@ -53,15 +53,15 @@ export default function Profile() {
             </div>
           </header>
 
-          <main className="flex-1 max-w-6xl w-full mx-auto py-6 px-4 md:px-6 pb-20 md:pb-6">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
-                <User className="w-8 h-8 text-white" />
+          <main className="flex-1 max-w-6xl w-full mx-auto py-4 sm:py-6 px-4 sm:px-6 pb-20 md:pb-6">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 mb-6 sm:mb-8">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
+                <User className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-foreground">Полина Каримова</h2>
-                <p className="text-muted-foreground">polina@example.com</p>
-                <div className="flex items-center gap-2 mt-1">
+              <div className="text-center sm:text-left">
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground">Полина Каримова</h2>
+                <p className="text-muted-foreground text-sm sm:text-base">polina@example.com</p>
+                <div className="flex flex-col sm:flex-row items-center gap-2 mt-1">
                   <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-md">
                     Pro Plan
                   </span>
@@ -70,37 +70,38 @@ export default function Profile() {
               </div>
             </div>
 
-            <div className="flex gap-1 mb-6 bg-muted p-1 rounded-lg w-fit">
+            <div className="flex overflow-x-auto gap-1 mb-6 bg-muted p-1 rounded-lg w-full sm:w-fit">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                     activeTab === tab.id
                       ? "bg-background text-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   <tab.icon className="w-4 h-4" />
-                  {tab.label}
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.label}</span>
                 </button>
               ))}
             </div>
 
             {activeTab === "overview" && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {stats.map((stat, index) => (
-                    <div key={index} className="bg-card p-6 rounded-xl border">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                          <stat.icon className="w-5 h-5 text-primary" />
+                    <div key={index} className="bg-card p-4 sm:p-6 rounded-xl border">
+                      <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                          <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                         </div>
-                        <div className="text-2xl font-bold text-foreground">
+                        <div className="text-xl sm:text-2xl font-bold text-foreground">
                           {stat.value}
                         </div>
                       </div>
-                      <div className="text-sm font-medium text-foreground mb-1">
+                      <div className="text-xs sm:text-sm font-medium text-foreground mb-1">
                         {stat.label}
                       </div>
                       <div className="text-xs text-green-600">

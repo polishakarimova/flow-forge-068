@@ -34,11 +34,11 @@ export function AppSidebar() {
   const location = useLocation();
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border min-w-[240px] w-[240px]">
-      <SidebarContent className="pt-4">
+    <Sidebar collapsible="icon" className="border-r border-border min-w-[200px] sm:min-w-[240px] w-[200px] sm:w-[240px]">
+      <SidebarContent className="pt-3 sm:pt-4">
         {!collapsed && (
-          <div className="px-4 pb-4">
-            <span className="text-sm font-bold tracking-tight text-foreground">
+          <div className="px-3 sm:px-4 pb-3 sm:pb-4">
+            <span className="text-xs sm:text-sm font-bold tracking-tight text-foreground">
               ContentMap
             </span>
           </div>
@@ -54,15 +54,15 @@ export function AppSidebar() {
                       <NavLink
                         to={item.url}
                         end
-                        className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[14px] font-medium transition-colors ${
+                        className={`flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs sm:text-[14px] font-medium transition-colors ${
                           active
                             ? "bg-primary/10 text-primary"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                         }`}
                         activeClassName="bg-primary/10 text-primary"
                       >
-                        <item.icon className="h-[20px] w-[20px] shrink-0" />
-                        {!collapsed && <span>{item.title}</span>}
+                        <item.icon className="h-[18px] w-[18px] sm:h-[20px] sm:w-[20px] shrink-0" />
+                        {!collapsed && <span className="truncate">{item.title}</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
