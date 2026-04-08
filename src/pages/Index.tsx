@@ -146,8 +146,16 @@ const Index = () => {
             )}
 
             {filtered.length === 0 && (
-              <div className="text-center py-16 text-muted-foreground">
-                <div className="text-[13px]">Нет воронок по выбранным фильтрам</div>
+              <div className="text-center py-16">
+                <div className="text-[40px] mb-3">🔗</div>
+                <div className="text-[15px] font-semibold text-foreground mb-1">Создайте первую воронку</div>
+                <div className="text-[13px] text-muted-foreground mb-4 max-w-xs mx-auto">Свяжите контент с продуктами и отслеживайте путь клиента от первого касания до покупки</div>
+                <button
+                  onClick={() => setShowCreate(true)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-xl hover:bg-primary/90 transition-colors border-none cursor-pointer"
+                >
+                  + Создать воронку
+                </button>
               </div>
             )}
           </main>

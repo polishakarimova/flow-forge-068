@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
-import { initialProducts, DEFAULT_FORMATS, type Product, type ProductStatusKey } from "@/lib/productData";
-import { initialTopics, type Topic, type ContentItemData, type ContentStatusKey } from "@/lib/contentData";
-import { funnelsData, type Funnel } from "@/lib/funnelData";
+import { DEFAULT_FORMATS, type Product, type ProductStatusKey } from "@/lib/productData";
+import { type Topic, type ContentItemData, type ContentStatusKey } from "@/lib/contentData";
+import { type Funnel } from "@/lib/funnelData";
 
 interface DataStore {
   // Products
@@ -37,15 +37,12 @@ interface DataStore {
 
 const DataStoreContext = createContext<DataStore | null>(null);
 
-// Derive initial keywords from funnelsData
-const initialKeywords = [...new Set(funnelsData.map((f) => f.keyword))];
-
 export function DataStoreProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
   const [formats, setFormats] = useState<string[]>(DEFAULT_FORMATS);
-  const [topics, setTopics] = useState<Topic[]>(initialTopics);
-  const [funnels, setFunnels] = useState<Funnel[]>(funnelsData);
-  const [keywords, setKeywords] = useState<string[]>(initialKeywords);
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [funnels, setFunnels] = useState<Funnel[]>([]);
+  const [keywords, setKeywords] = useState<string[]>([]);
 
   const addProduct = useCallback((data: Omit<Product, "id" | "status" | "createdDate" | "publishDate">) => {
     const newProduct: Product = {

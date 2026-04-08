@@ -164,9 +164,16 @@ const Products = () => {
 
             {/* Product list */}
             {grouped.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <div className="text-[28px] mb-1.5">📦</div>
-                <div className="text-[13px]">Пока нет продуктов</div>
+              <div className="text-center py-16">
+                <div className="text-[40px] mb-3">📦</div>
+                <div className="text-[15px] font-semibold text-foreground mb-1">Создайте первый продукт</div>
+                <div className="text-[13px] text-muted-foreground mb-4 max-w-xs mx-auto">Лид-магнит, трипвайер, флагман — добавьте продукт, чтобы начать строить воронку</div>
+                <button
+                  onClick={() => setShowCreate(true)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-xl hover:bg-primary/90 transition-colors border-none cursor-pointer"
+                >
+                  + Создать продукт
+                </button>
               </div>
             ) : (
               grouped.map((g) => (

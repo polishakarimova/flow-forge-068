@@ -203,7 +203,17 @@ const Content = () => {
             {tab === "topics" && (
               <div>
                 {activeTopics.length === 0 ? (
-                  <div className="text-center py-10 text-muted-foreground text-[13px]">Пока нет тем с контентом</div>
+                  <div className="text-center py-16">
+                    <div className="text-[40px] mb-3">✏️</div>
+                    <div className="text-[15px] font-semibold text-foreground mb-1">Добавьте первую тему</div>
+                    <div className="text-[13px] text-muted-foreground mb-4 max-w-xs mx-auto">Создайте тему и добавляйте контент: посты, сторис, статьи для разных платформ</div>
+                    <button
+                      onClick={() => setShowCreate(true)}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-xl hover:bg-primary/90 transition-colors border-none cursor-pointer"
+                    >
+                      + Создать тему
+                    </button>
+                  </div>
                 ) : (
                   activeTopics.map((topic) => (
                     <TopicRow
@@ -250,7 +260,11 @@ const Content = () => {
                 </div>
 
                 {groupedContent.length === 0 ? (
-                  <div className="text-center py-10 text-muted-foreground text-[14px]">Ничего не найдено</div>
+                  <div className="text-center py-16">
+                    <div className="text-[40px] mb-3">📝</div>
+                    <div className="text-[15px] font-semibold text-foreground mb-1">Контент пока пуст</div>
+                    <div className="text-[13px] text-muted-foreground mb-4 max-w-xs mx-auto">Создайте тему на вкладке "Темы" и добавьте туда единицы контента</div>
+                  </div>
                 ) : (
                   groupedContent.map((g) => (
                     <div key={g.date}>
