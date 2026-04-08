@@ -835,7 +835,7 @@ const FunnelMapPage = () => {
           <AppSidebar />
         </div>
 
-        <div className="flex-1 flex flex-col min-w-0 pt-10 md:pt-0" style={{ touchAction: "none" }}>
+        <div className="flex-1 flex flex-col min-w-0 pt-8 md:pt-0" style={{ touchAction: "none" }}>
           <header className="sticky top-0 z-50 surface-glass border-b border-border">
             <div className="w-full px-4 md:px-6">
               <div className="flex items-center justify-between h-[44px]">

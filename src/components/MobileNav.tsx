@@ -48,22 +48,20 @@ export function MobileHeader() {
   const { startTour } = useTour();
 
   return (
-    <div className="md:hidden fixed top-0 left-0 right-0 flex items-center justify-between px-4 py-2.5 bg-card/95 backdrop-blur-sm border-b border-border z-[60]">
+    <div className="md:hidden fixed top-0 left-0 right-0 flex items-center justify-between px-3 h-8 bg-card border-b border-border/60 z-[60]">
       <button
         onClick={() => navigate("/")}
-        className="logo-gradient text-[18px] leading-none cursor-pointer bg-transparent border-none p-0"
+        className="logo-gradient text-[14px] leading-none cursor-pointer bg-transparent border-none p-0"
       >
         Content Map
       </button>
-      <div className="flex items-center gap-1">
-        <button
-          onClick={() => { resetTour(); startTour(); }}
-          className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors bg-transparent border-none cursor-pointer"
-        >
-          <GraduationCap className="w-3.5 h-3.5" />
-          Обучение
-        </button>
-      </div>
+      <button
+        onClick={() => { resetTour(); startTour(); }}
+        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] text-muted-foreground hover:text-foreground transition-colors bg-transparent border-none cursor-pointer"
+      >
+        <GraduationCap className="w-3 h-3" />
+        Обучение
+      </button>
     </div>
   );
 }
