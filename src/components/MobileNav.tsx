@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { FileText, GitBranch, Package, Map, CalendarDays, User, GraduationCap, ChevronUp } from "lucide-react";
+import { FileText, GitBranch, Package, Map, CalendarDays, User, GraduationCap } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { resetTour } from "@/components/OnboardingTour";
@@ -9,81 +8,18 @@ import { useTour } from "@/App";
 
 export function MobileNav() {
   const location = useLocation();
-  const [showMapMenu, setShowMapMenu] = useState(false);
-
-  const isMapActive = location.pathname === "/map" || location.pathname === "/calendar";
 
   return (
-    <>
-      {/* Popup for Map+Calendar */}
-      {showMapMenu && (
-        <div
-          className="fixed inset-0 z-40 md:hidden"
-          onClick={() => setShowMapMenu(false)}
-        >
-          <div
-            className="absolute bottom-[68px] left-1/2 -translate-x-1/2 bg-card border border-border rounded-2xl shadow-xl p-1.5 flex gap-1 animate-in slide-in-from-bottom-2 fade-in duration-200 safe-area-bottom"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <NavLink
-              to="/map"
-              end
-              onClick={() => setShowMapMenu(false)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-colors ${
-                location.pathname === "/map"
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted/50"
-              }`}
-            >
-              <Map className="w-4 h-4" />
-              Карта
-            </NavLink>
-            <NavLink
-              to="/calendar"
-              end
-              onClick={() => setShowMapMenu(false)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-colors ${
-                location.pathname === "/calendar"
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted/50"
-              }`}
-            >
-              <CalendarDays className="w-4 h-4" />
-              Календарь
-            </NavLink>
-          </div>
-        </div>
-      )}
-
-      {/* Bottom tabs */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card/95 backdrop-blur-sm border-t border-border safe-area-bottom">
-        <div className="flex items-center justify-around h-16 px-1">
-          <TabLink url="/products" icon={Package} title="Продукты" pathname={location.pathname} />
-          <TabLink url="/content" icon={FileText} title="Контент" pathname={location.pathname} />
-          <TabLink url="/dashboard" icon={GitBranch} title="Воронки" pathname={location.pathname} />
-
-          {/* Map + Calendar combined tab */}
-          <button
-            onClick={() => setShowMapMenu(!showMapMenu)}
-            className={`flex flex-col items-center gap-1 px-2 py-2 rounded-lg transition-all duration-200 min-w-0 flex-1 border-none cursor-pointer ${
-              isMapActive
-                ? "text-primary bg-primary/10"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            } bg-transparent`}
-          >
-            <div className="relative">
-              <Map className={`w-5 h-5 ${isMapActive ? "scale-110" : ""} transition-transform`} />
-              <ChevronUp className="w-2.5 h-2.5 absolute -top-1 -right-1.5 text-muted-foreground" />
-            </div>
-            <span className="text-[10px] font-medium truncate">
-              {location.pathname === "/calendar" ? "Календарь" : "Карта"}
-            </span>
-          </button>
-
-          <TabLink url="/profile" icon={User} title="Профиль" pathname={location.pathname} />
-        </div>
-      </nav>
-    </>
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card/95 backdrop-blur-sm border-t border-border safe-area-bottom">
+      <div className="flex items-center justify-around h-16 px-1">
+        <TabLink url="/products" icon={Package} title="Продукты" pathname={location.pathname} />
+        <TabLink url="/content" icon={FileText} title="Контент" pathname={location.pathname} />
+        <TabLink url="/dashboard" icon={GitBranch} title="Воронки" pathname={location.pathname} />
+        <TabLink url="/map" icon={Map} title="Карта" pathname={location.pathname} />
+        <TabLink url="/calendar" icon={CalendarDays} title="Календарь" pathname={location.pathname} />
+        <TabLink url="/profile" icon={User} title="Профиль" pathname={location.pathname} />
+      </div>
+    </nav>
   );
 }
 
