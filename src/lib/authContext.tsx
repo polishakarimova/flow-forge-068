@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { supabase } from "@/lib/supabase";
+import type { User as SupaUser, Session } from "@supabase/supabase-js";
 
 export interface User {
   id: string;
@@ -26,101 +28,93 @@ interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const STORAGE_KEY = "contentmap-auth";
-
-function loadAuth(): AuthState {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const user = JSON.parse(raw) as User;
-      return { user, isAuthenticated: true, isLoading: false };
-    }
-  } catch { /* ignore */ }
-  return { user: null, isAuthenticated: false, isLoading: false };
-}
-
-function saveAuth(user: User | null) {
-  if (user) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-  } else {
-    localStorage.removeItem(STORAGE_KEY);
-  }
+function mapSupaUser(su: SupaUser): User {
+  const provider = su.app_metadata?.provider === "google" ? "google" : "email";
+  return {
+    id: su.id,
+    name: su.user_metadata?.full_name || su.user_metadata?.name || su.email?.split("@")[0] || "Пользователь",
+    email: su.email || "",
+    avatar: su.user_metadata?.avatar_url,
+    provider,
+    emailVerified: !!su.email_confirmed_at,
+  };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>(loadAuth);
+  const [state, setState] = useState<AuthState>({ user: null, isAuthenticated: false, isLoading: true });
 
-  const registerWithEmail = useCallback(async (name: string, email: string, _password: string) => {
+  // Listen to auth state changes
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setState({ user: mapSupaUser(session.user), isAuthenticated: true, isLoading: false });
+      } else {
+        setState({ user: null, isAuthenticated: false, isLoading: false });
+      }
+    });
+
+    // Subscribe to changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setState({ user: mapSupaUser(session.user), isAuthenticated: true, isLoading: false });
+      } else {
+        setState({ user: null, isAuthenticated: false, isLoading: false });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const registerWithEmail = useCallback(async (name: string, email: string, password: string) => {
     setState((s) => ({ ...s, isLoading: true }));
-    // Simulate API call
-    await new Promise((r) => setTimeout(r, 800));
-    const user: User = {
-      id: `user_${Date.now()}`,
-      name,
+    const redirectUrl = window.location.origin + "/flow-forge-068/";
+    const { error } = await supabase.auth.signUp({
       email,
-      provider: "email",
-      emailVerified: false,
-    };
-    setState({ user, isAuthenticated: true, isLoading: false });
-    saveAuth(user);
+      password,
+      options: {
+        data: { full_name: name },
+        emailRedirectTo: redirectUrl,
+      },
+    });
+    setState((s) => ({ ...s, isLoading: false }));
+    if (error) return { success: false, message: error.message };
     return { success: true, message: "Письмо с подтверждением отправлено на " + email };
   }, []);
 
   const registerWithGoogle = useCallback(async () => {
-    setState((s) => ({ ...s, isLoading: true }));
-    // Simulate Google OAuth
-    await new Promise((r) => setTimeout(r, 1200));
-    const user: User = {
-      id: `google_${Date.now()}`,
-      name: "Пользователь Google",
-      email: "user@gmail.com",
+    const redirectUrl = window.location.origin + "/flow-forge-068/";
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      emailVerified: true,
-    };
-    setState({ user, isAuthenticated: true, isLoading: false });
-    saveAuth(user);
-    return { success: true, message: "Вход через Google выполнен" };
+      options: { redirectTo: redirectUrl },
+    });
+    if (error) return { success: false, message: error.message };
+    return { success: true, message: "Перенаправление на Google..." };
   }, []);
 
-  const verifyEmail = useCallback(async (code: string) => {
-    setState((s) => ({ ...s, isLoading: true }));
-    await new Promise((r) => setTimeout(r, 600));
-    if (code.length >= 4) {
-      setState((s) => ({
-        ...s,
-        user: s.user ? { ...s.user, emailVerified: true } : null,
-        isLoading: false,
-      }));
-      if (state.user) saveAuth({ ...state.user, emailVerified: true });
-      return { success: true, message: "Email подтвержден!" };
-    }
-    setState((s) => ({ ...s, isLoading: false }));
-    return { success: false, message: "Неверный код подтверждения" };
-  }, [state.user]);
+  const verifyEmail = useCallback(async (_code: string) => {
+    // Supabase handles email verification via link, not code
+    // This is kept for UI compatibility
+    return { success: true, message: "Проверьте почту — перейдите по ссылке из письма" };
+  }, []);
 
   const resendVerification = useCallback(async (email: string) => {
-    await new Promise((r) => setTimeout(r, 500));
-    return { success: true, message: "Код отправлен повторно на " + email };
+    const { error } = await supabase.auth.resend({ type: "signup", email });
+    if (error) return { success: false, message: error.message };
+    return { success: true, message: "Письмо отправлено повторно на " + email };
   }, []);
 
-  const login = useCallback(async (email: string, _password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     setState((s) => ({ ...s, isLoading: true }));
-    await new Promise((r) => setTimeout(r, 800));
-    const user: User = {
-      id: `user_${Date.now()}`,
-      name: email.split("@")[0],
-      email,
-      provider: "email",
-      emailVerified: true,
-    };
-    setState({ user, isAuthenticated: true, isLoading: false });
-    saveAuth(user);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setState((s) => ({ ...s, isLoading: false }));
+    if (error) return { success: false, message: error.message };
     return { success: true, message: "Вход выполнен" };
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
     setState({ user: null, isAuthenticated: false, isLoading: false });
-    saveAuth(null);
   }, []);
 
   return (
