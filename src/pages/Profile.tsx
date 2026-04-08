@@ -39,7 +39,7 @@ export default function Profile() {
           <AppSidebar />
         </div>
 
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 pt-10 md:pt-0">
           <header className="sticky top-0 z-50 surface-glass border-b border-border">
             <div className="w-full px-4 sm:px-6 max-w-[1400px] mx-auto">
               <div className="flex items-center justify-between h-14 sm:h-16">

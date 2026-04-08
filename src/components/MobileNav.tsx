@@ -48,7 +48,7 @@ export function MobileHeader() {
   const { startTour } = useTour();
 
   return (
-    <div className="md:hidden flex items-center justify-between px-4 py-2 bg-card/95 backdrop-blur-sm border-b border-border sticky top-0 z-40">
+    <div className="md:hidden fixed top-0 left-0 right-0 flex items-center justify-between px-4 py-2.5 bg-card/95 backdrop-blur-sm border-b border-border z-[60]">
       <button
         onClick={() => navigate("/")}
         className="logo-gradient text-[18px] leading-none cursor-pointer bg-transparent border-none p-0"
