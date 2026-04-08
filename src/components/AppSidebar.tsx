@@ -7,7 +7,7 @@ import {
   User,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -36,13 +36,17 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
       <SidebarContent className="pt-3 sm:pt-4">
-        {!collapsed && (
-          <div className="px-3 sm:px-4 pb-3 sm:pb-4">
-            <span className="text-xs sm:text-sm font-bold tracking-tight text-foreground">
-              ContentMap
-            </span>
-          </div>
-        )}
+        <div className="px-3 sm:px-4 pb-3 sm:pb-4">
+          <Link to="/" className="logo-link group" title="На главную">
+            {collapsed ? (
+              <span className="logo-gradient text-lg font-black">C</span>
+            ) : (
+              <span className="logo-gradient text-lg sm:text-xl font-black tracking-tight">
+                ContentMap
+              </span>
+            )}
+          </Link>
+        </div>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
