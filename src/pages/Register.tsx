@@ -43,10 +43,10 @@ export default function Register() {
 
     if (!verificationCode.trim()) { setError("Введите код подтверждения"); return; }
 
-    const result = await verifyEmail(verificationCode);
+    const result = await verifyEmail(verificationCode, email);
     if (result.success) {
       setMessage(result.message);
-      setTimeout(() => navigate("/profile"), 1200);
+      setTimeout(() => navigate("/products"), 1200);
     } else {
       setError(result.message);
     }

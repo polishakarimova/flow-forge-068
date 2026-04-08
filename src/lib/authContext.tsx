@@ -20,7 +20,7 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   registerWithEmail: (name: string, email: string, password: string) => Promise<{ success: boolean; message: string }>;
   registerWithGoogle: () => Promise<{ success: boolean; message: string }>;
-  verifyEmail: (code: string) => Promise<{ success: boolean; message: string }>;
+  verifyEmail: (code: string, email: string) => Promise<{ success: boolean; message: string }>;
   resendVerification: (email: string) => Promise<{ success: boolean; message: string }>;
   login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
@@ -92,10 +92,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { success: true, message: "Перенаправление на Google..." };
   }, []);
 
-  const verifyEmail = useCallback(async (_code: string) => {
-    // Supabase handles email verification via link, not code
-    // This is kept for UI compatibility
-    return { success: true, message: "Проверьте почту — перейдите по ссылке из письма" };
+  const verifyEmail = useCallback(async (code: string, email: string) => {
+    setState((s) => ({ ...s, isLoading: true }));
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token: code,
+      type: "signup",
+    });
+    setState((s) => ({ ...s, isLoading: false }));
+    if (error) return { success: false, message: "Неверный код. Попробуйте ещё раз." };
+    return { success: true, message: "Email подтверждён!" };
   }, []);
 
   const resendVerification = useCallback(async (email: string) => {
