@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Plus, PartyPopper, X, Clock } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
@@ -17,11 +17,41 @@ interface CalendarEvent {
   id: string;
   title: string;
   date: string; // YYYY-MM-DD
-  type: "content" | "product";
+  time?: string; // HH:MM
+  type: "content" | "product" | "custom";
   color: string;
   statusColor: string;
   icon?: React.ReactNode;
-  original: ContentItemData | Product;
+  original?: ContentItemData | Product;
+}
+
+interface CustomEvent {
+  id: string;
+  title: string;
+  date: string;
+  time?: string;
+  color: string;
+}
+
+/* ── Custom events storage ── */
+
+const CUSTOM_EVENTS_KEY = "contentmap-custom-events";
+
+const DEFAULT_CUSTOM_EVENTS: CustomEvent[] = [
+  { id: "ce-1", title: "Праздник, ждём гостей", date: "2026-04-25", time: "16:00", color: "#f59e0b" },
+];
+
+function loadCustomEvents(): CustomEvent[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_EVENTS_KEY);
+    return raw ? JSON.parse(raw) : DEFAULT_CUSTOM_EVENTS;
+  } catch {
+    return DEFAULT_CUSTOM_EVENTS;
+  }
+}
+
+function saveCustomEvents(events: CustomEvent[]) {
+  localStorage.setItem(CUSTOM_EVENTS_KEY, JSON.stringify(events));
 }
 
 /* ── Date helpers ── */
@@ -152,6 +182,35 @@ const Calendar = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [currentDate, setCurrentDate] = useState(new Date());
   const todayStr = toDateStr(new Date());
+  const [customEvents, setCustomEvents] = useState<CustomEvent[]>(loadCustomEvents);
+  const [showAddEvent, setShowAddEvent] = useState(false);
+  const [newEventTitle, setNewEventTitle] = useState("");
+  const [newEventDate, setNewEventDate] = useState("");
+  const [newEventTime, setNewEventTime] = useState("");
+
+  const addCustomEvent = () => {
+    if (!newEventTitle.trim() || !newEventDate) return;
+    const ev: CustomEvent = {
+      id: `ce-${Date.now()}`,
+      title: newEventTitle.trim(),
+      date: newEventDate,
+      time: newEventTime || undefined,
+      color: "#f59e0b",
+    };
+    const updated = [...customEvents, ev];
+    setCustomEvents(updated);
+    saveCustomEvents(updated);
+    setNewEventTitle("");
+    setNewEventDate("");
+    setNewEventTime("");
+    setShowAddEvent(false);
+  };
+
+  const removeCustomEvent = (id: string) => {
+    const updated = customEvents.filter((e) => e.id !== id);
+    setCustomEvents(updated);
+    saveCustomEvents(updated);
+  };
 
   const curYear = currentDate.getFullYear();
   const curMonth = currentDate.getMonth();
@@ -237,8 +296,20 @@ const Calendar = () => {
         });
       }
     });
+    customEvents.forEach((ce) => {
+      list.push({
+        id: ce.id,
+        title: ce.time ? `${ce.time} ${ce.title}` : ce.title,
+        date: ce.date,
+        time: ce.time,
+        type: "custom",
+        color: ce.color,
+        statusColor: ce.color,
+        icon: <PartyPopper className="w-3 h-3" />,
+      });
+    });
     return list;
-  }, [topics, products]);
+  }, [topics, products, customEvents]);
 
   const eventsByDate = useMemo(() => {
     const map: Record<string, CalendarEvent[]> = {};
@@ -322,9 +393,18 @@ const Calendar = () => {
                   )}
                 </div>
 
-                <span className="ml-auto text-[11px] text-muted-foreground font-light tracking-wide">
-                  {events.length} запланировано
-                </span>
+                <div className="ml-auto flex items-center gap-2">
+                  <button
+                    onClick={() => { setShowAddEvent(true); setNewEventDate(toDateStr(currentDate)); }}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-[11px] font-semibold hover:bg-primary/20 transition-colors border-none cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Событие
+                  </button>
+                  <span className="text-[11px] text-muted-foreground font-light tracking-wide">
+                    {events.length} запланировано
+                  </span>
+                </div>
               </div>
             </div>
           </header>
@@ -337,6 +417,7 @@ const Calendar = () => {
                 month={curMonth}
                 eventsByDate={eventsByDate}
                 todayStr={todayStr}
+                onRemoveEvent={removeCustomEvent}
               />
             )}
             {viewMode === "week" && (
@@ -352,6 +433,7 @@ const Calendar = () => {
                 date={currentDate}
                 events={eventsByDate[toDateStr(currentDate)] || []}
                 todayStr={todayStr}
+                onRemoveEvent={removeCustomEvent}
               />
             )}
           </main>
@@ -359,6 +441,54 @@ const Calendar = () => {
 
         <MobileNav />
       </div>
+
+      {/* Add event modal */}
+      {showAddEvent && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] animate-in fade-in duration-200"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowAddEvent(false); }}
+        >
+          <div className="bg-card rounded-2xl w-full max-w-[380px] p-5 mx-4 shadow-xl animate-in slide-in-from-bottom-3 duration-300">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[14px] font-bold text-foreground">Новое событие</h3>
+              <button onClick={() => setShowAddEvent(false)} className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:bg-muted/80 transition-colors border-none cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={newEventTitle}
+                onChange={(e) => setNewEventTitle(e.target.value)}
+                placeholder="Название события"
+                className="w-full px-3 py-2.5 bg-muted/30 border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40 transition-colors"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={newEventDate}
+                  onChange={(e) => setNewEventDate(e.target.value)}
+                  className="flex-1 px-3 py-2.5 bg-muted/30 border border-border rounded-xl text-sm text-foreground focus:outline-none focus:border-primary/40 transition-colors"
+                />
+                <input
+                  type="time"
+                  value={newEventTime}
+                  onChange={(e) => setNewEventTime(e.target.value)}
+                  className="w-28 px-3 py-2.5 bg-muted/30 border border-border rounded-xl text-sm text-foreground focus:outline-none focus:border-primary/40 transition-colors"
+                />
+              </div>
+              <button
+                onClick={addCustomEvent}
+                disabled={!newEventTitle.trim() || !newEventDate}
+                className="w-full py-2.5 bg-primary text-primary-foreground font-semibold rounded-xl text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 border-none cursor-pointer"
+              >
+                Добавить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </SidebarProvider>
   );
 };
@@ -366,12 +496,13 @@ const Calendar = () => {
 /* ── Month View ── */
 
 function MonthView({
-  year, month, eventsByDate, todayStr,
+  year, month, eventsByDate, todayStr, onRemoveEvent,
 }: {
   year: number;
   month: number;
   eventsByDate: Record<string, CalendarEvent[]>;
   todayStr: string;
+  onRemoveEvent: (id: string) => void;
 }) {
   const weeks = getMonthGrid(year, month);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -469,7 +600,7 @@ function MonthView({
           ) : (
             <div className="flex flex-col gap-1.5">
               {selectedEvents.map((ev) => (
-                <DayEventCard key={ev.id} event={ev} />
+                <DayEventCard key={ev.id} event={ev} onRemove={onRemoveEvent} />
               ))}
             </div>
           )}
@@ -547,17 +678,19 @@ function WeekView({
 /* ── Day View ── */
 
 function DayView({
-  date, events, todayStr,
+  date, events, todayStr, onRemoveEvent,
 }: {
   date: Date;
   events: CalendarEvent[];
   todayStr: string;
+  onRemoveEvent: (id: string) => void;
 }) {
   const isToday = toDateStr(date) === todayStr;
   const dayIdx = (date.getDay() + 6) % 7;
 
   const contentEvents = events.filter((e) => e.type === "content");
   const productEvents = events.filter((e) => e.type === "product");
+  const customEventsDay = events.filter((e) => e.type === "custom");
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -585,6 +718,19 @@ function DayView({
         </div>
       ) : (
         <>
+          {customEventsDay.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-[13px] font-semibold text-muted-foreground mb-2">
+                События ({customEventsDay.length})
+              </h3>
+              <div className="flex flex-col gap-1.5">
+                {customEventsDay.map((ev) => (
+                  <DayEventCard key={ev.id} event={ev} onRemove={onRemoveEvent} />
+                ))}
+              </div>
+            </div>
+          )}
+
           {contentEvents.length > 0 && (
             <div className="mb-6">
               <h3 className="text-[13px] font-semibold text-muted-foreground mb-2">
@@ -639,7 +785,8 @@ function EventPill({ event, compact }: { event: CalendarEvent; compact?: boolean
 
 /* ── Day Event Card (detailed for day view) ── */
 
-function DayEventCard({ event }: { event: CalendarEvent }) {
+function DayEventCard({ event, onRemove }: { event: CalendarEvent; onRemove?: (id: string) => void }) {
+  const typeLabel = event.type === "content" ? "контент" : event.type === "product" ? "продукт" : "событие";
   return (
     <div
       className="flex items-center gap-3 px-4 py-3 rounded-xl card-elevated transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)]"
@@ -658,17 +805,27 @@ function DayEventCard({ event }: { event: CalendarEvent }) {
 
       <div className="flex-1 min-w-0">
         <div className="text-[13px] font-medium text-foreground truncate">{event.title}</div>
-        <div className="text-[10px] text-muted-foreground capitalize">
-          {event.type === "content" ? "контент" : "продукт"}
+        <div className="text-[10px] text-muted-foreground capitalize flex items-center gap-1">
+          {event.time && <><Clock className="w-2.5 h-2.5" />{event.time} · </>}
+          {typeLabel}
         </div>
       </div>
 
       <span
-        className="px-2 py-0.5 rounded-lg text-[10px] font-semibold"
+        className="px-2 py-0.5 rounded-lg text-[10px] font-semibold shrink-0"
         style={{ background: event.color + "15", color: event.color }}
       >
-        {event.type === "content" ? "контент" : "продукт"}
+        {typeLabel}
       </span>
+
+      {event.type === "custom" && onRemove && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onRemove(event.id); }}
+          className="w-6 h-6 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:bg-red-100 hover:text-red-500 transition-colors border-none cursor-pointer shrink-0"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      )}
     </div>
   );
 }
