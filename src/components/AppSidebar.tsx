@@ -5,6 +5,7 @@ import {
   Map,
   CalendarDays,
   User,
+  ShieldCheck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -26,6 +27,7 @@ const navItems = [
   { title: "Карта", url: "/map", icon: Map },
   { title: "Календарь", url: "/calendar", icon: CalendarDays },
   { title: "Профиль", url: "/profile", icon: User },
+  { title: "Админ", url: "/admin", icon: ShieldCheck },
 ];
 
 export function AppSidebar() {
