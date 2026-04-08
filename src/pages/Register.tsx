@@ -213,6 +213,8 @@ export default function Register() {
                 <div className="flex justify-center">
                   <input
                     type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
                     value={verificationCode}
                     onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                     placeholder="000000"
