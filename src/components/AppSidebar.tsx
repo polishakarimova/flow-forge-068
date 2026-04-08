@@ -19,6 +19,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { TourButton, resetTour } from "@/components/OnboardingTour";
+import { useTour } from "@/App";
 
 const navItems = [
   { title: "Продукты", url: "/products", icon: Package },
@@ -35,6 +37,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
+  const { startTour } = useTour();
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
@@ -78,6 +81,13 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Tour button at bottom */}
+        {!collapsed && (
+          <div className="mt-auto px-3 pb-4">
+            <TourButton onClick={() => { resetTour(); startTour(); }} />
+          </div>
+        )}
       </SidebarContent>
     </Sidebar>
   );
