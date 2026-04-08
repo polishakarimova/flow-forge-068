@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
@@ -624,6 +625,7 @@ function applyCustomPositions(nodes: MapNode[], saved: Record<string, { x: numbe
 }
 
 const FunnelMapPage = () => {
+  const navigate = useNavigate();
   const { funnels, allContentItems, products, topics, updateContentItem, updateProduct, updateTopic, formats, addFormat, deleteFormat, setFunnels } = useDataStore();
   const svgRef = useRef<SVGSVGElement>(null);
   const savedView = useRef(loadSavedView());
@@ -841,9 +843,13 @@ const FunnelMapPage = () => {
               <div className="flex items-center justify-between h-[44px]">
                 <div className="flex items-center gap-3">
                   <SidebarTrigger className="hidden md:flex" />
-                  <span className="text-[12px] font-extrabold text-foreground tracking-[0.08em]">
-                    КАРТА ВОРОНОК
-                  </span>
+                  <button
+                    onClick={() => navigate("/")}
+                    className="logo-gradient text-[18px] md:text-[22px] leading-none cursor-pointer bg-transparent border-none p-0"
+                    title="На главную"
+                  >
+                    Content Map
+                  </button>
                 </div>
 
                 <div className="flex items-center gap-1.5">

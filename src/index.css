@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -97,6 +98,25 @@
 
   .violet-surface {
     background: hsl(var(--violet-soft));
+  }
+
+  .logo-gradient {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 800;
+    background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 30%, #7C3AED 60%, #6D28D9 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-fill-color: transparent;
+    filter: drop-shadow(0 1px 2px rgba(139, 92, 246, 0.3));
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    transition: filter 0.2s ease, transform 0.2s ease;
+  }
+
+  .logo-gradient:hover {
+    filter: drop-shadow(0 2px 8px rgba(139, 92, 246, 0.5));
+    transform: scale(1.02);
   }
 
   .safe-area-bottom {
