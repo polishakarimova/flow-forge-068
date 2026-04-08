@@ -35,14 +35,7 @@ export default function Welcome() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
       {/* Top navigation bar */}
       <nav className="w-full px-4 sm:px-6 lg:px-8 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <button
-            onClick={() => navigate("/")}
-            className="logo-gradient text-[24px] sm:text-[28px] leading-none cursor-pointer bg-transparent border-none p-0"
-          >
-            Content Map
-          </button>
-
+        <div className="max-w-7xl mx-auto flex items-center justify-end">
           <div className="flex items-center gap-2 sm:gap-3">
             {isAuthenticated ? (
               <button
