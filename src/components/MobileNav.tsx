@@ -5,6 +5,7 @@ import { useLocation } from "react-router-dom";
 const mainTabs = [
   { title: "Главная", url: "/", icon: Home },
   { title: "Продукты", url: "/products", icon: Package },
+  { title: "Контент", url: "/content", icon: FileText },
   { title: "Воронки", url: "/dashboard", icon: GitBranch },
   { title: "Карта", url: "/map", icon: Map },
   { title: "Профиль", url: "/profile", icon: User },
