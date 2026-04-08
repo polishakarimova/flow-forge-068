@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { ArrowRight, Play, BarChart3, Zap, Target, Users } from "lucide-react";
+import { ArrowRight, Play, BarChart3, Zap, Target, Users, UserPlus, LogIn } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/authContext";
 
 export default function Welcome() {
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
   const [showDemo, setShowDemo] = useState(false);
 
   const features = [
@@ -31,9 +33,50 @@ export default function Welcome() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
+      {/* Top navigation bar */}
+      <nav className="w-full px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <button
+            onClick={() => navigate("/")}
+            className="logo-gradient text-[24px] sm:text-[28px] leading-none cursor-pointer bg-transparent border-none p-0"
+          >
+            Content Map
+          </button>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            {isAuthenticated ? (
+              <button
+                onClick={() => navigate("/profile")}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-xl hover:bg-purple-700 transition-all duration-200"
+              >
+                <Users className="w-4 h-4" />
+                <span className="hidden sm:inline">{user?.name || "Кабинет"}</span>
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => navigate("/login")}
+                  className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 border-2 border-purple-200 text-purple-700 text-sm font-semibold rounded-xl hover:bg-purple-50 transition-all duration-200"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span className="hidden sm:inline">Войти</span>
+                </button>
+                <button
+                  onClick={() => navigate("/register")}
+                  className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-semibold rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-md shadow-purple-200"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span className="hidden sm:inline">Регистрация</span>
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </nav>
+
       {/* Hero Section */}
       <div className="relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 lg:pt-20 pb-12 sm:pb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 lg:pt-16 pb-12 sm:pb-16">
           <div className="text-center">
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight">
               Карта <span className="text-purple-600">воронок</span>
