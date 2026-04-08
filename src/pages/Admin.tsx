@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { MobileNav } from "@/components/MobileNav";
+import { MobileNav, MobileHeader } from "@/components/MobileNav";
 import {
   Users,
   TrendingUp,
@@ -582,6 +582,7 @@ export default function Admin() {
           </main>
         </div>
 
+        <MobileHeader />
         <MobileNav />
       </div>
     </SidebarProvider>

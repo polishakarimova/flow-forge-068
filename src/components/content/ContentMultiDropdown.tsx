@@ -43,7 +43,7 @@ export function ContentMultiDropdown({ values, onChange, options, placeholder, w
     <div ref={ref} className="relative" style={{ width }}>
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full flex items-center justify-between gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-card text-[11px] font-light tracking-wide cursor-pointer transition-all duration-200 hover:border-primary/40 hover:shadow-sm ${
+        className={`w-full flex items-center justify-between gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-border bg-card text-[10px] sm:text-[11px] font-light tracking-wide cursor-pointer transition-all duration-200 hover:border-primary/40 hover:shadow-sm ${
           has ? "text-foreground" : "text-muted-foreground"
         }`}
       >

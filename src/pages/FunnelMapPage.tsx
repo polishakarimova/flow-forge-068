@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { MobileNav } from "@/components/MobileNav";
+import { MobileNav, MobileHeader } from "@/components/MobileNav";
 import type { BadgeColor, Funnel } from "@/lib/funnelData";
 import { resolveFunnelContent } from "@/lib/funnelData";
 import { useDataStore } from "@/lib/dataStore";
@@ -945,6 +945,7 @@ const FunnelMapPage = () => {
           </svg>
         </div>
 
+        <MobileHeader />
         <MobileNav />
       </div>
 

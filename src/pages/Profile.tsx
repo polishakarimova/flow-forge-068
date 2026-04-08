@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { MobileNav } from "@/components/MobileNav";
+import { MobileNav, MobileHeader } from "@/components/MobileNav";
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -210,6 +210,7 @@ export default function Profile() {
           </main>
         </div>
 
+        <MobileHeader />
         <MobileNav />
       </div>
     </SidebarProvider>

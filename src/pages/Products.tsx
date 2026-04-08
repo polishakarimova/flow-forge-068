@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { MobileNav } from "@/components/MobileNav";
+import { MobileNav, MobileHeader } from "@/components/MobileNav";
 import {
   PRODUCT_TYPES,
   PRODUCT_STATUSES,
@@ -127,37 +127,37 @@ const Products = () => {
           {/* Content */}
           <main className="flex-1 w-full mx-auto py-5 md:py-6 px-4 md:px-6 pb-20 md:pb-6 max-w-[1400px]">
             {/* Filters */}
-            <div className="flex gap-2 mb-3 items-center flex-wrap">
+            <div className="flex gap-1.5 mb-3 items-center">
               <ContentMultiDropdown
                 values={typeFilters}
                 onChange={setTypeFilters}
                 options={typeOptions}
-                placeholder="Все типы"
-                width={160}
+                placeholder="Тип"
+                width={100}
               />
               <ContentMultiDropdown
                 values={formatFilters}
                 onChange={setFormatFilters}
                 options={formatOptions}
-                placeholder="Все форматы"
-                width={160}
+                placeholder="Формат"
+                width={100}
               />
               <ContentMultiDropdown
                 values={statusFilters}
                 onChange={setStatusFilters}
                 options={statusOptions}
-                placeholder="Все статусы"
-                width={160}
+                placeholder="Статус"
+                width={100}
               />
               {hasFilters && (
                 <button
                   onClick={() => { setTypeFilters([]); setFormatFilters([]); setStatusFilters([]); }}
-                  className="text-[12px] text-muted-foreground bg-transparent border-none cursor-pointer underline hover:text-foreground transition-colors"
+                  className="text-[10px] text-muted-foreground bg-transparent border-none cursor-pointer underline hover:text-foreground transition-colors shrink-0"
                 >
-                  Сбросить
+                  ✕
                 </button>
               )}
-              <span className="ml-auto text-[11px] text-muted-foreground">
+              <span className="ml-auto text-[11px] text-muted-foreground shrink-0">
                 {filtered.length} из {products.length}
               </span>
             </div>
@@ -194,6 +194,7 @@ const Products = () => {
           </main>
         </div>
 
+        <MobileHeader />
         <MobileNav />
       </div>
 

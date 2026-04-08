@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, Plus, PartyPopper, X, Clock } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { MobileNav } from "@/components/MobileNav";
+import { MobileNav, MobileHeader } from "@/components/MobileNav";
 import { useDataStore } from "@/lib/dataStore";
 import { PLATFORMS, STATUSES, type ContentItemData } from "@/lib/contentData";
 import { PRODUCT_TYPES, PRODUCT_STATUSES, type Product } from "@/lib/productData";
@@ -439,6 +439,7 @@ const Calendar = () => {
           </main>
         </div>
 
+        <MobileHeader />
         <MobileNav />
       </div>
 

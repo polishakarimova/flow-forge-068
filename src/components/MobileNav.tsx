@@ -1,43 +1,133 @@
-import { FileText, GitBranch, Package, Map, CalendarDays, User, Home } from "lucide-react";
+import { useState } from "react";
+import { FileText, GitBranch, Package, Map, CalendarDays, User, GraduationCap, ChevronUp } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { resetTour } from "@/components/OnboardingTour";
+import { useTour } from "@/App";
 
-const mainTabs = [
-  { title: "Главная", url: "/", icon: Home },
-  { title: "Продукты", url: "/products", icon: Package },
-  { title: "Контент", url: "/content", icon: FileText },
-  { title: "Воронки", url: "/dashboard", icon: GitBranch },
-  { title: "Карта", url: "/map", icon: Map },
-  { title: "Профиль", url: "/profile", icon: User },
-];
+/* ── Bottom tabs ─────────────────────────────────── */
 
 export function MobileNav() {
   const location = useLocation();
-  
+  const [showMapMenu, setShowMapMenu] = useState(false);
+
+  const isMapActive = location.pathname === "/map" || location.pathname === "/calendar";
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card/95 backdrop-blur-sm border-t border-border safe-area-bottom">
-      <div className="flex items-center justify-around h-16 px-1">
-        {mainTabs.map((tab) => {
-          const isActive = location.pathname === tab.url;
-          return (
+    <>
+      {/* Popup for Map+Calendar */}
+      {showMapMenu && (
+        <div
+          className="fixed inset-0 z-40 md:hidden"
+          onClick={() => setShowMapMenu(false)}
+        >
+          <div
+            className="absolute bottom-[68px] left-1/2 -translate-x-1/2 bg-card border border-border rounded-2xl shadow-xl p-1.5 flex gap-1 animate-in slide-in-from-bottom-2 fade-in duration-200 safe-area-bottom"
+            onClick={(e) => e.stopPropagation()}
+          >
             <NavLink
-              key={tab.url}
-              to={tab.url}
+              to="/map"
               end
-              className={`flex flex-col items-center gap-1 px-2 py-2 rounded-lg transition-all duration-200 min-w-0 flex-1 ${
-                isActive 
-                  ? "text-primary bg-primary/10" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              onClick={() => setShowMapMenu(false)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-colors ${
+                location.pathname === "/map"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted/50"
               }`}
             >
-              <tab.icon className={`w-5 h-5 ${
-                isActive ? "scale-110" : ""
-              } transition-transform`} />
-              <span className="text-[10px] font-medium truncate">{tab.title}</span>
+              <Map className="w-4 h-4" />
+              Карта
             </NavLink>
-          );
-        })}
+            <NavLink
+              to="/calendar"
+              end
+              onClick={() => setShowMapMenu(false)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-colors ${
+                location.pathname === "/calendar"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted/50"
+              }`}
+            >
+              <CalendarDays className="w-4 h-4" />
+              Календарь
+            </NavLink>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom tabs */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card/95 backdrop-blur-sm border-t border-border safe-area-bottom">
+        <div className="flex items-center justify-around h-16 px-1">
+          <TabLink url="/products" icon={Package} title="Продукты" pathname={location.pathname} />
+          <TabLink url="/content" icon={FileText} title="Контент" pathname={location.pathname} />
+          <TabLink url="/dashboard" icon={GitBranch} title="Воронки" pathname={location.pathname} />
+
+          {/* Map + Calendar combined tab */}
+          <button
+            onClick={() => setShowMapMenu(!showMapMenu)}
+            className={`flex flex-col items-center gap-1 px-2 py-2 rounded-lg transition-all duration-200 min-w-0 flex-1 border-none cursor-pointer ${
+              isMapActive
+                ? "text-primary bg-primary/10"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            } bg-transparent`}
+          >
+            <div className="relative">
+              <Map className={`w-5 h-5 ${isMapActive ? "scale-110" : ""} transition-transform`} />
+              <ChevronUp className="w-2.5 h-2.5 absolute -top-1 -right-1.5 text-muted-foreground" />
+            </div>
+            <span className="text-[10px] font-medium truncate">
+              {location.pathname === "/calendar" ? "Календарь" : "Карта"}
+            </span>
+          </button>
+
+          <TabLink url="/profile" icon={User} title="Профиль" pathname={location.pathname} />
+        </div>
+      </nav>
+    </>
+  );
+}
+
+function TabLink({ url, icon: Icon, title, pathname }: { url: string; icon: any; title: string; pathname: string }) {
+  const isActive = pathname === url;
+  return (
+    <NavLink
+      to={url}
+      end
+      className={`flex flex-col items-center gap-1 px-2 py-2 rounded-lg transition-all duration-200 min-w-0 flex-1 ${
+        isActive
+          ? "text-primary bg-primary/10"
+          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+      }`}
+    >
+      <Icon className={`w-5 h-5 ${isActive ? "scale-110" : ""} transition-transform`} />
+      <span className="text-[10px] font-medium truncate">{title}</span>
+    </NavLink>
+  );
+}
+
+/* ── Top header (mobile only) ────────────────────── */
+
+export function MobileHeader() {
+  const navigate = useNavigate();
+  const { startTour } = useTour();
+
+  return (
+    <div className="md:hidden flex items-center justify-between px-4 py-2 bg-card/95 backdrop-blur-sm border-b border-border sticky top-0 z-40">
+      <button
+        onClick={() => navigate("/")}
+        className="logo-gradient text-[18px] leading-none cursor-pointer bg-transparent border-none p-0"
+      >
+        Content Map
+      </button>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => { resetTour(); startTour(); }}
+          className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors bg-transparent border-none cursor-pointer"
+        >
+          <GraduationCap className="w-3.5 h-3.5" />
+          Обучение
+        </button>
       </div>
-    </nav>
+    </div>
   );
 }

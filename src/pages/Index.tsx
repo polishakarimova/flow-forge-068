@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { MobileNav } from "@/components/MobileNav";
+import { MobileNav, MobileHeader } from "@/components/MobileNav";
 import { PathRow } from "@/components/PathRow";
 import { ContentMultiDropdown } from "@/components/content/ContentMultiDropdown";
 import { CreateFunnelModal } from "@/components/funnels/CreateFunnelModal";
@@ -161,6 +161,7 @@ const Index = () => {
           </main>
         </div>
 
+        <MobileHeader />
         <MobileNav />
       </div>
       {showCreate && <CreateFunnelModal onClose={() => setShowCreate(false)} />}
