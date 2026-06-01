@@ -69,7 +69,7 @@ const App = () => (
       <AuthProvider>
         <DataStoreProvider>
           <ContextProvider>
-            <BrowserRouter basename="/flow-forge-068">
+            <BrowserRouter basename="/">
               <AppRoutes />
             </BrowserRouter>
           </ContextProvider>

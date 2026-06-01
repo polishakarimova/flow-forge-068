@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerWithEmail = useCallback(async (name: string, email: string, password: string) => {
     setState((s) => ({ ...s, isLoading: true }));
-    const redirectUrl = window.location.origin + "/flow-forge-068/";
+    const redirectUrl = window.location.origin + "/";
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const registerWithGoogle = useCallback(async () => {
-    const redirectUrl = window.location.origin + "/flow-forge-068/";
+    const redirectUrl = window.location.origin + "/";
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: redirectUrl },

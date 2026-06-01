@@ -55,13 +55,13 @@ npm run dev
 Локальный URL:
 
 ```txt
-http://127.0.0.1:8080/flow-forge-068/
+http://127.0.0.1:8080/
 ```
 
 Vite base / React Router basename:
 
 ```txt
-/flow-forge-068
+/
 ```
 
 ## 3. Глобальная Архитектура
@@ -80,7 +80,7 @@ Vite base / React Router basename:
     <Sonner />
     <AuthProvider>
       <DataStoreProvider>
-        <BrowserRouter basename="/flow-forge-068">
+        <BrowserRouter basename="/">
           <AppRoutes />
         </BrowserRouter>
       </DataStoreProvider>
@@ -794,7 +794,7 @@ Supabase auth:
 Redirect URL:
 
 ```txt
-window.location.origin + "/flow-forge-068/"
+window.location.origin + "/"
 ```
 
 ## 17. Экран Admin `/admin`
