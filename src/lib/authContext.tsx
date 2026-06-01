@@ -7,7 +7,7 @@ export interface User {
   name: string;
   email: string;
   avatar?: string;
-  provider: "email" | "google";
+  provider: "email" | "google" | "telegram";
   emailVerified: boolean;
 }
 
@@ -23,13 +23,14 @@ interface AuthContextValue extends AuthState {
   verifyEmail: (code: string, email: string) => Promise<{ success: boolean; message: string }>;
   resendVerification: (email: string) => Promise<{ success: boolean; message: string }>;
   login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
+  loginWithTelegram: (telegramUser: Record<string, unknown>) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 function mapSupaUser(su: SupaUser): User {
-  const provider = su.app_metadata?.provider === "google" ? "google" : "email";
+  const provider = su.user_metadata?.auth_provider === "telegram" ? "telegram" : su.app_metadata?.provider === "google" ? "google" : "email";
   return {
     id: su.id,
     name: su.user_metadata?.full_name || su.user_metadata?.name || su.email?.split("@")[0] || "Пользователь",
@@ -118,13 +119,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { success: true, message: "Вход выполнен" };
   }, []);
 
+  const loginWithTelegram = useCallback(async (telegramUser: Record<string, unknown>) => {
+    setState((s) => ({ ...s, isLoading: true }));
+    try {
+      const response = await fetch("/api/auth/telegram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user: telegramUser }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.ok) {
+        return { success: false, message: result.error || "Не удалось войти через Telegram" };
+      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email: result.email,
+        password: result.password,
+      });
+      if (error) return { success: false, message: error.message };
+      return { success: true, message: "Вход через Telegram выполнен" };
+    } catch (error) {
+      return { success: false, message: error instanceof Error ? error.message : "Не удалось войти через Telegram" };
+    } finally {
+      setState((s) => ({ ...s, isLoading: false }));
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
     setState({ user: null, isAuthenticated: false, isLoading: false });
   }, []);
 
   return (
-    <AuthContext.Provider value={{ ...state, registerWithEmail, registerWithGoogle, verifyEmail, resendVerification, login, logout }}>
+    <AuthContext.Provider value={{ ...state, registerWithEmail, registerWithGoogle, verifyEmail, resendVerification, login, loginWithTelegram, logout }}>
       {children}
     </AuthContext.Provider>
   );

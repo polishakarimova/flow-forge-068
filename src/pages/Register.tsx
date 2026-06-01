@@ -2,12 +2,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock, User, ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/authContext";
+import { TelegramLoginButton } from "@/components/TelegramLoginButton";
 
 type Step = "form" | "verify";
 
 export default function Register() {
   const navigate = useNavigate();
-  const { registerWithEmail, registerWithGoogle, verifyEmail, resendVerification, isLoading } = useAuth();
+  const { registerWithEmail, registerWithGoogle, loginWithTelegram, verifyEmail, resendVerification, isLoading } = useAuth();
 
   const [step, setStep] = useState<Step>("form");
   const [name, setName] = useState("");
@@ -69,6 +70,17 @@ export default function Register() {
     }
   };
 
+  const handleTelegram = async (user: Record<string, unknown>) => {
+    setError("");
+    const result = await loginWithTelegram(user);
+    if (result.success) {
+      setMessage(result.message);
+      setTimeout(() => navigate("/profile"), 800);
+    } else {
+      setError(result.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50 flex items-center justify-center px-4 py-8">
       {/* Background decoration */}
@@ -113,6 +125,10 @@ export default function Register() {
                 )}
                 Продолжить с Google
               </button>
+
+              <div className="mb-4">
+                <TelegramLoginButton onAuth={handleTelegram} disabled={isLoading} />
+              </div>
 
               {/* Divider */}
               <div className="flex items-center gap-3 mb-4">

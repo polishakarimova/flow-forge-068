@@ -2,10 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock, ArrowLeft, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/authContext";
+import { TelegramLoginButton } from "@/components/TelegramLoginButton";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, registerWithGoogle, isLoading } = useAuth();
+  const { login, loginWithTelegram, registerWithGoogle, isLoading } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,6 +30,16 @@ export default function Login() {
   const handleGoogle = async () => {
     setError("");
     const result = await registerWithGoogle();
+    if (result.success) {
+      navigate("/profile");
+    } else {
+      setError(result.message);
+    }
+  };
+
+  const handleTelegram = async (user: Record<string, unknown>) => {
+    setError("");
+    const result = await loginWithTelegram(user);
     if (result.success) {
       navigate("/profile");
     } else {
@@ -77,6 +88,10 @@ export default function Login() {
             )}
             Войти через Google
           </button>
+
+          <div className="mb-4">
+            <TelegramLoginButton onAuth={handleTelegram} disabled={isLoading} />
+          </div>
 
           {/* Divider */}
           <div className="flex items-center gap-3 mb-4">
