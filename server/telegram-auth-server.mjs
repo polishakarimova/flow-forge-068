@@ -2,6 +2,7 @@ import { createHmac, createHash, randomBytes, timingSafeEqual } from "node:crypt
 import { createServer } from "node:http";
 import { readFileSync, existsSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
+import pg from "pg";
 
 const envPath = new URL("../.env.local", import.meta.url);
 if (existsSync(envPath)) {
@@ -20,16 +21,39 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_BOT_USERNAME = (process.env.VITE_TELEGRAM_BOT_USERNAME || "").replace(/^@/, "");
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://knwqhjutzlzckzjmbtto.supabase.co";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const DATABASE_URL = process.env.DATABASE_URL;
+const PGSSLROOTCERT = process.env.PGSSLROOTCERT;
 const PASSWORD_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || TELEGRAM_BOT_TOKEN || "telegram-auth";
 const TOKEN_TTL_MINUTES = 10;
 
 if (!TELEGRAM_BOT_TOKEN) throw new Error("TELEGRAM_BOT_TOKEN is required");
 if (!TELEGRAM_BOT_USERNAME) throw new Error("VITE_TELEGRAM_BOT_USERNAME is required");
 if (!SUPABASE_SERVICE_ROLE_KEY) throw new Error("SUPABASE_SERVICE_ROLE_KEY is required");
+if (!DATABASE_URL) throw new Error("DATABASE_URL is required");
 
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
+const pgPool = new pg.Pool({
+  connectionString: DATABASE_URL,
+  ssl: PGSSLROOTCERT && existsSync(PGSSLROOTCERT)
+    ? { ca: readFileSync(PGSSLROOTCERT, "utf8"), rejectUnauthorized: true }
+    : { rejectUnauthorized: false },
+});
+
+async function ensureDb() {
+  await pgPool.query(`
+    create table if not exists telegram_login_tokens (
+      token text primary key,
+      status text not null default 'pending' check (status in ('pending', 'confirmed', 'consumed', 'expired')),
+      telegram_user jsonb,
+      expires_at timestamptz not null,
+      confirmed_at timestamptz,
+      consumed_at timestamptz,
+      created_at timestamptz not null default now()
+    )
+  `);
+}
 
 function json(res, status, body) {
   res.writeHead(status, {
@@ -135,67 +159,82 @@ async function getOrCreateSupabaseUser(telegramUser) {
 
 async function createLoginToken() {
   const token = randomBytes(24).toString("base64url");
-  const { error } = await supabaseAdmin.from("telegram_login_tokens").insert({
-    token,
-    status: "pending",
-    expires_at: tokenExpiresAt(),
-  });
-  if (error) throw error;
+  await pgPool.query(
+    "insert into telegram_login_tokens (token, status, expires_at) values ($1, 'pending', $2)",
+    [token, tokenExpiresAt()],
+  );
   return token;
 }
 
 async function completeLoginToken(token, telegramUser) {
-  const { data, error } = await supabaseAdmin
-    .from("telegram_login_tokens")
-    .select("*")
-    .eq("token", token)
-    .eq("status", "pending")
-    .gt("expires_at", new Date().toISOString())
-    .maybeSingle();
-  if (error) throw error;
+  const { rows } = await pgPool.query(
+    "select * from telegram_login_tokens where token = $1 and status = 'pending' and expires_at > now() limit 1",
+    [token],
+  );
+  const data = rows[0];
   if (!data) return false;
 
-  const { error: updateError } = await supabaseAdmin
-    .from("telegram_login_tokens")
-    .update({
-      status: "confirmed",
-      telegram_user: telegramUser,
-      confirmed_at: new Date().toISOString(),
-    })
-    .eq("token", token);
-  if (updateError) throw updateError;
+  await pgPool.query(
+    "update telegram_login_tokens set status = 'confirmed', telegram_user = $2::jsonb, confirmed_at = now() where token = $1",
+    [token, JSON.stringify(telegramUser)],
+  );
   return true;
 }
 
 async function consumeLoginToken(token) {
-  const { data, error } = await supabaseAdmin
-    .from("telegram_login_tokens")
-    .select("*")
-    .eq("token", token)
-    .maybeSingle();
-  if (error) throw error;
+  const { rows } = await pgPool.query("select * from telegram_login_tokens where token = $1 limit 1", [token]);
+  const data = rows[0];
   if (!data) return { status: "missing" };
   if (data.status === "consumed") return { status: "consumed" };
   if (new Date(data.expires_at).getTime() < Date.now()) return { status: "expired" };
   if (data.status !== "confirmed" || !data.telegram_user) return { status: "pending" };
 
   const credentials = await getOrCreateSupabaseUser(data.telegram_user);
-  await supabaseAdmin
-    .from("telegram_login_tokens")
-    .update({ status: "consumed", consumed_at: new Date().toISOString() })
-    .eq("token", token);
+  await pgPool.query("update telegram_login_tokens set status = 'consumed', consumed_at = now() where token = $1", [token]);
   return { status: "confirmed", ...credentials };
 }
 
 async function sendTelegramMessage(chatId, text) {
-  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+  await telegramApi("sendMessage", {
+    chat_id: chatId,
+    text,
+  });
+}
+
+async function telegramApi(method, payload) {
+  const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/${method}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text }),
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.ok === false) {
+    throw new Error(data.description || `Telegram API ${method} failed`);
+  }
+  return data.result;
+}
+
+async function setupTelegramBot() {
+  await telegramApi("setWebhook", {
+    url: `${APP_URL}/api/auth/telegram/webhook`,
+    secret_token: process.env.TELEGRAM_WEBHOOK_SECRET || undefined,
+    allowed_updates: ["message"],
+  });
+  await telegramApi("setChatMenuButton", {
+    menu_button: {
+      type: "web_app",
+      text: "Открыть карту",
+      web_app: { url: APP_URL },
+    },
   });
 }
 
 async function handleTelegramWebhook(req, res) {
+  const secret = process.env.TELEGRAM_WEBHOOK_SECRET || "";
+  if (secret && req.headers["x-telegram-bot-api-secret-token"] !== secret) {
+    return json(res, 401, { ok: false, error: "Invalid webhook secret" });
+  }
+
   const update = await parseBody(req);
   const message = update.message || update.edited_message;
   const text = message?.text || "";
@@ -217,6 +256,11 @@ async function handleTelegramWebhook(req, res) {
   );
   return json(res, 200, { ok: true });
 }
+
+await ensureDb();
+setupTelegramBot().catch((error) => {
+  console.error("Telegram bot setup failed:", error);
+});
 
 createServer(async (req, res) => {
   try {

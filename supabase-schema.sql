@@ -240,16 +240,3 @@ create table if not exists public.ai_analyses (
 
 alter table public.ai_analyses enable row level security;
 create policy "Users manage own ai analyses" on public.ai_analyses for all using (auth.uid() = user_id);
-
--- 14. Telegram login handoff tokens
-create table if not exists public.telegram_login_tokens (
-  token text primary key,
-  status text not null default 'pending' check (status in ('pending', 'confirmed', 'consumed', 'expired')),
-  telegram_user jsonb,
-  expires_at timestamptz not null,
-  confirmed_at timestamptz,
-  consumed_at timestamptz,
-  created_at timestamptz not null default now()
-);
-
-alter table public.telegram_login_tokens enable row level security;
