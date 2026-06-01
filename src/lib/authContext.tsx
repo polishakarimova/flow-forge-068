@@ -1,6 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
-import { supabase } from "@/lib/supabase";
-import type { User as SupaUser, Session } from "@supabase/supabase-js";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
 export interface User {
   id: string;
@@ -29,100 +27,84 @@ interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function mapSupaUser(su: SupaUser): User {
-  const provider = su.user_metadata?.auth_provider === "telegram" ? "telegram" : su.app_metadata?.provider === "google" ? "google" : "email";
+function mapUser(user: any): User {
   return {
-    id: su.id,
-    name: su.user_metadata?.full_name || su.user_metadata?.name || su.email?.split("@")[0] || "Пользователь",
-    email: su.email || "",
-    avatar: su.user_metadata?.avatar_url,
-    provider,
-    emailVerified: !!su.email_confirmed_at,
+    id: String(user.id),
+    name: user.name || user.email || "Пользователь",
+    email: user.email || "",
+    avatar: user.avatar,
+    provider: user.authProvider === "telegram" ? "telegram" : "email",
+    emailVerified: true,
   };
+}
+
+async function api(path: string, options?: RequestInit) {
+  const response = await fetch(path, {
+    credentials: "include",
+    headers: { "Content-Type": "application/json", ...(options?.headers || {}) },
+    ...options,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "request_failed");
+  return data;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ user: null, isAuthenticated: false, isLoading: true });
 
-  // Listen to auth state changes
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setState({ user: mapSupaUser(session.user), isAuthenticated: true, isLoading: false });
-      } else {
-        setState({ user: null, isAuthenticated: false, isLoading: false });
-      }
-    });
-
-    // Subscribe to changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setState({ user: mapSupaUser(session.user), isAuthenticated: true, isLoading: false });
-      } else {
-        setState({ user: null, isAuthenticated: false, isLoading: false });
-      }
-    });
-
-    return () => subscription.unsubscribe();
+  const refreshMe = useCallback(async () => {
+    const data = await api("/api/auth/me");
+    const user = data.user ? mapUser(data.user) : null;
+    setState({ user, isAuthenticated: Boolean(user), isLoading: false });
+    return user;
   }, []);
+
+  useEffect(() => {
+    refreshMe().catch(() => setState({ user: null, isAuthenticated: false, isLoading: false }));
+  }, [refreshMe]);
 
   const registerWithEmail = useCallback(async (name: string, email: string, password: string) => {
     setState((s) => ({ ...s, isLoading: true }));
-    const redirectUrl = window.location.origin + "/";
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: name },
-        emailRedirectTo: redirectUrl,
-      },
-    });
-    setState((s) => ({ ...s, isLoading: false }));
-    if (error) return { success: false, message: error.message };
-    return { success: true, message: "Письмо с подтверждением отправлено на " + email };
+    try {
+      const data = await api("/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ name, email, password }),
+      });
+      const user = mapUser(data.user);
+      setState({ user, isAuthenticated: true, isLoading: false });
+      return { success: true, message: "Аккаунт создан" };
+    } catch (error) {
+      setState((s) => ({ ...s, isLoading: false }));
+      return { success: false, message: error instanceof Error ? error.message : "Не удалось зарегистрироваться" };
+    }
   }, []);
 
   const registerWithGoogle = useCallback(async () => {
-    const redirectUrl = window.location.origin + "/";
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: redirectUrl },
-    });
-    if (error) return { success: false, message: error.message };
-    return { success: true, message: "Перенаправление на Google..." };
+    return { success: false, message: "Google-вход сейчас отключён. Используйте Telegram." };
   }, []);
 
-  const verifyEmail = useCallback(async (code: string, email: string) => {
-    setState((s) => ({ ...s, isLoading: true }));
-    const { error } = await supabase.auth.verifyOtp({
-      email,
-      token: code,
-      type: "signup",
-    });
-    setState((s) => ({ ...s, isLoading: false }));
-    if (error) return { success: false, message: "Неверный код. Попробуйте ещё раз." };
-    return { success: true, message: "Email подтверждён!" };
+  const verifyEmail = useCallback(async () => {
+    return { success: true, message: "Email подтверждён" };
   }, []);
 
-  const resendVerification = useCallback(async (email: string) => {
-    const { error } = await supabase.auth.resend({ type: "signup", email });
-    if (error) return { success: false, message: error.message };
-    return { success: true, message: "Письмо отправлено повторно на " + email };
+  const resendVerification = useCallback(async () => {
+    return { success: true, message: "Подтверждение не требуется" };
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     setState((s) => ({ ...s, isLoading: true }));
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setState((s) => ({ ...s, isLoading: false }));
-    if (error) return { success: false, message: error.message };
-    return { success: true, message: "Вход выполнен" };
-  }, []);
-
-  const signInWithTelegramCredentials = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { success: false, message: error.message };
-    return { success: true, message: "Вход через Telegram выполнен" };
+    try {
+      const data = await api("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+      const user = mapUser(data.user);
+      setState({ user, isAuthenticated: true, isLoading: false });
+      return { success: true, message: "Вход выполнен" };
+    } catch (error) {
+      setState((s) => ({ ...s, isLoading: false }));
+      return { success: false, message: error instanceof Error ? error.message : "Не удалось войти" };
+    }
   }, []);
 
   const loginWithTelegram = useCallback(async () => {
@@ -130,50 +112,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const webApp = (window as any).Telegram?.WebApp;
       if (webApp?.initData) {
-        const miniAppResponse = await fetch("/api/auth/telegram/miniapp", {
+        await api("/api/auth/telegram-mini-app", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ initData: webApp.initData }),
         });
-        const miniAppResult = await miniAppResponse.json();
-        if (!miniAppResponse.ok || !miniAppResult.ok) {
-          return { success: false, message: miniAppResult.error || "Не удалось войти через Telegram" };
-        }
-        return await signInWithTelegramCredentials(miniAppResult.email, miniAppResult.password);
+        await refreshMe();
+        return { success: true, message: "Вход через Telegram выполнен" };
       }
 
-      const startResponse = await fetch("/api/auth/telegram/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      const start = await startResponse.json();
-      if (!startResponse.ok || !start.ok) {
-        return { success: false, message: start.error || "Не удалось открыть Telegram-бота" };
+      const start = await api("/api/auth/telegram-login-token", { method: "POST" });
+      if (webApp?.openTelegramLink) {
+        webApp.openTelegramLink(start.botLink);
+      } else {
+        window.open(start.botLink, "_blank", "noopener,noreferrer");
       }
-
-      window.open(start.botUrl, "_blank", "noopener,noreferrer");
 
       for (let attempt = 0; attempt < 60; attempt += 1) {
         await new Promise((resolve) => window.setTimeout(resolve, 2000));
-        const statusResponse = await fetch(`/api/auth/telegram/status?token=${encodeURIComponent(start.token)}`);
-        const status = await statusResponse.json();
-        if (status.status === "pending") continue;
-        if (status.status === "confirmed") {
-          return await signInWithTelegramCredentials(status.email, status.password);
+        const response = await fetch(`/api/auth/telegram-login-token/${encodeURIComponent(start.token)}`, { credentials: "include" });
+        if (response.status === 202) continue;
+        if (response.ok) {
+          await refreshMe();
+          return { success: true, message: "Вход через Telegram выполнен" };
         }
         return { success: false, message: "Токен входа устарел. Попробуйте ещё раз." };
       }
-
       return { success: false, message: "Telegram не подтвердил вход. Нажмите кнопку ещё раз." };
     } catch (error) {
       return { success: false, message: error instanceof Error ? error.message : "Не удалось войти через Telegram" };
     } finally {
       setState((s) => ({ ...s, isLoading: false }));
     }
-  }, [signInWithTelegramCredentials]);
+  }, [refreshMe]);
 
   const logout = useCallback(async () => {
-    await supabase.auth.signOut();
+    await api("/api/auth/logout", { method: "POST" }).catch(() => null);
     setState({ user: null, isAuthenticated: false, isLoading: false });
   }, []);
 

@@ -33,7 +33,7 @@ export default function Register() {
     const result = await registerWithEmail(name, email, password);
     if (result.success) {
       setMessage(result.message);
-      setStep("verify");
+      setTimeout(() => navigate("/products"), 800);
     } else {
       setError(result.message);
     }
