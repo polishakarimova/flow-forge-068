@@ -18,6 +18,7 @@ export default function Register() {
   const [verificationCode, setVerificationCode] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [isTelegramLoading, setIsTelegramLoading] = useState(false);
 
   const handleEmailRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,9 +71,11 @@ export default function Register() {
     }
   };
 
-  const handleTelegram = async (user: Record<string, unknown>) => {
+  const handleTelegram = async () => {
     setError("");
-    const result = await loginWithTelegram(user);
+    setIsTelegramLoading(true);
+    const result = await loginWithTelegram();
+    setIsTelegramLoading(false);
     if (result.success) {
       setMessage(result.message);
       setTimeout(() => navigate("/profile"), 800);
@@ -127,7 +130,7 @@ export default function Register() {
               </button>
 
               <div className="mb-4">
-                <TelegramLoginButton onAuth={handleTelegram} disabled={isLoading} />
+                <TelegramLoginButton onAuth={handleTelegram} disabled={isLoading} loading={isTelegramLoading} />
               </div>
 
               {/* Divider */}

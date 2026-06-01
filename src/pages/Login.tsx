@@ -11,6 +11,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isTelegramLoading, setIsTelegramLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,9 +38,11 @@ export default function Login() {
     }
   };
 
-  const handleTelegram = async (user: Record<string, unknown>) => {
+  const handleTelegram = async () => {
     setError("");
-    const result = await loginWithTelegram(user);
+    setIsTelegramLoading(true);
+    const result = await loginWithTelegram();
+    setIsTelegramLoading(false);
     if (result.success) {
       navigate("/profile");
     } else {
@@ -90,7 +93,7 @@ export default function Login() {
           </button>
 
           <div className="mb-4">
-            <TelegramLoginButton onAuth={handleTelegram} disabled={isLoading} />
+            <TelegramLoginButton onAuth={handleTelegram} disabled={isLoading} loading={isTelegramLoading} />
           </div>
 
           {/* Divider */}

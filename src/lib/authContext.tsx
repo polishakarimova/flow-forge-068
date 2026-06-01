@@ -23,7 +23,7 @@ interface AuthContextValue extends AuthState {
   verifyEmail: (code: string, email: string) => Promise<{ success: boolean; message: string }>;
   resendVerification: (email: string) => Promise<{ success: boolean; message: string }>;
   login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
-  loginWithTelegram: (telegramUser: Record<string, unknown>) => Promise<{ success: boolean; message: string }>;
+  loginWithTelegram: () => Promise<{ success: boolean; message: string }>;
   logout: () => void;
 }
 
@@ -119,30 +119,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { success: true, message: "Вход выполнен" };
   }, []);
 
-  const loginWithTelegram = useCallback(async (telegramUser: Record<string, unknown>) => {
+  const signInWithTelegramCredentials = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { success: false, message: error.message };
+    return { success: true, message: "Вход через Telegram выполнен" };
+  }, []);
+
+  const loginWithTelegram = useCallback(async () => {
     setState((s) => ({ ...s, isLoading: true }));
     try {
-      const response = await fetch("/api/auth/telegram", {
+      const webApp = (window as any).Telegram?.WebApp;
+      if (webApp?.initData) {
+        const miniAppResponse = await fetch("/api/auth/telegram/miniapp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ initData: webApp.initData }),
+        });
+        const miniAppResult = await miniAppResponse.json();
+        if (!miniAppResponse.ok || !miniAppResult.ok) {
+          return { success: false, message: miniAppResult.error || "Не удалось войти через Telegram" };
+        }
+        return await signInWithTelegramCredentials(miniAppResult.email, miniAppResult.password);
+      }
+
+      const startResponse = await fetch("/api/auth/telegram/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: telegramUser }),
       });
-      const result = await response.json();
-      if (!response.ok || !result.ok) {
-        return { success: false, message: result.error || "Не удалось войти через Telegram" };
+      const start = await startResponse.json();
+      if (!startResponse.ok || !start.ok) {
+        return { success: false, message: start.error || "Не удалось открыть Telegram-бота" };
       }
-      const { error } = await supabase.auth.signInWithPassword({
-        email: result.email,
-        password: result.password,
-      });
-      if (error) return { success: false, message: error.message };
-      return { success: true, message: "Вход через Telegram выполнен" };
+
+      window.open(start.botUrl, "_blank", "noopener,noreferrer");
+
+      for (let attempt = 0; attempt < 60; attempt += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 2000));
+        const statusResponse = await fetch(`/api/auth/telegram/status?token=${encodeURIComponent(start.token)}`);
+        const status = await statusResponse.json();
+        if (status.status === "pending") continue;
+        if (status.status === "confirmed") {
+          return await signInWithTelegramCredentials(status.email, status.password);
+        }
+        return { success: false, message: "Токен входа устарел. Попробуйте ещё раз." };
+      }
+
+      return { success: false, message: "Telegram не подтвердил вход. Нажмите кнопку ещё раз." };
     } catch (error) {
       return { success: false, message: error instanceof Error ? error.message : "Не удалось войти через Telegram" };
     } finally {
       setState((s) => ({ ...s, isLoading: false }));
     }
-  }, []);
+  }, [signInWithTelegramCredentials]);
 
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
