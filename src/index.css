@@ -122,6 +122,51 @@
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
+
+  .surface-glass > div > div:first-child {
+    min-height: 4rem;
+    height: 4rem;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .surface-glass h1 {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 0;
+  }
+
+  .surface-glass h1 + span,
+  .surface-glass [class*="text-muted-foreground"] {
+    letter-spacing: 0;
+  }
+
+  .surface-glass button[class~="bg-primary"] {
+    min-height: 2.25rem;
+    height: 2.25rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    font-size: 13px;
+    line-height: 1;
+    font-weight: 500;
+    box-shadow: var(--shadow-card);
+    transform: none;
+  }
+
+  .surface-glass button[class~="bg-primary"]:hover {
+    transform: none;
+  }
+
+  .surface-glass button.border {
+    min-height: 2.25rem;
+    height: 2.25rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    font-size: 13px;
+    line-height: 1;
+    font-weight: 500;
+  }
   
   /* Better mobile experience */
   body {

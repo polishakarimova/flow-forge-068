@@ -1,4 +1,4 @@
-import { FileText, GitBranch, Package, Map, CalendarDays, User, GraduationCap } from "lucide-react";
+import { FileText, GitBranch, Package, Map, CalendarDays, User, GraduationCap, Brain } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { resetTour } from "@/components/OnboardingTour";
@@ -12,6 +12,7 @@ export function MobileNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card/95 backdrop-blur-sm border-t border-border safe-area-bottom">
       <div className="flex items-center justify-around h-16 px-1">
+        <TabLink url="/context" icon={Brain} title="Контекст" pathname={location.pathname} />
         <TabLink url="/products" icon={Package} title="Продукты" pathname={location.pathname} />
         <TabLink url="/content" icon={FileText} title="Контент" pathname={location.pathname} />
         <TabLink url="/dashboard" icon={GitBranch} title="Воронки" pathname={location.pathname} />

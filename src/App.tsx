@@ -4,11 +4,13 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DataStoreProvider } from "@/lib/dataStore";
+import { ContextProvider } from "@/lib/contextStore";
 import { AuthProvider, useAuth } from "@/lib/authContext";
 import { OnboardingTour, isTourCompleted } from "@/components/OnboardingTour";
 import { createContext, useContext, useState, useEffect } from "react";
 import Index from "./pages/Index.tsx";
 import Content from "./pages/Content.tsx";
+import ContextPage from "./pages/ContextPage.tsx";
 import Products from "./pages/Products.tsx";
 import FunnelMapPage from "./pages/FunnelMapPage.tsx";
 import Calendar from "./pages/Calendar.tsx";
@@ -41,6 +43,7 @@ function AppRoutes() {
     <TourContext.Provider value={{ startTour: () => setShowTour(true) }}>
       <Routes>
         <Route path="/" element={<Welcome />} />
+        <Route path="/context" element={<ContextPage />} />
         <Route path="/dashboard" element={<Index />} />
         <Route path="/content" element={<Content />} />
         <Route path="/products" element={<Products />} />
@@ -65,9 +68,11 @@ const App = () => (
       <Sonner />
       <AuthProvider>
         <DataStoreProvider>
-          <BrowserRouter basename="/flow-forge-068">
-            <AppRoutes />
-          </BrowserRouter>
+          <ContextProvider>
+            <BrowserRouter basename="/flow-forge-068">
+              <AppRoutes />
+            </BrowserRouter>
+          </ContextProvider>
         </DataStoreProvider>
       </AuthProvider>
     </TooltipProvider>

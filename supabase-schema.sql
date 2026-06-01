@@ -151,3 +151,92 @@ create table if not exists public.formats (
 
 alter table public.formats enable row level security;
 create policy "Users manage own formats" on public.formats for all using (auth.uid() = user_id);
+
+-- 9. Expert strategic profile
+create table if not exists public.expert_profiles (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade unique,
+  personality_answers jsonb not null default '{}',
+  niche_answers jsonb not null default '{}',
+  audience_answers jsonb not null default '{}',
+  brand_voice jsonb not null default '{}',
+  completion_score integer not null default 0 check (completion_score >= 0 and completion_score <= 100),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.expert_profiles enable row level security;
+create policy "Users manage own expert profile" on public.expert_profiles for all using (auth.uid() = user_id);
+
+-- 10. Strategic context for products/offers
+create table if not exists public.product_contexts (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  product_id bigint,
+  title text not null default '',
+  audience text not null default '',
+  problem text not null default '',
+  result text not null default '',
+  offer_details text not null default '',
+  objections text not null default '',
+  differentiators text not null default '',
+  proof text not null default '',
+  raw_data jsonb not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.product_contexts enable row level security;
+create policy "Users manage own product contexts" on public.product_contexts for all using (auth.uid() = user_id);
+
+-- 11. Content/style references for future generation
+create table if not exists public.references (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  type text not null default 'other',
+  content text not null default '',
+  url text not null default '',
+  notes text not null default '',
+  tags text[] not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.references enable row level security;
+create policy "Users manage own references" on public.references for all using (auth.uid() = user_id);
+
+-- 12. Source materials uploaded or pasted by the user
+create table if not exists public.source_materials (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  type text not null default 'other',
+  source_kind text not null default 'text' check (source_kind in ('text', 'link', 'file', 'voice')),
+  content text not null default '',
+  file_url text,
+  metadata jsonb not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.source_materials enable row level security;
+create policy "Users manage own source materials" on public.source_materials for all using (auth.uid() = user_id);
+
+-- 13. Future async AI analyses
+create table if not exists public.ai_analyses (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  type text not null,
+  title text not null,
+  status text not null default 'draft' check (status in ('draft', 'queued', 'processing', 'completed', 'failed')),
+  input_snapshot jsonb not null default '{}',
+  result jsonb not null default '{}',
+  summary text not null default '',
+  error_message text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.ai_analyses enable row level security;
+create policy "Users manage own ai analyses" on public.ai_analyses for all using (auth.uid() = user_id);

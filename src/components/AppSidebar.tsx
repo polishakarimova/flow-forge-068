@@ -6,6 +6,7 @@ import {
   CalendarDays,
   User,
   ShieldCheck,
+  Brain,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -23,6 +24,7 @@ import { TourButton, resetTour } from "@/components/OnboardingTour";
 import { useTour } from "@/App";
 
 const navItems = [
+  { title: "Контекст", url: "/context", icon: Brain },
   { title: "Продукты", url: "/products", icon: Package },
   { title: "Контент", url: "/content", icon: FileText },
   { title: "Воронки", url: "/dashboard", icon: GitBranch },
