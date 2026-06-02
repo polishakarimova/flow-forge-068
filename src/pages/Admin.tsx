@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav, MobileHeader } from "@/components/MobileNav";
@@ -39,6 +39,8 @@ const statCards = [
   { key: "funnels", label: "Воронки", icon: GitBranch },
 ] as const;
 
+const ADMIN_TOKEN_STORAGE_KEY = "contentmap_admin_token";
+
 function formatDate(value: string) {
   if (!value) return "нет данных";
   const date = new Date(value);
@@ -66,14 +68,22 @@ function displayContact(user: AdminUser) {
 export default function Admin() {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [search, setSearch] = useState("");
+  const [adminToken, setAdminToken] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY) || "";
+  });
+  const [tokenDraft, setTokenDraft] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  const loadOverview = useCallback((token: string) => {
     let cancelled = false;
     setIsLoading(true);
-    fetch("/api/admin/overview", { credentials: "include" })
+    fetch("/api/admin/overview", {
+      credentials: "include",
+      headers: token ? { "x-admin-token": token } : undefined,
+    })
       .then(async (response) => {
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || "Не удалось загрузить админку");
@@ -95,6 +105,35 @@ export default function Admin() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get("token")?.trim();
+    if (urlToken) {
+      window.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, urlToken);
+      setAdminToken(urlToken);
+      params.delete("token");
+      const nextQuery = params.toString();
+      window.history.replaceState(null, "", `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash}`);
+      return;
+    }
+    return loadOverview(adminToken);
+  }, [adminToken, loadOverview]);
+
+  const saveAdminToken = () => {
+    const next = tokenDraft.trim();
+    if (!next) return;
+    window.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, next);
+    setAdminToken(next);
+    setTokenDraft("");
+  };
+
+  const clearAdminToken = () => {
+    window.localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
+    setAdminToken("");
+    setOverview(null);
+    setError("");
+  };
 
   const filteredUsers = useMemo(() => {
     const users = overview?.users || [];
@@ -124,7 +163,18 @@ export default function Admin() {
                     <span className="text-[12px] text-muted-foreground">/ реальные данные</span>
                   </div>
                 </div>
-                {overview && <span className="text-[12px] text-muted-foreground">{overview.totals.users} аккаунтов</span>}
+                <div className="flex items-center gap-2">
+                  {overview && <span className="text-[12px] text-muted-foreground">{overview.totals.users} аккаунтов</span>}
+                  {adminToken && (
+                    <button
+                      type="button"
+                      onClick={clearAdminToken}
+                      className="rounded-lg border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
+                    >
+                      Сбросить токен
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </header>
@@ -138,11 +188,39 @@ export default function Admin() {
             )}
 
             {!isLoading && error && (
-              <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-[13px] text-red-700 flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <div>
-                  <div className="font-semibold">Админка недоступна</div>
-                  <div>{error === "forbidden" ? "Ваш Telegram ID не указан в ADMIN_TELEGRAM_IDS." : error}</div>
+              <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-4 text-[13px] text-red-700">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-semibold">Админка недоступна</div>
+                    <div>
+                      {error === "unauthorized"
+                        ? "Войдите в приложение или вставьте ADMIN_TOKEN."
+                        : error === "forbidden"
+                          ? "Токен не подошёл или ваш Telegram ID не указан в ADMIN_TELEGRAM_IDS."
+                          : error}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <input
+                    value={tokenDraft}
+                    onChange={(event) => setTokenDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") saveAdminToken();
+                    }}
+                    placeholder="ADMIN_TOKEN"
+                    className="min-w-0 flex-1 rounded-xl border border-red-100 bg-white px-3 py-2 text-[12px] text-foreground outline-none focus:border-primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={saveAdminToken}
+                    className="rounded-xl bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
+                    disabled={!tokenDraft.trim()}
+                  >
+                    Открыть админку
+                  </button>
                 </div>
               </div>
             )}

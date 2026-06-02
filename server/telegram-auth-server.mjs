@@ -33,6 +33,7 @@ const DATABASE_URL = process.env.DATABASE_URL || "";
 const PGSSLROOTCERT = process.env.PGSSLROOTCERT || "";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || "";
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 const ADMIN_TELEGRAM_IDS = new Set(String(process.env.ADMIN_TELEGRAM_IDS || "").split(",").map((id) => id.trim()).filter(Boolean));
 const cookieName = "contentmap_session";
 let telegramBotInfo = null;
@@ -110,6 +111,13 @@ async function ensureSchema() {
       updated_at timestamptz not null default now(),
       primary key (user_id, key)
     );
+    create table if not exists cm_admin_actions (
+      id text primary key,
+      admin_user_id text,
+      action text not null,
+      data jsonb not null default '{}'::jsonb,
+      created_at timestamptz not null default now()
+    );
     create index if not exists cm_sessions_user_id_idx on cm_sessions (user_id);
   `);
 }
@@ -121,8 +129,30 @@ async function readUsers() {
 
 function isAdminUser(user) {
   if (!user) return false;
-  if (ADMIN_TELEGRAM_IDS.size === 0) return true;
+  if (ADMIN_TELEGRAM_IDS.size === 0) return !ADMIN_TOKEN;
   return ADMIN_TELEGRAM_IDS.has(String(user.telegramId || ""));
+}
+
+function getAdminToken(req, url) {
+  const auth = String(req.headers.authorization || "");
+  if (auth.toLowerCase().startsWith("bearer ")) return auth.slice(7).trim();
+  return String(req.headers["x-admin-token"] || url.searchParams.get("token") || "").trim();
+}
+
+async function requireAdmin(req, res, url) {
+  const token = getAdminToken(req, url);
+  if (ADMIN_TOKEN && token && safeCompare(token, ADMIN_TOKEN)) return { id: "admin-token", authProvider: "admin-token" };
+
+  const user = await getUserBySession(parseCookies(req)[cookieName]);
+  if (!user) {
+    send(res, 401, { error: "unauthorized" });
+    return null;
+  }
+  if (!isAdminUser(user)) {
+    send(res, 403, { error: "forbidden" });
+    return null;
+  }
+  return user;
 }
 
 function countUserState(data) {
@@ -568,10 +598,17 @@ async function api(req, res, url) {
 
   if (path === "/api/admin/overview") {
     if (req.method !== "GET") return methodNotAllowed(res);
-    const user = await requireUser(req, res);
-    if (!user) return;
-    if (!isAdminUser(user)) return send(res, 403, { error: "forbidden" });
+    const admin = await requireAdmin(req, res, url);
+    if (!admin) return;
     return send(res, 200, await readAdminOverview());
+  }
+
+  if (path === "/api/admin/users") {
+    if (req.method !== "GET") return methodNotAllowed(res);
+    const admin = await requireAdmin(req, res, url);
+    if (!admin) return;
+    const overview = await readAdminOverview();
+    return send(res, 200, { users: overview.users, totals: overview.totals });
   }
 
   const stateMatch = path.match(/^\/api\/state\/([a-z0-9_-]+)$/i);
