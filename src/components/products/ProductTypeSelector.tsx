@@ -40,7 +40,7 @@ export function ProductTypeSelector({ value, productTypes, onChange, onAddType, 
       }`}
     >
       <div className="mb-1.5 flex items-center gap-1.5">
-        <label className="block text-[13px] font-semibold text-muted-foreground">Тип продукта</label>
+        <label className="block text-[12px] font-semibold text-muted-foreground">Тип продукта</label>
         <button
           type="button"
           onClick={() => {
@@ -48,14 +48,14 @@ export function ProductTypeSelector({ value, productTypes, onChange, onAddType, 
             setPendingDeleteId(null);
             setIsAdding(false);
           }}
-          className={`flex h-5 w-5 items-center justify-center rounded-full border transition-colors ${
+          className={`flex h-[18px] w-[18px] items-center justify-center rounded-md border transition-colors ${
             editing
               ? "border-primary/30 bg-primary/10 text-primary"
               : "border-border bg-background text-muted-foreground hover:bg-muted/50 hover:text-foreground"
           }`}
           title={editing ? "Завершить редактирование" : "Редактировать типы"}
         >
-          {editing ? <Check className="h-3 w-3" /> : <Settings className="h-3 w-3" />}
+          {editing ? <Check className="h-2.5 w-2.5" /> : <Settings className="h-2.5 w-2.5" />}
         </button>
       </div>
 
@@ -74,14 +74,14 @@ export function ProductTypeSelector({ value, productTypes, onChange, onAddType, 
                   }
                   onChange(selected ? "" : t.id);
                 }}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-normal leading-5 cursor-pointer transition-all duration-200"
+                className="flex items-center gap-1 px-2 py-[3px] rounded-lg text-[10px] font-light leading-4 tracking-[0.01em] cursor-pointer transition-all duration-200"
                 style={{
                   border: pendingDelete ? "1px solid #fecaca" : selected ? "1px solid hsl(var(--primary))" : "1px solid hsl(var(--border))",
                   background: pendingDelete ? "#fff1f2" : selected ? "hsl(var(--primary) / 0.08)" : "transparent",
                   color: pendingDelete ? "#e11d48" : selected ? "hsl(var(--primary))" : "#64748b",
                 }}
               >
-                <ProductTypeIcon typeId={t.id} size={12} />
+                <ProductTypeIcon typeId={t.id} size={11} />
                 <span className="uppercase">{pendingDelete ? "Удалить?" : t.label}</span>
                 {selected && !pendingDelete && <span>✓</span>}
               </button>
