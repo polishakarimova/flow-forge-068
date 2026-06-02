@@ -27,7 +27,26 @@ interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function mapUser(user: any): User {
+interface ApiUser {
+  id: string | number;
+  name?: string;
+  email?: string;
+  avatar?: string;
+  authProvider?: string;
+}
+
+interface TelegramWebApp {
+  initData?: string;
+  openTelegramLink?: (url: string) => void;
+}
+
+interface TelegramWindow extends Window {
+  Telegram?: {
+    WebApp?: TelegramWebApp;
+  };
+}
+
+function mapUser(user: ApiUser): User {
   return {
     id: String(user.id),
     name: user.name || user.email || "Пользователь",
@@ -110,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginWithTelegram = useCallback(async () => {
     setState((s) => ({ ...s, isLoading: true }));
     try {
-      const webApp = (window as any).Telegram?.WebApp;
+      const webApp = (window as TelegramWindow).Telegram?.WebApp;
       if (webApp?.initData) {
         await api("/api/auth/telegram-mini-app", {
           method: "POST",

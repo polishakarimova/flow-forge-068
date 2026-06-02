@@ -21,7 +21,7 @@ export default function Welcome() {
     },
     {
       icon: BarChart3,
-      title: "Стройй воронки",
+      title: "Строй воронки",
       description: "Соединяй контент с продуктами и отслеживай путь клиента визуально"
     },
     {

@@ -1,4 +1,4 @@
-import { FileText, GitBranch, Package, Map, CalendarDays, User, GraduationCap, Brain } from "lucide-react";
+import { FileText, GitBranch, Package, Map, CalendarDays, User, GraduationCap, Brain, type LucideIcon } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { resetTour } from "@/components/OnboardingTour";
@@ -24,7 +24,7 @@ export function MobileNav() {
   );
 }
 
-function TabLink({ url, icon: Icon, title, pathname }: { url: string; icon: any; title: string; pathname: string }) {
+function TabLink({ url, icon: Icon, title, pathname }: { url: string; icon: LucideIcon; title: string; pathname: string }) {
   const isActive = pathname === url;
   return (
     <NavLink

@@ -524,14 +524,20 @@ const ANALYSIS_TEMPLATES: AiAnalysis[] = [
   { type: "product_line", title: "Продуктовая линейка", status: "draft", inputSnapshot: {}, result: {}, summary: "Будущая диагностика офферов и ступеней линейки." },
 ];
 
-function getBlockProgress(fields: readonly (readonly [string, string])[], answers: Record<string, any>) {
+type AnswerMap = Record<string, unknown>;
+type QuestionBlock = {
+  section?: keyof Pick<ExpertProfile, "personalityAnswers" | "nicheAnswers" | "audienceAnswers">;
+  fields: readonly (readonly [string, string])[];
+};
+
+function getBlockProgress(fields: readonly (readonly [string, string])[], answers: AnswerMap) {
   const filled = fields.filter(([key]) => String(answers?.[key] || "").trim().length > 0).length;
   const total = fields.length;
   const percent = total ? Math.round((filled / total) * 100) : 0;
   return { filled, total, percent };
 }
 
-function getGroupProgress(blocks: readonly any[], answersBySection: Record<string, Record<string, any>>) {
+function getGroupProgress(blocks: readonly QuestionBlock[], answersBySection: Record<string, AnswerMap>) {
   const items = blocks.map((block) => {
     const section = block.section || "personalityAnswers";
     return getBlockProgress(block.fields, answersBySection[section] || {});
@@ -664,7 +670,7 @@ function PersonalityQuestionnaire({
   onComplete,
 }: {
   block: (typeof PERSONALITY_BLOCKS)[number];
-  answers: Record<string, any>;
+  answers: AnswerMap;
   questionIndex: number;
   onQuestionIndexChange: (index: number) => void;
   onSaveAnswer: (key: string, value: string) => void;
@@ -784,7 +790,7 @@ function AudienceFactQuestionnaire({
   onComplete,
 }: {
   block: (typeof AUDIENCE_INPUT_BLOCKS)[number];
-  answers: Record<string, any>;
+  answers: AnswerMap;
   questionIndex: number;
   onQuestionIndexChange: (index: number) => void;
   onSaveAnswer: (key: string, value: string) => void;
@@ -939,19 +945,22 @@ export default function ContextPage() {
   const [newReference, setNewReference] = useState<ReferenceItem>({ title: "", type: REFERENCE_TYPES[0], content: "", url: "", notes: "", tags: [] });
   const [newMaterial, setNewMaterial] = useState<SourceMaterial>({ title: "", type: MATERIAL_TYPES[0], sourceKind: "text", content: "", metadata: {} });
 
-  const answersBySection = {
-    personalityAnswers: expertProfile.personalityAnswers,
-    audienceAnswers: expertProfile.audienceAnswers,
-    nicheAnswers: expertProfile.nicheAnswers,
-  };
+  const answersBySection = useMemo(
+    () => ({
+      personalityAnswers: expertProfile.personalityAnswers,
+      audienceAnswers: expertProfile.audienceAnswers,
+      nicheAnswers: expertProfile.nicheAnswers,
+    }),
+    [expertProfile.audienceAnswers, expertProfile.nicheAnswers, expertProfile.personalityAnswers],
+  );
 
-  const personalityProgress = useMemo(() => getGroupProgress(PERSONALITY_BLOCKS, answersBySection), [expertProfile]);
+  const personalityProgress = useMemo(() => getGroupProgress(PERSONALITY_BLOCKS, answersBySection), [answersBySection]);
   const personalityBlockProgresses = useMemo(
     () => PERSONALITY_BLOCKS.map((block) => getBlockProgress(block.fields, expertProfile.personalityAnswers)),
     [expertProfile.personalityAnswers],
   );
   const firstIncompletePersonalityIndex = personalityBlockProgresses.findIndex((progress) => progress.percent < 100);
-  const audienceInputProgress = useMemo(() => getGroupProgress(AUDIENCE_INPUT_BLOCKS, answersBySection), [expertProfile]);
+  const audienceInputProgress = useMemo(() => getGroupProgress(AUDIENCE_INPUT_BLOCKS, answersBySection), [answersBySection]);
   const audienceBlockProgresses = useMemo(
     () => AUDIENCE_INPUT_BLOCKS.map((block) => getBlockProgress(block.fields, expertProfile[block.section])),
     [expertProfile],
@@ -1085,7 +1094,7 @@ export default function ContextPage() {
     };
   };
 
-  const saveProductField = (productId: number, field: keyof ProductContext, value: any) => {
+  const saveProductField = (productId: number, field: keyof ProductContext, value: ProductContext[keyof ProductContext]) => {
     const ctx = productContextFor(productId);
     upsertProductContext({ ...ctx, [field]: value });
     toast({ title: "Продуктовый контекст сохранен" });

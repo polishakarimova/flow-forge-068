@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/authContext";
 
-type JsonRecord = Record<string, any>;
+type JsonRecord = Record<string, unknown>;
 
 export interface ExpertProfile {
   id?: number;
