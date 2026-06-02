@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { PRODUCT_TYPES } from "@/lib/productData";
+import type { ProductType } from "@/lib/productData";
 import { FormatSelector } from "./FormatSelector";
-import { ProductTypeIcon } from "./ProductTypeIcon";
+import { ProductTypeSelector } from "./ProductTypeSelector";
 
 interface CreateProductModalProps {
   onClose: () => void;
@@ -9,17 +9,23 @@ interface CreateProductModalProps {
   formats: string[];
   onAddFormat: (f: string) => void;
   onDeleteFormat: (f: string) => void;
+  productTypes: ProductType[];
+  onAddProductType: (label: string) => string | null;
+  onDeleteProductType: (id: string) => void;
 }
 
-export function CreateProductModal({ onClose, onCreate, formats, onAddFormat, onDeleteFormat }: CreateProductModalProps) {
+export function CreateProductModal({ onClose, onCreate, formats, onAddFormat, onDeleteFormat, productTypes, onAddProductType, onDeleteProductType }: CreateProductModalProps) {
   const [name, setName] = useState("");
   const [typeId, setTypeId] = useState("");
   const [format, setFormat] = useState("");
   const [price, setPrice] = useState("");
   const [link, setLink] = useState("");
   const [description, setDescription] = useState("");
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const canCreate = name.trim() && typeId;
+  const showNameError = submitAttempted && !name.trim();
+  const showTypeError = submitAttempted && !typeId;
 
   return (
     <div
@@ -45,35 +51,24 @@ export function CreateProductModal({ onClose, onCreate, formats, onAddFormat, on
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Например: Наставничество 1 на 1"
-              className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+              className={`w-full px-4 py-3 rounded-xl border-[1.5px] text-[15px] outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] ${
+                showNameError ? "border-primary bg-primary/5 shadow-[0_0_0_3px_hsl(var(--primary)/0.08)]" : "border-border"
+              }`}
               autoFocus
             />
+            {showNameError && <p className="mt-1.5 text-[12px] font-medium text-primary">Добавьте название продукта.</p>}
           </div>
 
           {/* Product type */}
           <div className="mb-4">
-            <label className="block text-[13px] font-semibold text-muted-foreground mb-2">Тип продукта</label>
-            <div className="flex flex-wrap gap-1">
-              {PRODUCT_TYPES.map((t) => {
-                const sel = typeId === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => setTypeId(sel ? "" : t.id)}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-normal cursor-pointer transition-all duration-200"
-                    style={{
-                      border: sel ? "1.5px solid hsl(var(--primary))" : "1.5px solid hsl(var(--border))",
-                      background: sel ? "hsl(var(--primary) / 0.08)" : "transparent",
-                      color: sel ? "hsl(var(--primary))" : "#4b5563",
-                    }}
-                  >
-                    <ProductTypeIcon typeId={t.id} size={14} />
-                    <span className="uppercase">{t.label}</span>
-                    {sel && <span>✓</span>}
-                  </button>
-                );
-              })}
-            </div>
+            <ProductTypeSelector
+              value={typeId}
+              productTypes={productTypes}
+              onChange={setTypeId}
+              onAddType={onAddProductType}
+              onDeleteType={onDeleteProductType}
+              showError={showTypeError}
+            />
           </div>
 
           {/* Format + Price */}
@@ -120,12 +115,12 @@ export function CreateProductModal({ onClose, onCreate, formats, onAddFormat, on
         <div className="px-7 py-4 border-t border-border">
           <button
             onClick={() => {
+              setSubmitAttempted(true);
               if (!canCreate) return;
               onCreate({ name: name.trim(), typeId, format, price: price.trim(), currency: "₽", description: description.trim(), link: link.trim() });
               onClose();
             }}
-            disabled={!canCreate}
-            className="w-full py-3 px-4 rounded-2xl text-[14px] font-bold cursor-pointer transition-all duration-200 disabled:cursor-not-allowed border-none"
+            className="w-full py-3 px-4 rounded-2xl text-[14px] font-bold cursor-pointer transition-all duration-200 border-none"
             style={{
               background: canCreate ? "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" : "hsl(var(--muted))",
               color: canCreate ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",

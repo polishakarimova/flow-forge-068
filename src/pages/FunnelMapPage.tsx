@@ -624,7 +624,7 @@ function applyCustomPositions(nodes: MapNode[], saved: Record<string, { x: numbe
 }
 
 const FunnelMapPage = () => {
-  const { funnels, allContentItems, products, topics, updateContentItem, updateProduct, updateTopic, formats, addFormat, deleteFormat, setFunnels } = useDataStore();
+  const { funnels, allContentItems, products, topics, updateContentItem, updateProduct, updateTopic, productTypes, addProductType, deleteProductType, formats, addFormat, deleteFormat, setFunnels } = useDataStore();
   const svgRef = useRef<SVGSVGElement>(null);
   const savedView = useRef(loadSavedView());
   const [pan, setPan] = useState(savedView.current?.pan ?? { x: 20, y: 10 });
@@ -1047,6 +1047,9 @@ const FunnelMapPage = () => {
           formats={formats}
           onAddFormat={addFormat}
           onDeleteFormat={deleteFormat}
+          productTypes={productTypes}
+          onAddProductType={addProductType}
+          onDeleteProductType={deleteProductType}
         />
       )}
 

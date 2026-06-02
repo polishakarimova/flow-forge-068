@@ -1,13 +1,14 @@
-import { PRODUCT_TYPES, PRODUCT_STATUSES, type Product } from "@/lib/productData";
+import { PRODUCT_STATUSES, type Product, type ProductType } from "@/lib/productData";
 import { ProductTypeIcon } from "./ProductTypeIcon";
 
 interface ProductCardProps {
   product: Product;
   onOpen: (product: Product) => void;
+  productTypes: ProductType[];
 }
 
-export function ProductCard({ product, onOpen }: ProductCardProps) {
-  const type = PRODUCT_TYPES.find((t) => t.id === product.typeId);
+export function ProductCard({ product, onOpen, productTypes }: ProductCardProps) {
+  const type = productTypes.find((t) => t.id === product.typeId);
   const status = PRODUCT_STATUSES[product.status];
 
   return (
@@ -26,7 +27,7 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
       {/* Type abbreviation badge */}
       <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] md:text-[10px] font-medium uppercase tracking-[0.03em] bg-foreground/[0.05] shrink-0" style={{ color: "#4b5563" }}>
         {type && <ProductTypeIcon typeId={type.id} size={14} />}
-        {type?.short}
+        {type?.short || "—"}
       </span>
 
       {/* Product name — dark gray like funnel keywords */}

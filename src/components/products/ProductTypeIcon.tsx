@@ -109,6 +109,13 @@ const ICONS: Record<string, (s: number) => JSX.Element> = {
 
 export function ProductTypeIcon({ typeId, size = 18, className = "" }: ProductTypeIconProps) {
   const render = ICONS[typeId];
-  if (!render) return null;
-  return <span className={`inline-flex shrink-0 ${className}`}>{render(size)}</span>;
+  if (render) return <span className={`inline-flex shrink-0 ${className}`}>{render(size)}</span>;
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary ${className}`}
+      style={{ width: size, height: size }}
+    >
+      <span style={{ fontSize: Math.max(9, Math.round(size * 0.65)), lineHeight: 1 }}>+</span>
+    </span>
+  );
 }

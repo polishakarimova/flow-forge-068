@@ -1,8 +1,9 @@
-import { useState, useRef, useCallback } from "react";
-import { PRODUCT_TYPES, formatProductDateLabel, type Product, type ProductStatusKey } from "@/lib/productData";
+import { useState, useCallback } from "react";
+import { formatProductDateLabel, type Product, type ProductStatusKey, type ProductType } from "@/lib/productData";
 import { ProductStatusSelect } from "./ProductStatusSelect";
 import { FormatSelector } from "./FormatSelector";
 import { ProductTypeIcon } from "./ProductTypeIcon";
+import { ProductTypeSelector } from "./ProductTypeSelector";
 
 interface EditProductModalProps {
   product: Product;
@@ -11,9 +12,12 @@ interface EditProductModalProps {
   formats: string[];
   onAddFormat: (f: string) => void;
   onDeleteFormat: (f: string) => void;
+  productTypes: ProductType[];
+  onAddProductType: (label: string) => string | null;
+  onDeleteProductType: (id: string) => void;
 }
 
-export function EditProductModal({ product, onClose, onSave, formats, onAddFormat, onDeleteFormat }: EditProductModalProps) {
+export function EditProductModal({ product, onClose, onSave, formats, onAddFormat, onDeleteFormat, productTypes, onAddProductType, onDeleteProductType }: EditProductModalProps) {
   const [name, setName] = useState(product.name);
   const [typeId, setTypeId] = useState(product.typeId);
   const [format, setFormat] = useState(product.format);
@@ -23,7 +27,7 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
   const [status, setStatus] = useState<ProductStatusKey>(product.status);
   const [publishDate, setPublishDate] = useState(product.publishDate || "");
 
-  const type = PRODUCT_TYPES.find((t) => t.id === typeId);
+  const type = productTypes.find((t) => t.id === typeId);
 
   const textareaRef = useCallback((el: HTMLTextAreaElement | null) => {
     if (el) {
@@ -77,28 +81,13 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
 
           {/* Product type */}
           <div className="mb-4">
-            <label className="block text-[13px] font-semibold text-muted-foreground mb-2">Тип продукта</label>
-            <div className="flex flex-wrap gap-1">
-              {PRODUCT_TYPES.map((t) => {
-                const sel = typeId === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => setTypeId(t.id)}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-normal cursor-pointer transition-all duration-200"
-                    style={{
-                      border: sel ? "1.5px solid hsl(var(--primary))" : "1.5px solid hsl(var(--border))",
-                      background: sel ? "hsl(var(--primary) / 0.08)" : "transparent",
-                      color: sel ? "hsl(var(--primary))" : "#4b5563",
-                    }}
-                  >
-                    <ProductTypeIcon typeId={t.id} size={14} />
-                    <span className="uppercase">{t.label}</span>
-                    {sel && <span>✓</span>}
-                  </button>
-                );
-              })}
-            </div>
+            <ProductTypeSelector
+              value={typeId}
+              productTypes={productTypes}
+              onChange={setTypeId}
+              onAddType={onAddProductType}
+              onDeleteType={onDeleteProductType}
+            />
           </div>
 
           {/* Format + Price */}

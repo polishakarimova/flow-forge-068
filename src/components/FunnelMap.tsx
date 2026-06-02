@@ -9,8 +9,7 @@ import { STATUSES, type ContentItemData, type Topic } from "@/lib/contentData";
 import { ContentDetailModal } from "@/components/content/ContentDetailModal";
 import { EditProductModal } from "@/components/products/EditProductModal";
 import { CreateProductModal } from "@/components/products/CreateProductModal";
-import type { Product } from "@/lib/productData";
-import { PRODUCT_TYPES } from "@/lib/productData";
+import type { Product, ProductType } from "@/lib/productData";
 import { getBadgeStyle } from "@/lib/badgeStyles";
 
 const TIER_LABEL: Record<string, string> = {
@@ -284,11 +283,13 @@ function ExpandedListModal({
 /* ── Add product picker modal ── */
 function AddProductPickerModal({
   existingProducts,
+  productTypes,
   onSelectExisting,
   onCreateNew,
   onClose,
 }: {
   existingProducts: Product[];
+  productTypes: ProductType[];
   onSelectExisting: (product: Product) => void;
   onCreateNew: () => void;
   onClose: () => void;
@@ -318,7 +319,7 @@ function AddProductPickerModal({
                 Существующие продукты
               </p>
               {existingProducts.map((product) => {
-                const typeInfo = PRODUCT_TYPES.find((t) => t.id === product.typeId);
+                const typeInfo = productTypes.find((t) => t.id === product.typeId);
                 return (
                   <div
                     key={product.id}
@@ -437,7 +438,7 @@ function ContentPickerModal({
 }
 
 export function FunnelMap({ funnel }: { funnel: Funnel }) {
-  const { allContentItems, products, topics, updateContentItem, updateProduct, updateTopic, addProduct, formats, addFormat, deleteFormat, setFunnels } = useDataStore();
+  const { allContentItems, products, topics, updateContentItem, updateProduct, updateTopic, addProduct, productTypes, addProductType, deleteProductType, formats, addFormat, deleteFormat, setFunnels } = useDataStore();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingContent, setEditingContent] = useState<ContentItemData | null>(null);
   const [expandedContent, setExpandedContent] = useState(false);
@@ -631,6 +632,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
       {showAddProductPicker && (
         <AddProductPickerModal
           existingProducts={availableProducts}
+          productTypes={productTypes}
           onSelectExisting={(product) => {
             setShowAddProductPicker(false);
             setEditingProduct(product);
@@ -654,6 +656,9 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
           formats={formats}
           onAddFormat={addFormat}
           onDeleteFormat={deleteFormat}
+          productTypes={productTypes}
+          onAddProductType={addProductType}
+          onDeleteProductType={deleteProductType}
         />
       )}
 
@@ -676,6 +681,9 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
           formats={formats}
           onAddFormat={addFormat}
           onDeleteFormat={deleteFormat}
+          productTypes={productTypes}
+          onAddProductType={addProductType}
+          onDeleteProductType={deleteProductType}
         />
       )}
 

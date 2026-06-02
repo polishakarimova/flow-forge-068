@@ -28,7 +28,7 @@ export interface Product {
   publishDate: string;
 }
 
-export const PRODUCT_TYPES: ProductType[] = [
+export const DEFAULT_PRODUCT_TYPES: ProductType[] = [
   { id: "lead_magnet", label: "лид-магнит", short: "ЛМ", icon: "🧲", color: "#8b5cf6" },
   { id: "tripwire", label: "трипвайер", short: "ТВ", icon: "⚡", color: "#f59e0b" },
   { id: "mid_ticket", label: "среднечек", short: "СЧ", icon: "💎", color: "#6366f1" },
@@ -36,6 +36,8 @@ export const PRODUCT_TYPES: ProductType[] = [
   { id: "consultation", label: "консультация", short: "КС", icon: "🎯", color: "#22c55e" },
   { id: "private", label: "личная работа", short: "ЛР", icon: "🔒", color: "#0ea5e9" },
 ];
+
+export const PRODUCT_TYPES = DEFAULT_PRODUCT_TYPES;
 
 export const PRODUCT_STATUSES: Record<ProductStatusKey, ProductStatusInfo> = {
   draft: { label: "черновик", color: "#94a3b8", bg: "#f1f5f9" },

@@ -3,13 +3,7 @@ import { Plus } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav, MobileHeader } from "@/components/MobileNav";
-import {
-  PRODUCT_TYPES,
-  PRODUCT_STATUSES,
-  PRODUCT_STATUS_ORDER,
-  formatProductDateLabel,
-  type Product,
-} from "@/lib/productData";
+import { PRODUCT_STATUSES, PRODUCT_STATUS_ORDER, formatProductDateLabel, type Product } from "@/lib/productData";
 import { useDataStore } from "@/lib/dataStore";
 import { ProductCard } from "@/components/products/ProductCard";
 import { CreateProductModal } from "@/components/products/CreateProductModal";
@@ -18,7 +12,7 @@ import { ContentMultiDropdown } from "@/components/content/ContentMultiDropdown"
 import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
 
 const Products = () => {
-  const { products, addProduct, updateProduct, formats, addFormat, deleteFormat } = useDataStore();
+  const { products, addProduct, updateProduct, productTypes, addProductType, deleteProductType, formats, addFormat, deleteFormat } = useDataStore();
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [typeFilters, setTypeFilters] = useState<string[]>([]);
@@ -52,10 +46,10 @@ const Products = () => {
   const typeOptions = useMemo(() => {
     const counts: Record<string, number> = {};
     products.forEach((p) => { counts[p.typeId] = (counts[p.typeId] || 0) + 1; });
-    return PRODUCT_TYPES.filter((t) => counts[t.id]).map((t) => ({
+    return productTypes.filter((t) => counts[t.id]).map((t) => ({
       value: t.id, label: t.label, iconNode: <ProductTypeIcon typeId={t.id} size={15} />, count: counts[t.id],
     }));
-  }, [products]);
+  }, [products, productTypes]);
 
   const formatOptions = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -185,7 +179,7 @@ const Products = () => {
                   </div>
                   <div className="flex flex-col gap-0.5 mb-0.5">
                     {g.items.map((p) => (
-                      <ProductCard key={p.id} product={p} onOpen={setEditing} />
+                      <ProductCard key={p.id} product={p} onOpen={setEditing} productTypes={productTypes} />
                     ))}
                   </div>
                 </div>
@@ -206,6 +200,9 @@ const Products = () => {
           formats={formats}
           onAddFormat={handleAddFormat}
           onDeleteFormat={handleDeleteFormat}
+          productTypes={productTypes}
+          onAddProductType={addProductType}
+          onDeleteProductType={deleteProductType}
         />
       )}
       {editing && (
@@ -216,6 +213,9 @@ const Products = () => {
           formats={formats}
           onAddFormat={handleAddFormat}
           onDeleteFormat={handleDeleteFormat}
+          productTypes={productTypes}
+          onAddProductType={addProductType}
+          onDeleteProductType={deleteProductType}
         />
       )}
     </SidebarProvider>
