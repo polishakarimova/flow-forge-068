@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Plus, Trash2, AlertTriangle, Search, ChevronDown } from "lucide-react";
 import { useDataStore } from "@/lib/dataStore";
-import { PRODUCT_TYPES, type Product } from "@/lib/productData";
+import type { Product } from "@/lib/productData";
 import { PLATFORMS } from "@/lib/contentData";
 import { PlatformIcon } from "@/components/content/PlatformIcon";
 import type { BadgeColor, Funnel } from "@/lib/funnelData";
@@ -62,7 +62,7 @@ function SelectDropdown({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full flex items-center justify-between gap-1.5 px-3.5 py-2 rounded-xl border-[1.5px] border-border bg-card text-[13px] leading-5 font-light tracking-wide cursor-pointer transition-all duration-200 hover:border-primary/40 ${
+        className={`w-full flex items-center justify-between gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-card text-[12px] leading-5 font-light tracking-wide cursor-pointer transition-all duration-200 hover:border-primary/40 ${
           selected ? "text-foreground" : "text-muted-foreground"
         }`}
       >
@@ -76,21 +76,11 @@ function SelectDropdown({
       </button>
 
       {open && (
-        <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-card border border-border/60 rounded-2xl z-50 p-1.5 animate-in fade-in slide-in-from-top-2 duration-200 shadow-[0_12px_40px_rgba(0,0,0,.08),0_2px_8px_rgba(0,0,0,.04)] max-h-[240px] overflow-auto">
-          {/* None option */}
-          <div
-            onClick={() => { onChange(null); setOpen(false); }}
-            className={`px-3 py-2 rounded-xl text-[13px] font-light tracking-wide cursor-pointer transition-all duration-150 ${
-              value === null ? "violet-surface text-primary" : "text-muted-foreground hover:bg-muted/50"
-            }`}
-          >
-            {placeholder}
-          </div>
-
+        <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-card border border-border/60 rounded-2xl z-50 p-1 animate-in fade-in slide-in-from-top-2 duration-200 shadow-[0_12px_40px_rgba(0,0,0,.08),0_2px_8px_rgba(0,0,0,.04)] max-h-[220px] overflow-auto">
           {options.map((o) => (
             <div
               key={o.value}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-light tracking-wide cursor-pointer transition-all duration-150 ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[12px] font-light tracking-wide cursor-pointer transition-all duration-150 ${
                 value === o.value ? "violet-surface text-primary !font-medium" : "text-foreground hover:bg-muted/50"
               }`}
             >
@@ -114,7 +104,7 @@ function SelectDropdown({
 
           {/* Add new inline */}
           {onAdd && (
-            <div className="flex items-center gap-1.5 px-2 pt-1.5 mt-1 border-t border-border">
+            <div className="flex items-center gap-1.5 px-1.5 pt-1.5 mt-1 border-t border-border">
               <input
                 value={addValue}
                 onChange={(e) => setAddValue(e.target.value.toUpperCase())}
@@ -125,7 +115,7 @@ function SelectDropdown({
                   }
                 }}
                 placeholder={addPlaceholder || "Добавить..."}
-                className="flex-1 px-2 py-1.5 rounded-lg border border-border text-[12px] font-bold uppercase outline-none focus:border-primary transition-colors"
+                className="min-w-0 flex-1 px-2.5 py-1.5 rounded-full border border-border text-[11px] font-light tracking-[0.08em] uppercase outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/70"
                 onClick={(e) => e.stopPropagation()}
               />
               <button
@@ -133,7 +123,7 @@ function SelectDropdown({
                   if (addValue.trim()) { onAdd(addValue.trim()); setAddValue(""); }
                 }}
                 disabled={!addValue.trim()}
-                className="p-1.5 rounded-lg bg-primary text-primary-foreground cursor-pointer disabled:opacity-30 border-none"
+                className="h-8 w-8 rounded-full bg-primary/15 text-primary cursor-pointer disabled:opacity-30 border-none flex items-center justify-center"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
@@ -276,11 +266,11 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] animate-in fade-in duration-200"
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center z-[1000] animate-in fade-in duration-200"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-card rounded-3xl w-full max-w-[540px] max-h-[90vh] overflow-auto animate-in slide-in-from-bottom-3 duration-300" style={{ boxShadow: "0 24px 60px rgba(0,0,0,.15)" }}>
-        <div className="px-7 pt-6">
+      <div className="bg-card rounded-t-[28px] sm:rounded-3xl w-full max-w-[540px] max-h-[calc(100svh-72px)] sm:max-h-[90vh] overflow-auto animate-in slide-in-from-bottom-3 duration-300" style={{ boxShadow: "0 24px 60px rgba(0,0,0,.15)" }}>
+        <div className="px-4 sm:px-7 pt-4 sm:pt-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-5">
             <h2 className="text-lg font-bold text-foreground">{isEdit ? "Редактировать воронку" : "Новая воронка"}</h2>
@@ -299,7 +289,7 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
               value={selectedKeyword}
               onChange={(v) => setSelectedKeyword(v as string | null)}
               options={keywordOptions}
-              placeholder="Выберите слово..."
+              placeholder="Кодовое слово..."
               onDelete={handleDeleteKeyword}
               onAdd={handleAddKeyword}
               addPlaceholder="Новое слово..."
@@ -329,7 +319,6 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
           {/* ─── Product tiers (dropdowns) ─── */}
           {TIER_STEPS.map((step) => {
             const available = productsByType[step.typeId] || [];
-            const typeInfo = PRODUCT_TYPES.find((t) => t.id === step.typeId);
 
             const options = available.map((p) => ({
               value: p.id,
@@ -338,13 +327,13 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
             }));
 
             return (
-              <div key={step.field} className="mb-3">
-                <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">
-                  {step.label}
-                  <span className="text-[11px] font-normal ml-1 text-muted-foreground/70">(необязательно)</span>
-                </label>
+              <div key={step.field} className="mb-2 rounded-2xl border border-border/70 bg-muted/15 px-3 py-2">
+                <div className="mb-1.5 flex items-baseline gap-1.5">
+                  <label className="text-[12px] font-semibold text-muted-foreground leading-4">{step.label}</label>
+                  <span className="text-[10px] font-light text-muted-foreground/60">(необязательно)</span>
+                </div>
                 {available.length === 0 ? (
-                  <div className="text-[12px] text-muted-foreground italic py-1">
+                  <div className="text-[11px] text-muted-foreground/80 italic py-0.5 leading-4">
                     Нет продуктов типа «{step.label}»
                   </div>
                 ) : (
@@ -360,7 +349,7 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
           })}
 
           {/* ─── Content selection with search ─── */}
-          <div className="mb-5 mt-4">
+          <div className="mb-4 mt-3 rounded-2xl border border-border/70 bg-muted/10 px-3 py-2.5">
             <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">
               Контент для воронки
               {selectedContentIds.size > 0 && (
@@ -380,12 +369,12 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
                     value={contentSearch}
                     onChange={(e) => setContentSearch(e.target.value)}
                     placeholder="Поиск по названию..."
-                    className="w-full pl-8 pr-3 py-2 rounded-xl border-[1.5px] border-border text-[12px] outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+                    className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-border text-[12px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
                   />
                 </div>
 
                 {/* List */}
-                <div className="flex flex-col gap-0.5 max-h-[180px] overflow-auto rounded-xl border border-border p-1.5">
+                <div className="flex flex-col gap-0.5 max-h-[152px] overflow-auto rounded-xl border border-border p-1">
                   {filteredContent.length === 0 ? (
                     <div className="text-[12px] text-muted-foreground text-center py-3">Ничего не найдено</div>
                   ) : (
@@ -397,7 +386,7 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
                         <button
                           key={ci.id}
                           onClick={() => toggleContent(ci.id)}
-                          className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-left text-[12px] cursor-pointer transition-all duration-150 border-none"
+                          className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-left text-[12px] cursor-pointer transition-all duration-150 border-none"
                           style={{
                             background: sel ? "hsl(var(--primary) / 0.08)" : "transparent",
                           }}
@@ -427,7 +416,7 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
         </div>
 
         {/* Footer */}
-        <div className="px-7 py-4 border-t border-border">
+        <div className="px-4 sm:px-7 py-3 sm:py-4 border-t border-border">
           <button
             onClick={handleSave}
             disabled={!canCreate}
