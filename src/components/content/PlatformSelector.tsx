@@ -10,6 +10,7 @@ interface PlatformSelectorProps {
   onAddPlatform: (label: string) => string | null;
   onDeletePlatform: (id: string) => void;
   label?: string;
+  showError?: boolean;
 }
 
 export function PlatformSelector({
@@ -19,6 +20,7 @@ export function PlatformSelector({
   onAddPlatform,
   onDeletePlatform,
   label = "Куда постим?",
+  showError,
 }: PlatformSelectorProps) {
   const [editing, setEditing] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -45,7 +47,11 @@ export function PlatformSelector({
   };
 
   return (
-    <div>
+    <div
+      className={`rounded-2xl transition-all duration-200 ${
+        showError ? "p-2 bg-gradient-to-br from-violet-50 via-white to-rose-50 ring-2 ring-primary/25" : ""
+      }`}
+    >
       <div className="mb-1.5 flex items-center gap-1.5">
         <label className="block text-[12px] font-semibold text-muted-foreground">{label}</label>
         <button
@@ -158,6 +164,8 @@ export function PlatformSelector({
           </button>
         ) : null}
       </div>
+
+      {showError && <p className="mt-2 text-[12px] font-medium text-primary">Выберите хотя бы одну площадку, чтобы создать тему.</p>}
     </div>
   );
 }

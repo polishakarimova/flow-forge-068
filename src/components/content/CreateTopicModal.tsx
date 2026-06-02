@@ -14,11 +14,16 @@ export function CreateTopicModal({ onClose, onCreate, platforms, onAddPlatform, 
   const [title, setTitle] = useState("");
   const [thesisPlan, setThesisPlan] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
+  const [submitAttempted, setSubmitAttempted] = useState<"topic" | "bank" | null>(null);
 
   const hasTitle = title.trim().length > 0;
+  const canCreateTopic = hasTitle && selected.length > 0;
+  const showTitleError = !!submitAttempted && !hasTitle;
+  const showPlatformError = submitAttempted === "topic" && selected.length === 0;
 
   const handleCreate = (isBank: boolean) => {
-    if (!hasTitle) return;
+    setSubmitAttempted(isBank ? "bank" : "topic");
+    if (!hasTitle || (!isBank && selected.length === 0)) return;
     onCreate({ title: title.trim(), thesisPlan: thesisPlan.trim(), isIdeaBank: isBank, platforms: isBank ? [] : selected });
     onClose();
   };
@@ -53,9 +58,12 @@ export function CreateTopicModal({ onClose, onCreate, platforms, onAddPlatform, 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Например: Кейс 1,4 ляма"
-              className="w-full px-3.5 py-2 rounded-xl border-[1.5px] border-border text-[14px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+              className={`w-full px-3.5 py-2 rounded-xl border-[1.5px] text-[14px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] ${
+                showTitleError ? "border-primary bg-primary/5 shadow-[0_0_0_3px_hsl(var(--primary)/0.08)]" : "border-border"
+              }`}
               autoFocus
             />
+            {showTitleError && <p className="mt-1.5 text-[12px] font-medium text-primary">Добавьте название темы.</p>}
           </div>
 
           <div className="mb-5">
@@ -76,6 +84,7 @@ export function CreateTopicModal({ onClose, onCreate, platforms, onAddPlatform, 
               onChange={setSelected}
               onAddPlatform={onAddPlatform}
               onDeletePlatform={onDeletePlatform}
+              showError={showPlatformError}
             />
           </div>
         </div>
@@ -83,11 +92,10 @@ export function CreateTopicModal({ onClose, onCreate, platforms, onAddPlatform, 
         <div className="flex gap-3 px-7 py-4 border-t border-border">
           <button
             onClick={() => handleCreate(false)}
-            disabled={!hasTitle || selected.length === 0}
-            className="flex-1 py-2.5 px-4 rounded-2xl text-[14px] font-bold cursor-pointer transition-all duration-200 disabled:cursor-not-allowed"
+            className="flex-1 py-2.5 px-4 rounded-2xl text-[14px] font-bold cursor-pointer transition-all duration-200"
             style={{
-              background: !hasTitle || selected.length === 0 ? "#e2e8f0" : "linear-gradient(135deg,#6366f1,#8b5cf6)",
-              color: !hasTitle || selected.length === 0 ? "#94a3b8" : "#fff",
+              background: !canCreateTopic ? "#e2e8f0" : "linear-gradient(135deg,#6366f1,#8b5cf6)",
+              color: !canCreateTopic ? "#94a3b8" : "#fff",
               border: "none",
             }}
           >
@@ -95,8 +103,7 @@ export function CreateTopicModal({ onClose, onCreate, platforms, onAddPlatform, 
           </button>
           <button
             onClick={() => handleCreate(true)}
-            disabled={!hasTitle}
-            className="py-2.5 px-4 rounded-2xl text-[14px] font-semibold cursor-pointer whitespace-nowrap transition-all duration-200 disabled:cursor-not-allowed"
+            className="py-2.5 px-4 rounded-2xl text-[14px] font-semibold cursor-pointer whitespace-nowrap transition-all duration-200"
             style={{
               background: !hasTitle ? "#f1f5f9" : "#fef9c3",
               color: !hasTitle ? "#94a3b8" : "#92400e",
