@@ -62,7 +62,7 @@ function SelectDropdown({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full flex items-center justify-between gap-1.5 px-4 py-3 rounded-xl border-[1.5px] border-border bg-card text-[14px] font-light tracking-wide cursor-pointer transition-all duration-200 hover:border-primary/40 ${
+        className={`w-full flex items-center justify-between gap-1.5 px-3.5 py-2 rounded-xl border-[1.5px] border-border bg-card text-[13px] leading-5 font-light tracking-wide cursor-pointer transition-all duration-200 hover:border-primary/40 ${
           selected ? "text-foreground" : "text-muted-foreground"
         }`}
       >
@@ -431,7 +431,7 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
           <button
             onClick={handleSave}
             disabled={!canCreate}
-            className="w-full py-3 px-4 rounded-2xl text-[14px] font-bold cursor-pointer transition-all duration-200 disabled:cursor-not-allowed border-none"
+            className="w-full py-2.5 px-4 rounded-2xl text-[14px] font-bold cursor-pointer transition-all duration-200 disabled:cursor-not-allowed border-none"
             style={{
               background: canCreate ? "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" : "hsl(var(--muted))",
               color: canCreate ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
@@ -481,3 +481,4 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
     </div>
   );
 }
+

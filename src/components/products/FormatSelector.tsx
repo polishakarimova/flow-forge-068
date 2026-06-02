@@ -37,7 +37,7 @@ export function FormatSelector({ value, onChange, formats, onAddFormat, onDelete
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full px-3 py-2.5 rounded-xl border-[1.5px] border-border text-[13px] font-medium cursor-pointer flex items-center justify-between transition-all duration-200 bg-transparent ${
+        className={`w-full px-3 py-2 rounded-xl border-[1.5px] border-border text-[13px] leading-5 font-medium cursor-pointer flex items-center justify-between transition-all duration-200 bg-transparent ${
           value ? "text-foreground" : "text-muted-foreground"
         }`}
       >
@@ -106,3 +106,4 @@ export function FormatSelector({ value, onChange, formats, onAddFormat, onDelete
     </div>
   );
 }
+

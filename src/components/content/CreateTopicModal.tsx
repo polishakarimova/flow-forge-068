@@ -53,7 +53,7 @@ export function CreateTopicModal({ onClose, onCreate }: CreateTopicModalProps) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Например: Кейс 1,4 ляма"
-              className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+              className="w-full px-3.5 py-2 rounded-xl border-[1.5px] border-border text-[14px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
               autoFocus
             />
           </div>
@@ -65,7 +65,7 @@ export function CreateTopicModal({ onClose, onCreate }: CreateTopicModalProps) {
               onChange={(e) => setThesisPlan(e.target.value)}
               placeholder={"— Что было до\n— Что сделали\n— Результат"}
               rows={3}
-              className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none resize-y leading-relaxed transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+              className="w-full px-3.5 py-2 rounded-xl border-[1.5px] border-border text-[14px] outline-none resize-y leading-5 transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
             />
           </div>
 
@@ -78,7 +78,7 @@ export function CreateTopicModal({ onClose, onCreate }: CreateTopicModalProps) {
                   <button
                     key={p.id}
                     onClick={() => toggle(p.id)}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] font-semibold cursor-pointer transition-all duration-200"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200"
                     style={{
                       border: isSelected ? "2px solid hsl(var(--primary))" : "2px solid #e8ecf1",
                       background: isSelected ? "hsl(var(--primary) / 0.06)" : "#fff",
@@ -99,7 +99,7 @@ export function CreateTopicModal({ onClose, onCreate }: CreateTopicModalProps) {
           <button
             onClick={() => handleCreate(false)}
             disabled={!hasTitle || selected.length === 0}
-            className="flex-1 py-3 px-4 rounded-2xl text-[14px] font-bold cursor-pointer transition-all duration-200 disabled:cursor-not-allowed"
+            className="flex-1 py-2.5 px-4 rounded-2xl text-[14px] font-bold cursor-pointer transition-all duration-200 disabled:cursor-not-allowed"
             style={{
               background: !hasTitle || selected.length === 0 ? "#e2e8f0" : "linear-gradient(135deg,#6366f1,#8b5cf6)",
               color: !hasTitle || selected.length === 0 ? "#94a3b8" : "#fff",
@@ -111,7 +111,7 @@ export function CreateTopicModal({ onClose, onCreate }: CreateTopicModalProps) {
           <button
             onClick={() => handleCreate(true)}
             disabled={!hasTitle}
-            className="py-3 px-4 rounded-2xl text-[14px] font-semibold cursor-pointer whitespace-nowrap transition-all duration-200 disabled:cursor-not-allowed"
+            className="py-2.5 px-4 rounded-2xl text-[14px] font-semibold cursor-pointer whitespace-nowrap transition-all duration-200 disabled:cursor-not-allowed"
             style={{
               background: !hasTitle ? "#f1f5f9" : "#fef9c3",
               color: !hasTitle ? "#94a3b8" : "#92400e",
@@ -131,3 +131,4 @@ export function CreateTopicModal({ onClose, onCreate }: CreateTopicModalProps) {
     </div>
   );
 }
+

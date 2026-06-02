@@ -67,7 +67,7 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none transition-all duration-200"
+              className="w-full px-3.5 py-2 rounded-xl border-[1.5px] border-border text-[14px] leading-5 outline-none transition-all duration-200"
               onFocus={(e) => {
                 (e.target as HTMLElement).style.borderColor = type?.color || "hsl(var(--primary))";
                 (e.target as HTMLElement).style.boxShadow = `0 0 0 3px ${(type?.color || "#6366f1")}15`;
@@ -102,7 +102,7 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="бесплатно"
-                className="w-full px-4 py-2.5 rounded-xl border-[1.5px] border-border text-[13px] outline-none transition-all duration-200"
+                className="w-full px-3.5 py-2 rounded-xl border-[1.5px] border-border text-[13px] leading-5 outline-none transition-all duration-200"
                 onFocus={(e) => {
                   (e.target as HTMLElement).style.borderColor = "hsl(var(--primary))";
                   (e.target as HTMLElement).style.boxShadow = "0 0 0 3px hsl(var(--primary) / 0.08)";
@@ -122,7 +122,7 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
               value={link}
               onChange={(e) => setLink(e.target.value)}
               placeholder="https://..."
-              className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none transition-all duration-200"
+              className="w-full px-3.5 py-2 rounded-xl border-[1.5px] border-border text-[14px] leading-5 outline-none transition-all duration-200"
               onFocus={(e) => {
                 (e.target as HTMLElement).style.borderColor = type?.color || "hsl(var(--primary))";
                 (e.target as HTMLElement).style.boxShadow = `0 0 0 3px ${(type?.color || "#6366f1")}15`;
@@ -138,7 +138,7 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div>
               <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">Создано</label>
-              <div className="px-4 py-2.5 rounded-xl border-[1.5px] border-border text-[13px] text-muted-foreground bg-muted/50">
+              <div className="px-3.5 py-2 rounded-xl border-[1.5px] border-border text-[13px] leading-5 text-muted-foreground bg-muted/50">
                 {formatProductDateLabel(product.createdDate) || "—"}
               </div>
             </div>
@@ -148,7 +148,7 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
                 type="date"
                 value={publishDate}
                 onChange={(e) => setPublishDate(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border-[1.5px] border-border text-[13px] outline-none transition-all duration-200"
+                className="w-full px-3.5 py-2 rounded-xl border-[1.5px] border-border text-[13px] leading-5 outline-none transition-all duration-200"
                 style={{ color: publishDate ? "#334155" : "#94a3b8" }}
                 onFocus={(e) => {
                   (e.target as HTMLElement).style.borderColor = "hsl(var(--primary))";
@@ -175,7 +175,7 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
               }}
               placeholder="Что входит, для кого, результат..."
               rows={3}
-              className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none leading-relaxed transition-all duration-200"
+              className="w-full px-3.5 py-2 rounded-xl border-[1.5px] border-border text-[14px] outline-none leading-5 transition-all duration-200"
               style={{ resize: "none", minHeight: 80, overflow: "hidden" }}
               onFocus={(e) => {
                 (e.target as HTMLElement).style.borderColor = type?.color || "hsl(var(--primary))";
@@ -194,7 +194,7 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
               onSave({ ...product, name: name.trim(), typeId, format, price: price.trim(), description: description.trim(), link: link.trim(), status, publishDate });
               onClose();
             }}
-            className="w-full py-3 rounded-2xl text-[15px] font-bold cursor-pointer text-white border-none transition-all duration-200 hover:shadow-lg"
+            className="w-full py-2.5 rounded-2xl text-[14px] font-bold cursor-pointer text-white border-none transition-all duration-200 hover:shadow-lg"
             style={{ background: "hsl(var(--primary))" }}
           >
             Сохранить
@@ -204,3 +204,4 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
     </div>
   );
 }
+

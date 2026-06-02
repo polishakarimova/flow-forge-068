@@ -46,7 +46,7 @@ export function EditIdeaModal({ topic, onClose, onSave, onRealize }: EditIdeaMod
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none transition-all duration-200 focus:border-amber-400 focus:shadow-[0_0_0_3px_rgba(251,191,36,0.1)]"
+              className="w-full px-3.5 py-2 rounded-xl border-[1.5px] border-border text-[14px] leading-5 outline-none transition-all duration-200 focus:border-amber-400 focus:shadow-[0_0_0_3px_rgba(251,191,36,0.1)]"
             />
           </div>
 
@@ -57,7 +57,7 @@ export function EditIdeaModal({ topic, onClose, onSave, onRealize }: EditIdeaMod
               value={thesisPlan}
               onChange={(e) => setThesisPlan(e.target.value)}
               rows={4}
-              className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none resize-y leading-relaxed transition-all duration-200 focus:border-amber-400 focus:shadow-[0_0_0_3px_rgba(251,191,36,0.1)]"
+              className="w-full px-3.5 py-2 rounded-xl border-[1.5px] border-border text-[14px] outline-none resize-y leading-5 transition-all duration-200 focus:border-amber-400 focus:shadow-[0_0_0_3px_rgba(251,191,36,0.1)]"
             />
           </div>
 
@@ -65,13 +65,13 @@ export function EditIdeaModal({ topic, onClose, onSave, onRealize }: EditIdeaMod
             <div className="flex gap-3">
               <button
                 onClick={() => { onSave({ ...topic, title: title.trim(), thesisPlan: thesisPlan.trim() }); onClose(); }}
-                className="flex-1 py-3 px-4 rounded-2xl bg-amber-100 text-amber-800 border border-amber-200 text-[14px] font-bold cursor-pointer hover:bg-amber-200 transition-all duration-200"
+                className="flex-1 py-2.5 px-4 rounded-2xl bg-amber-100 text-amber-800 border border-amber-200 text-[14px] font-bold cursor-pointer hover:bg-amber-200 transition-all duration-200"
               >
                 Сохранить
               </button>
               <button
                 onClick={() => setShowRealize(true)}
-                className="flex-1 py-3 px-4 rounded-2xl text-white border-none text-[14px] font-bold cursor-pointer transition-all duration-200 hover:shadow-lg"
+                className="flex-1 py-2.5 px-4 rounded-2xl text-white border-none text-[14px] font-bold cursor-pointer transition-all duration-200 hover:shadow-lg"
                 style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
               >
                 🚀 Реализовать
@@ -88,7 +88,7 @@ export function EditIdeaModal({ topic, onClose, onSave, onRealize }: EditIdeaMod
                       <button
                         key={p.id}
                         onClick={() => toggle(p.id)}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] font-semibold cursor-pointer transition-all duration-200"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200"
                         style={{
                           border: isSelected ? "2px solid hsl(var(--primary))" : "2px solid #e8ecf1",
                           background: isSelected ? "hsl(var(--primary) / 0.06)" : "#fff",
@@ -106,14 +106,14 @@ export function EditIdeaModal({ topic, onClose, onSave, onRealize }: EditIdeaMod
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowRealize(false)}
-                  className="py-3 px-4 rounded-2xl bg-muted text-muted-foreground border-none text-[14px] font-semibold cursor-pointer hover:bg-muted/80 transition-all duration-200"
+                  className="py-2.5 px-4 rounded-2xl bg-muted text-muted-foreground border-none text-[14px] font-semibold cursor-pointer hover:bg-muted/80 transition-all duration-200"
                 >
                   ← Назад
                 </button>
                 <button
                   onClick={() => { onRealize(topic.id, title.trim(), thesisPlan.trim(), selected); onClose(); }}
                   disabled={selected.length === 0}
-                  className="flex-1 py-3 px-4 rounded-2xl text-[14px] font-bold cursor-pointer border-none transition-all duration-200 disabled:cursor-not-allowed"
+                  className="flex-1 py-2.5 px-4 rounded-2xl text-[14px] font-bold cursor-pointer border-none transition-all duration-200 disabled:cursor-not-allowed"
                   style={{
                     background: selected.length === 0 ? "#e2e8f0" : "linear-gradient(135deg,#6366f1,#8b5cf6)",
                     color: selected.length === 0 ? "#94a3b8" : "#fff",
@@ -129,3 +129,4 @@ export function EditIdeaModal({ topic, onClose, onSave, onRealize }: EditIdeaMod
     </div>
   );
 }
+

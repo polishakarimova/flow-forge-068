@@ -51,7 +51,7 @@ export function CreateProductModal({ onClose, onCreate, formats, onAddFormat, on
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Например: Наставничество 1 на 1"
-              className={`w-full px-4 py-3 rounded-xl border-[1.5px] text-[15px] outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] ${
+              className={`w-full px-3.5 py-2 rounded-xl border-[1.5px] text-[14px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] ${
                 showNameError ? "border-primary bg-primary/5 shadow-[0_0_0_3px_hsl(var(--primary)/0.08)]" : "border-border"
               }`}
               autoFocus
@@ -83,7 +83,7 @@ export function CreateProductModal({ onClose, onCreate, formats, onAddFormat, on
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="2 990 ₽ или бесплатно"
-                className="w-full px-4 py-2.5 rounded-xl border-[1.5px] border-border text-[13px] outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+                className="w-full px-3.5 py-2 rounded-xl border-[1.5px] border-border text-[13px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
               />
             </div>
           </div>
@@ -95,7 +95,7 @@ export function CreateProductModal({ onClose, onCreate, formats, onAddFormat, on
               value={link}
               onChange={(e) => setLink(e.target.value)}
               placeholder="https://..."
-              className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+              className="w-full px-3.5 py-2 rounded-xl border-[1.5px] border-border text-[14px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
             />
           </div>
 
@@ -107,7 +107,7 @@ export function CreateProductModal({ onClose, onCreate, formats, onAddFormat, on
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Что входит в продукт, для кого, результат..."
               rows={3}
-              className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none resize-y leading-relaxed transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+              className="w-full px-3.5 py-2 rounded-xl border-[1.5px] border-border text-[14px] outline-none resize-y leading-5 transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
             />
           </div>
         </div>
@@ -120,7 +120,7 @@ export function CreateProductModal({ onClose, onCreate, formats, onAddFormat, on
               onCreate({ name: name.trim(), typeId, format, price: price.trim(), currency: "₽", description: description.trim(), link: link.trim() });
               onClose();
             }}
-            className="w-full py-3 px-4 rounded-2xl text-[14px] font-bold cursor-pointer transition-all duration-200 border-none"
+            className="w-full py-2.5 px-4 rounded-2xl text-[14px] font-bold cursor-pointer transition-all duration-200 border-none"
             style={{
               background: canCreate ? "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" : "hsl(var(--muted))",
               color: canCreate ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
@@ -133,3 +133,4 @@ export function CreateProductModal({ onClose, onCreate, formats, onAddFormat, on
     </div>
   );
 }
+

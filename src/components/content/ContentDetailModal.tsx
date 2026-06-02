@@ -104,7 +104,7 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave, onTopicR
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="О чём этот контент"
-              className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none transition-all duration-200"
+              className="w-full px-3.5 py-2 rounded-xl border-[1.5px] border-border text-[14px] leading-5 outline-none transition-all duration-200"
               onFocus={(e) => {
                 (e.target as HTMLElement).style.borderColor = "hsl(var(--primary))";
                 (e.target as HTMLElement).style.boxShadow = "0 0 0 3px hsl(var(--primary) / 0.08)";
@@ -124,7 +124,7 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave, onTopicR
               onChange={(e) => setBody(e.target.value)}
               placeholder="Напиши текст поста, сценарий рилса, тезисы для сторис..."
               rows={6}
-              className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none resize-y leading-relaxed transition-all duration-200"
+              className="w-full px-3.5 py-2 rounded-xl border-[1.5px] border-border text-[14px] outline-none resize-y leading-5 transition-all duration-200"
               style={{ minHeight: 120 }}
               onFocus={(e) => {
                 (e.target as HTMLElement).style.borderColor = "hsl(var(--primary))";
@@ -141,7 +141,7 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave, onTopicR
           <div className="grid grid-cols-2 gap-3 mb-5">
             <div>
               <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">Создано</label>
-              <div className="px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] text-muted-foreground bg-muted/50">
+              <div className="px-3.5 py-2 rounded-xl border-[1.5px] border-border text-[13px] leading-5 text-muted-foreground bg-muted/50">
                 {formatDateLabel(item.createdDate) || "—"}
               </div>
             </div>
@@ -151,7 +151,7 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave, onTopicR
                 type="date"
                 value={publishDate}
                 onChange={(e) => setPublishDate(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border-[1.5px] border-border text-[15px] outline-none transition-all duration-200"
+                className="w-full px-3.5 py-2 rounded-xl border-[1.5px] border-border text-[13px] leading-5 outline-none transition-all duration-200"
                 style={{ color: publishDate ? "#334155" : "#94a3b8" }}
                 onFocus={(e) => {
                   (e.target as HTMLElement).style.borderColor = "hsl(var(--primary))";
@@ -168,7 +168,7 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave, onTopicR
           {/* Save */}
           <button
             onClick={() => { onSave({ ...item, title, body, status, publishDate }); onClose(); }}
-            className="w-full py-3 rounded-2xl text-[15px] font-bold cursor-pointer text-white border-none transition-all duration-200 hover:shadow-lg"
+            className="w-full py-2.5 rounded-2xl text-[14px] font-bold cursor-pointer text-white border-none transition-all duration-200 hover:shadow-lg"
             style={{ background: "hsl(var(--primary))" }}
           >
             Сохранить
@@ -178,3 +178,4 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave, onTopicR
     </div>
   );
 }
+
