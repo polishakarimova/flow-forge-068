@@ -33,6 +33,7 @@ const DATABASE_URL = process.env.DATABASE_URL || "";
 const PGSSLROOTCERT = process.env.PGSSLROOTCERT || "";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || "";
+const ADMIN_TELEGRAM_IDS = new Set(String(process.env.ADMIN_TELEGRAM_IDS || "").split(",").map((id) => id.trim()).filter(Boolean));
 const cookieName = "contentmap_session";
 let telegramBotInfo = null;
 
@@ -116,6 +117,58 @@ async function ensureSchema() {
 async function readUsers() {
   const { rows } = await pgPool.query("select data from cm_users");
   return rows.map((row) => row.data);
+}
+
+function isAdminUser(user) {
+  if (!user) return false;
+  if (ADMIN_TELEGRAM_IDS.size === 0) return true;
+  return ADMIN_TELEGRAM_IDS.has(String(user.telegramId || ""));
+}
+
+function countUserState(data) {
+  const products = Array.isArray(data?.products) ? data.products.length : 0;
+  const topics = Array.isArray(data?.topics) ? data.topics : [];
+  const funnels = Array.isArray(data?.funnels) ? data.funnels.length : 0;
+  const keywords = Array.isArray(data?.keywords) ? data.keywords.length : 0;
+  const contentItems = topics.reduce((sum, topic) => sum + (Array.isArray(topic?.contentItems) ? topic.contentItems.length : 0), 0);
+  const activeTopics = topics.filter((topic) => !topic?.isIdeaBank).length;
+  const ideas = topics.filter((topic) => topic?.isIdeaBank).length;
+  return { products, topics: activeTopics, ideas, contentItems, funnels, keywords };
+}
+
+async function readAdminOverview() {
+  const { rows } = await pgPool.query(`
+    select u.id, u.data as user_data, s.data as state_data, s.updated_at
+    from cm_users u
+    left join cm_user_state s on s.user_id = u.id and s.key = 'main'
+    order by coalesce(s.updated_at, (u.data->>'updatedAt')::timestamptz, (u.data->>'createdAt')::timestamptz, now()) desc
+  `);
+  const users = rows.map((row) => {
+    const user = row.user_data || {};
+    const stats = countUserState(row.state_data || {});
+    return {
+      id: user.id || row.id,
+      name: user.name || user.telegramUsername || user.email || "Пользователь",
+      email: user.email || "",
+      telegramId: user.telegramId || "",
+      telegramUsername: user.telegramUsername || "",
+      provider: user.authProvider || "email",
+      createdAt: user.createdAt || "",
+      updatedAt: user.updatedAt || "",
+      stateUpdatedAt: row.updated_at || "",
+      stats,
+    };
+  });
+  const totals = users.reduce((acc, user) => {
+    acc.products += user.stats.products;
+    acc.topics += user.stats.topics;
+    acc.ideas += user.stats.ideas;
+    acc.contentItems += user.stats.contentItems;
+    acc.funnels += user.stats.funnels;
+    acc.keywords += user.stats.keywords;
+    return acc;
+  }, { users: users.length, products: 0, topics: 0, ideas: 0, contentItems: 0, funnels: 0, keywords: 0 });
+  return { totals, users };
 }
 
 async function saveUser(user) {
@@ -511,6 +564,14 @@ async function api(req, res, url) {
     await setupTelegramBot();
     const webhook = await telegramApi("getWebhookInfo");
     return send(res, 200, { ok: true, webhook });
+  }
+
+  if (path === "/api/admin/overview") {
+    if (req.method !== "GET") return methodNotAllowed(res);
+    const user = await requireUser(req, res);
+    if (!user) return;
+    if (!isAdminUser(user)) return send(res, 403, { error: "forbidden" });
+    return send(res, 200, await readAdminOverview());
   }
 
   const stateMatch = path.match(/^\/api\/state\/([a-z0-9_-]+)$/i);
