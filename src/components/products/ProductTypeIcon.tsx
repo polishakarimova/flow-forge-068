@@ -111,11 +111,21 @@ export function ProductTypeIcon({ typeId, size = 18, className = "" }: ProductTy
   const render = ICONS[typeId];
   if (render) return <span className={`inline-flex shrink-0 ${className}`}>{render(size)}</span>;
   return (
-    <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary ${className}`}
-      style={{ width: size, height: size }}
-    >
-      <span style={{ fontSize: Math.max(9, Math.round(size * 0.65)), lineHeight: 1 }}>+</span>
+    <span className={`inline-flex shrink-0 ${className}`}>
+      <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+        <defs>
+          <linearGradient id="custom-type-star" x1="8" y1="4" x2="40" y2="44" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#d8b4fe" />
+            <stop offset="45%" stopColor="#a855f7" />
+            <stop offset="100%" stopColor="#7c3aed" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M24 4l5.2 12.4 13.4 1.1-10.2 8.7 3.1 13.1L24 32.4 12.5 39.3l3.1-13.1L5.4 17.5l13.4-1.1L24 4z"
+          fill="url(#custom-type-star)"
+        />
+        <path d="M24 8.5l3.5 8.4 9.1.8-6.9 5.9 2.1 8.9L24 27.8l-7.8 4.7 2.1-8.9-6.9-5.9 9.1-.8L24 8.5z" fill="white" fillOpacity="0.18" />
+      </svg>
     </span>
   );
 }

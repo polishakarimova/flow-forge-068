@@ -172,7 +172,6 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
   }, [productTypes]);
 
   const deleteProductType = useCallback((id: string) => {
-    if (!id.startsWith("custom_")) return;
     setProductTypes((prev) => prev.filter((type) => type.id !== id));
     setProducts((prev) => prev.map((product) => (product.typeId === id ? { ...product, typeId: "" } : product)));
   }, []);
