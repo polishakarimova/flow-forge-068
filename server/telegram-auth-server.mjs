@@ -42,6 +42,7 @@ if (!TELEGRAM_BOT_TOKEN) console.warn("TELEGRAM_BOT_TOKEN is empty: Telegram aut
 function createPgPool() {
   const parsed = new URL(DATABASE_URL);
   const sslMode = parsed.searchParams.get("sslmode");
+  parsed.searchParams.delete("sslmode");
   let ssl = false;
   if (sslMode && sslMode !== "disable") {
     ssl = { rejectUnauthorized: false };
@@ -49,7 +50,7 @@ function createPgPool() {
       ssl = { ca: readFileSync(PGSSLROOTCERT, "utf8"), rejectUnauthorized: true };
     }
   }
-  return new pg.Pool({ connectionString: DATABASE_URL, ssl, max: 5 });
+  return new pg.Pool({ connectionString: parsed.toString(), ssl, max: 5 });
 }
 
 const pgPool = createPgPool();
