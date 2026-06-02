@@ -178,8 +178,22 @@ const ICONS: Record<string, (size: number) => JSX.Element> = {
 
 export function PlatformIcon({ platformId, size = 16, className = "" }: PlatformIconProps) {
   const render = ICONS[platformId];
-  if (!render) return null;
-  return <span className={`inline-flex shrink-0 ${className}`}>{render(size)}</span>;
+  return (
+    <span className={`inline-flex shrink-0 ${className}`}>
+      {render ? render(size) : (
+        <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+          <defs>
+            <linearGradient id={`custom_platform_${platformId}`} x1="0" y1="0" x2="32" y2="32">
+              <stop offset="0%" stopColor="#C4B5FD" />
+              <stop offset="100%" stopColor="#8B5CF6" />
+            </linearGradient>
+          </defs>
+          <rect x="1" y="1" width="30" height="30" rx="8" fill={`url(#custom_platform_${platformId})`} />
+          <path d="M16 6.5L18.9 12.6L25.5 13.5L20.7 18.2L21.9 24.7L16 21.6L10.1 24.7L11.3 18.2L6.5 13.5L13.1 12.6L16 6.5Z" fill="white" />
+        </svg>
+      )}
+    </span>
+  );
 }
 
 // Helper to get icon by old-style src path (for backward compat)

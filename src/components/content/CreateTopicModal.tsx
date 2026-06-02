@@ -1,21 +1,21 @@
 import { useState } from "react";
-import { PLATFORMS } from "@/lib/contentData";
-import { PlatformIcon } from "./PlatformIcon";
+import type { Platform } from "@/lib/contentData";
+import { PlatformSelector } from "./PlatformSelector";
 
 interface CreateTopicModalProps {
   onClose: () => void;
   onCreate: (data: { title: string; thesisPlan: string; isIdeaBank: boolean; platforms: string[] }) => void;
+  platforms: Platform[];
+  onAddPlatform: (label: string) => string | null;
+  onDeletePlatform: (id: string) => void;
 }
 
-export function CreateTopicModal({ onClose, onCreate }: CreateTopicModalProps) {
+export function CreateTopicModal({ onClose, onCreate, platforms, onAddPlatform, onDeletePlatform }: CreateTopicModalProps) {
   const [title, setTitle] = useState("");
   const [thesisPlan, setThesisPlan] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
 
   const hasTitle = title.trim().length > 0;
-
-  const toggle = (id: string) =>
-    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   const handleCreate = (isBank: boolean) => {
     if (!hasTitle) return;
@@ -70,28 +70,13 @@ export function CreateTopicModal({ onClose, onCreate }: CreateTopicModalProps) {
           </div>
 
           <div className="mb-5">
-            <label className="block text-[13px] font-semibold text-muted-foreground mb-2">Куда постим?</label>
-            <div className="flex flex-wrap gap-2">
-              {PLATFORMS.map((p) => {
-                const isSelected = selected.includes(p.id);
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => toggle(p.id)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200"
-                    style={{
-                      border: isSelected ? "2px solid hsl(var(--primary))" : "2px solid #e8ecf1",
-                      background: isSelected ? "hsl(var(--primary) / 0.06)" : "#fff",
-                      color: isSelected ? "hsl(var(--foreground))" : "#64748b",
-                    }}
-                  >
-                    <PlatformIcon platformId={p.id} size={16} />
-                    {p.label}
-                    {isSelected && <span>✓</span>}
-                  </button>
-                );
-              })}
-            </div>
+            <PlatformSelector
+              platforms={platforms}
+              values={selected}
+              onChange={setSelected}
+              onAddPlatform={onAddPlatform}
+              onDeletePlatform={onDeletePlatform}
+            />
           </div>
         </div>
 

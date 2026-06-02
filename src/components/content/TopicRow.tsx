@@ -1,4 +1,4 @@
-import { PLATFORMS, STATUSES, type Topic, type ContentItemData } from "@/lib/contentData";
+import { PLATFORMS, type Topic, type ContentItemData, type Platform } from "@/lib/contentData";
 import { ContentCard } from "./ContentCard";
 import { PlatformIcon } from "./PlatformIcon";
 import { ChevronDown } from "lucide-react";
@@ -6,11 +6,12 @@ import { ChevronDown } from "lucide-react";
 interface TopicRowProps {
   topic: Topic;
   expanded: boolean;
+  platforms?: Platform[];
   onToggle: () => void;
   onOpenContent: (item: ContentItemData) => void;
 }
 
-export function TopicRow({ topic, expanded, onToggle, onOpenContent }: TopicRowProps) {
+export function TopicRow({ topic, expanded, platforms = PLATFORMS, onToggle, onOpenContent }: TopicRowProps) {
   const platformIds = [...new Set(topic.contentItems.map((c) => c.platformId))];
 
   return (
@@ -31,8 +32,7 @@ export function TopicRow({ topic, expanded, onToggle, onOpenContent }: TopicRowP
         {/* Platform icons */}
         <div className="flex gap-1 shrink-0">
           {platformIds.map((pid) => {
-            const pl = PLATFORMS.find((x) => x.id === pid);
-            if (!pl) return null;
+            const pl = platforms.find((x) => x.id === pid) || PLATFORMS.find((x) => x.id === pid);
             return (
               <span
                 key={pid}
@@ -61,7 +61,7 @@ export function TopicRow({ topic, expanded, onToggle, onOpenContent }: TopicRowP
       {expanded && topic.contentItems.length > 0 && (
         <div className="animate-fade-in border-t border-border bg-muted/30 p-1.5 pl-5 flex flex-col gap-0.5">
           {topic.contentItems.map((ci) => (
-            <ContentCard key={ci.id} item={ci} onOpen={onOpenContent} showTopic={false} />
+            <ContentCard key={ci.id} item={ci} platforms={platforms} onOpen={onOpenContent} showTopic={false} />
           ))}
         </div>
       )}

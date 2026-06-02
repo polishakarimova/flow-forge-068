@@ -32,7 +32,7 @@ export interface Topic {
   contentItems: ContentItemData[];
 }
 
-export const PLATFORMS: Platform[] = [
+export const DEFAULT_PLATFORMS: Platform[] = [
   { id: "stories", label: "Сторис", icon: "/icons/stories.svg", color: "#8B5CF6" },
   { id: "tg_post", label: "Пост ТГ", icon: "/icons/telegram.svg", color: "#8B5CF6" },
   { id: "ig_post", label: "Пост Инста", icon: "/icons/instagram.svg", color: "#8B5CF6" },
@@ -43,6 +43,8 @@ export const PLATFORMS: Platform[] = [
   { id: "article", label: "Статья", icon: "/icons/article.svg", color: "#8B5CF6" },
   { id: "vk", label: "ВК", icon: "/icons/vk.svg", color: "#8B5CF6" },
 ];
+
+export const PLATFORMS: Platform[] = DEFAULT_PLATFORMS;
 
 export const STATUSES: Record<ContentStatusKey, StatusInfo> = {
   idea: { label: "идея", color: "#94a3b8", bg: "#f1f5f9", priority: 0 },

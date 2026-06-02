@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Settings } from "lucide-react";
-import { PLATFORMS, formatDateLabel, type ContentItemData, type ContentStatusKey } from "@/lib/contentData";
+import { PLATFORMS, formatDateLabel, type ContentItemData, type ContentStatusKey, type Platform } from "@/lib/contentData";
 import { StatusSelect } from "./StatusSelect";
 import { PlatformIcon } from "./PlatformIcon";
 
@@ -10,10 +10,11 @@ interface ContentDetailModalProps {
   onClose: () => void;
   onSave: (updated: ContentItemData) => void;
   onTopicRename?: (newTitle: string) => void;
+  platforms?: Platform[];
 }
 
-export function ContentDetailModal({ item, topicTitle, onClose, onSave, onTopicRename }: ContentDetailModalProps) {
-  const platform = PLATFORMS.find((p) => p.id === item.platformId);
+export function ContentDetailModal({ item, topicTitle, onClose, onSave, onTopicRename, platforms = PLATFORMS }: ContentDetailModalProps) {
+  const platform = platforms.find((p) => p.id === item.platformId) || PLATFORMS.find((p) => p.id === item.platformId);
   const [title, setTitle] = useState(item.title || "");
   const [body, setBody] = useState(item.body || "");
   const [status, setStatus] = useState<ContentStatusKey>(item.status);
@@ -50,7 +51,7 @@ export function ContentDetailModal({ item, topicTitle, onClose, onSave, onTopicR
           {/* Header */}
           <div className="flex justify-between items-center mb-5">
             <div className="flex items-center gap-2">
-              {platform && <PlatformIcon platformId={item.platformId} size={20} />}
+              <PlatformIcon platformId={item.platformId} size={20} />
               <span className="text-[16px] font-bold text-foreground uppercase">{platform?.label}</span>
             </div>
             <div className="flex items-center gap-2.5">

@@ -1,15 +1,16 @@
-import { PLATFORMS, STATUSES, type ContentItemData } from "@/lib/contentData";
+import { PLATFORMS, STATUSES, type ContentItemData, type Platform } from "@/lib/contentData";
 import { PlatformIcon } from "./PlatformIcon";
 
 interface ContentCardProps {
   item: ContentItemData;
   topicTitle?: string;
   showTopic?: boolean;
+  platforms?: Platform[];
   onOpen: (item: ContentItemData) => void;
 }
 
-export function ContentCard({ item, topicTitle, showTopic, onOpen }: ContentCardProps) {
-  const platform = PLATFORMS.find((x) => x.id === item.platformId);
+export function ContentCard({ item, topicTitle, showTopic, platforms = PLATFORMS, onOpen }: ContentCardProps) {
+  const platform = platforms.find((x) => x.id === item.platformId) || PLATFORMS.find((x) => x.id === item.platformId);
   const status = STATUSES[item.status];
 
   return (
@@ -26,8 +27,8 @@ export function ContentCard({ item, topicTitle, showTopic, onOpen }: ContentCard
       </span>
 
       {/* Platform badge */}
-      <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-foreground/[0.06] shrink-0">
-        {platform && <PlatformIcon platformId={item.platformId} size={16} />}
+      <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-foreground/[0.06] shrink-0" title={platform?.label}>
+        <PlatformIcon platformId={item.platformId} size={16} />
       </span>
 
       {/* Content title — dark gray like funnel keywords */}

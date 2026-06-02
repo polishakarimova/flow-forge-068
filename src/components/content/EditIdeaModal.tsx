@@ -1,22 +1,22 @@
 import { useState } from "react";
-import { PLATFORMS, type Topic } from "@/lib/contentData";
-import { PlatformIcon } from "./PlatformIcon";
+import type { Platform, Topic } from "@/lib/contentData";
+import { PlatformSelector } from "./PlatformSelector";
 
 interface EditIdeaModalProps {
   topic: Topic;
   onClose: () => void;
   onSave: (updated: Topic) => void;
   onRealize: (topicId: number, title: string, plan: string, platforms: string[]) => void;
+  platforms: Platform[];
+  onAddPlatform: (label: string) => string | null;
+  onDeletePlatform: (id: string) => void;
 }
 
-export function EditIdeaModal({ topic, onClose, onSave, onRealize }: EditIdeaModalProps) {
+export function EditIdeaModal({ topic, onClose, onSave, onRealize, platforms, onAddPlatform, onDeletePlatform }: EditIdeaModalProps) {
   const [title, setTitle] = useState(topic.title);
   const [thesisPlan, setThesisPlan] = useState(topic.thesisPlan);
   const [showRealize, setShowRealize] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
-
-  const toggle = (id: string) =>
-    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   return (
     <div
@@ -80,28 +80,14 @@ export function EditIdeaModal({ topic, onClose, onSave, onRealize }: EditIdeaMod
           ) : (
             <div>
               <div className="mb-4 p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
-                <div className="text-[13px] font-semibold text-indigo-500 mb-2">Куда постим:</div>
-                <div className="flex flex-wrap gap-2">
-                  {PLATFORMS.map((p) => {
-                    const isSelected = selected.includes(p.id);
-                    return (
-                      <button
-                        key={p.id}
-                        onClick={() => toggle(p.id)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200"
-                        style={{
-                          border: isSelected ? "2px solid hsl(var(--primary))" : "2px solid #e8ecf1",
-                          background: isSelected ? "hsl(var(--primary) / 0.06)" : "#fff",
-                          color: isSelected ? "hsl(var(--foreground))" : "#64748b",
-                        }}
-                      >
-                        <PlatformIcon platformId={p.id} size={16} />
-                        {p.label}
-                        {isSelected && <span>✓</span>}
-                      </button>
-                    );
-                  })}
-                </div>
+                <PlatformSelector
+                  label="Куда постим:"
+                  platforms={platforms}
+                  values={selected}
+                  onChange={setSelected}
+                  onAddPlatform={onAddPlatform}
+                  onDeletePlatform={onDeletePlatform}
+                />
               </div>
               <div className="flex gap-3">
                 <button

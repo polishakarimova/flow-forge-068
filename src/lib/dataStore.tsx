@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, type ReactNode } from "react";
 import { DEFAULT_FORMATS, DEFAULT_PRODUCT_TYPES, initialProducts, type Product, type ProductStatusKey, type ProductType } from "@/lib/productData";
-import { initialTopics, type Topic, type ContentItemData } from "@/lib/contentData";
+import { DEFAULT_PLATFORMS, initialTopics, type Platform, type Topic, type ContentItemData } from "@/lib/contentData";
 import { funnelsData, type Funnel } from "@/lib/funnelData";
 import { useAuth } from "@/lib/authContext";
 
@@ -14,6 +14,9 @@ interface DataStore {
   formats: string[];
   addFormat: (f: string) => void;
   deleteFormat: (f: string) => void;
+  platforms: Platform[];
+  addPlatform: (label: string) => string | null;
+  deletePlatform: (id: string) => void;
   topics: Topic[];
   allContentItems: ContentItemData[];
   addTopic: (t: Omit<Topic, "id">) => void;
@@ -35,6 +38,7 @@ type AppDataState = {
   products: Product[];
   productTypes: ProductType[];
   formats: string[];
+  platforms: Platform[];
   topics: Topic[];
   funnels: Funnel[];
   keywords: string[];
@@ -44,6 +48,7 @@ const emptyState: AppDataState = {
   products: [],
   productTypes: DEFAULT_PRODUCT_TYPES,
   formats: DEFAULT_FORMATS,
+  platforms: DEFAULT_PLATFORMS,
   topics: [],
   funnels: [],
   keywords: [],
@@ -53,6 +58,7 @@ const demoState: AppDataState = {
   products: initialProducts,
   productTypes: DEFAULT_PRODUCT_TYPES,
   formats: DEFAULT_FORMATS,
+  platforms: DEFAULT_PLATFORMS,
   topics: initialTopics,
   funnels: funnelsData,
   keywords: Array.from(new Set(funnelsData.map((f) => f.keyword))),
@@ -81,6 +87,7 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [productTypes, setProductTypes] = useState<ProductType[]>(DEFAULT_PRODUCT_TYPES);
   const [formats, setFormats] = useState<string[]>(DEFAULT_FORMATS);
+  const [platforms, setPlatforms] = useState<Platform[]>(DEFAULT_PLATFORMS);
   const [topics, setTopics] = useState<Topic[]>([]);
   const [funnels, setFunnelsRaw] = useState<Funnel[]>([]);
   const [keywords, setKeywords] = useState<string[]>([]);
@@ -92,6 +99,7 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
     if (!isAuthenticated) {
       setProducts([]);
       setProductTypes(DEFAULT_PRODUCT_TYPES);
+      setPlatforms(DEFAULT_PLATFORMS);
       setTopics([]);
       setFunnelsRaw([]);
       setKeywords([]);
@@ -107,6 +115,7 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
         setProducts(next.products || []);
         setProductTypes(next.productTypes?.length ? next.productTypes : DEFAULT_PRODUCT_TYPES);
         setFormats(next.formats?.length ? next.formats : DEFAULT_FORMATS);
+        setPlatforms(next.platforms?.length ? next.platforms : DEFAULT_PLATFORMS);
         setTopics(next.topics || []);
         setFunnelsRaw(next.funnels || []);
         setKeywords(next.keywords || []);
@@ -125,10 +134,10 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isAuthenticated || !hydrated) return;
     const timer = window.setTimeout(() => {
-      saveState({ products, productTypes, formats, topics, funnels, keywords }).catch(console.error);
+      saveState({ products, productTypes, formats, platforms, topics, funnels, keywords }).catch(console.error);
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [isAuthenticated, hydrated, products, productTypes, formats, topics, funnels, keywords]);
+  }, [isAuthenticated, hydrated, products, productTypes, formats, platforms, topics, funnels, keywords]);
 
   const setFunnels: React.Dispatch<React.SetStateAction<Funnel[]>> = useCallback((value) => {
     setFunnelsRaw(value);
@@ -184,6 +193,28 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
     setFormats((prev) => prev.filter((x) => x !== f));
   }, []);
 
+  const addPlatform = useCallback((label: string) => {
+    const normalized = label.trim();
+    if (!normalized) return null;
+    const existing = platforms.find((platform) => platform.label.toLowerCase() === normalized.toLowerCase());
+    if (existing) return existing.id;
+    const id = `custom_${Date.now().toString(36)}`;
+    setPlatforms((prev) => [
+      ...prev,
+      {
+        id,
+        label: normalized,
+        icon: "",
+        color: "#8b5cf6",
+      },
+    ]);
+    return id;
+  }, [platforms]);
+
+  const deletePlatform = useCallback((id: string) => {
+    setPlatforms((prev) => prev.filter((platform) => platform.id !== id));
+  }, []);
+
   const addTopic = useCallback((data: Omit<Topic, "id">) => {
     setTopics((prev) => [{ ...data, id: Date.now() }, ...prev]);
   }, []);
@@ -227,11 +258,12 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
   const value = useMemo(() => ({
     products, addProduct, updateProduct, productTypes, addProductType, deleteProductType,
     formats, addFormat, deleteFormat,
+    platforms, addPlatform, deletePlatform,
     topics, allContentItems, addTopic, updateTopic, updateContentItem,
     keywords, addKeyword, deleteKeyword,
     funnels, setFunnels, addFunnel, updateFunnel, toggleFunnelActive, funnelsForKeyword,
     isDataLoading,
-  }), [products, addProduct, updateProduct, productTypes, addProductType, deleteProductType, formats, addFormat, deleteFormat, topics, allContentItems, addTopic, updateTopic, updateContentItem, keywords, addKeyword, deleteKeyword, funnels, setFunnels, addFunnel, updateFunnel, toggleFunnelActive, funnelsForKeyword, isDataLoading]);
+  }), [products, addProduct, updateProduct, productTypes, addProductType, deleteProductType, formats, addFormat, deleteFormat, platforms, addPlatform, deletePlatform, topics, allContentItems, addTopic, updateTopic, updateContentItem, keywords, addKeyword, deleteKeyword, funnels, setFunnels, addFunnel, updateFunnel, toggleFunnelActive, funnelsForKeyword, isDataLoading]);
 
   return <DataStoreContext.Provider value={value}>{children}</DataStoreContext.Provider>;
 }

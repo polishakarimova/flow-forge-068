@@ -4,7 +4,6 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav, MobileHeader } from "@/components/MobileNav";
 import {
-  PLATFORMS,
   STATUSES,
   STATUS_ORDER,
   getEffectiveDate,
@@ -24,7 +23,7 @@ import { ContentMultiDropdown } from "@/components/content/ContentMultiDropdown"
 type TabKey = "topics" | "content" | "ideas";
 
 const Content = () => {
-  const { topics, addTopic, updateTopic, updateContentItem } = useDataStore();
+  const { topics, addTopic, updateTopic, updateContentItem, platforms, addPlatform, deletePlatform } = useDataStore();
   const [showCreate, setShowCreate] = useState(false);
   const [expandedTopics, setExpandedTopics] = useState<Record<number, boolean>>({ 1: true, 2: true, 3: true });
   const [editingContent, setEditingContent] = useState<ContentItemData | null>(null);
@@ -125,10 +124,10 @@ const Content = () => {
   const platformOptions = useMemo(() => {
     const counts: Record<string, number> = {};
     allContent.forEach((ci) => { counts[ci.platformId] = (counts[ci.platformId] || 0) + 1; });
-    return PLATFORMS.filter((p) => counts[p.id]).map((p) => ({
+    return platforms.filter((p) => counts[p.id]).map((p) => ({
       value: p.id, label: p.label, platformId: p.id, count: counts[p.id],
     }));
-  }, [allContent]);
+  }, [allContent, platforms]);
 
   const statusOptions = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -219,6 +218,7 @@ const Content = () => {
                     <TopicRow
                       key={topic.id}
                       topic={topic}
+                      platforms={platforms}
                       expanded={!!expandedTopics[topic.id]}
                       onToggle={() => setExpandedTopics((p) => ({ ...p, [topic.id]: !p[topic.id] }))}
                       onOpenContent={(ci) => { setEditingContent(ci); setEditingTopicTitle(topic.title); }}
@@ -280,6 +280,7 @@ const Content = () => {
                             item={ci}
                             topicTitle={ci.topicTitle}
                             showTopic
+                            platforms={platforms}
                             onOpen={(c) => { setEditingContent(c); setEditingTopicTitle(ci.topicTitle); }}
                           />
                         ))}
@@ -326,11 +327,20 @@ const Content = () => {
       </div>
 
       {/* Modals */}
-      {showCreate && <CreateTopicModal onClose={() => setShowCreate(false)} onCreate={handleCreate} />}
+      {showCreate && (
+        <CreateTopicModal
+          onClose={() => setShowCreate(false)}
+          onCreate={handleCreate}
+          platforms={platforms}
+          onAddPlatform={addPlatform}
+          onDeletePlatform={deletePlatform}
+        />
+      )}
       {editingContent && (
         <ContentDetailModal
           item={editingContent}
           topicTitle={editingTopicTitle}
+          platforms={platforms}
           onClose={() => setEditingContent(null)}
           onSave={handleSaveContent}
           onTopicRename={(newTitle) => {
@@ -345,6 +355,9 @@ const Content = () => {
           onClose={() => setEditingIdea(null)}
           onSave={handleSaveIdea}
           onRealize={handleRealizeIdea}
+          platforms={platforms}
+          onAddPlatform={addPlatform}
+          onDeletePlatform={deletePlatform}
         />
       )}
     </SidebarProvider>
