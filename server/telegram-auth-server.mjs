@@ -1,9 +1,13 @@
 import { createServer } from "node:http";
-import { existsSync, readFileSync } from "node:fs";
+import { createReadStream, existsSync, readFileSync } from "node:fs";
+import { stat } from "node:fs/promises";
 import { createHmac, pbkdf2Sync, randomBytes, timingSafeEqual } from "node:crypto";
+import { extname, join, normalize, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import pg from "pg";
 
 const root = new URL("../", import.meta.url);
+const distDir = fileURLToPath(new URL("../dist", import.meta.url));
 
 function loadEnvFile() {
   for (const name of [".env.local", ".env"]) {
@@ -178,6 +182,58 @@ async function body(req) {
 function send(res, status, data, headers = {}) {
   res.writeHead(status, { "content-type": "application/json; charset=utf-8", ...headers });
   res.end(JSON.stringify(data));
+}
+
+const mimeTypes = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".svg": "image/svg+xml",
+  ".webp": "image/webp",
+  ".ico": "image/x-icon",
+  ".txt": "text/plain; charset=utf-8",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+};
+
+function staticPath(pathname) {
+  const decoded = decodeURIComponent(pathname);
+  const cleaned = normalize(decoded).replace(/^[/\\]+/, "");
+  const target = join(distDir, cleaned || "index.html");
+  if (target !== distDir && !target.startsWith(distDir + sep)) return null;
+  return target;
+}
+
+async function sendStaticFile(req, res, filePath) {
+  try {
+    const file = await stat(filePath);
+    if (!file.isFile()) return false;
+    res.writeHead(200, {
+      "content-type": mimeTypes[extname(filePath).toLowerCase()] || "application/octet-stream",
+      "content-length": file.size,
+    });
+    if (req.method === "HEAD") return res.end();
+    createReadStream(filePath).pipe(res);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function serveStatic(req, res, url) {
+  if (req.method !== "GET" && req.method !== "HEAD") return methodNotAllowed(res);
+  if (!existsSync(distDir)) return send(res, 503, { error: "frontend_not_built" });
+
+  const target = staticPath(url.pathname);
+  if (target && (await sendStaticFile(req, res, target))) return;
+
+  const indexPath = join(distDir, "index.html");
+  if (await sendStaticFile(req, res, indexPath)) return;
+  return send(res, 404, { error: "not_found" });
 }
 
 function methodNotAllowed(res) {
@@ -502,7 +558,7 @@ createServer(async (req, res) => {
   try {
     const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
     if (url.pathname.startsWith("/api/")) return await api(req, res, url);
-    return send(res, 404, { error: "not_found" });
+    return await serveStatic(req, res, url);
   } catch (error) {
     console.error(error);
     return send(res, 500, { error: error.message || "server_error" });
