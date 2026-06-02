@@ -76,12 +76,12 @@ function SelectDropdown({
       </button>
 
       {open && (
-        <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-card border border-border/60 rounded-2xl z-50 p-1 animate-in fade-in slide-in-from-top-2 duration-200 shadow-[0_12px_40px_rgba(0,0,0,.08),0_2px_8px_rgba(0,0,0,.04)] max-h-[220px] overflow-auto">
+        <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-card border border-border/60 rounded-xl z-50 p-1 animate-in fade-in slide-in-from-top-2 duration-200 shadow-[0_12px_40px_rgba(0,0,0,.08),0_2px_8px_rgba(0,0,0,.04)] max-h-[190px] overflow-auto">
           {options.map((o) => (
             <div
               key={o.value}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[12px] font-light tracking-wide cursor-pointer transition-all duration-150 ${
-                value === o.value ? "violet-surface text-primary !font-medium" : "text-foreground hover:bg-muted/50"
+              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] leading-4 font-light tracking-[0.03em] cursor-pointer transition-all duration-150 ${
+                value === o.value ? "bg-primary/[0.07] text-primary !font-normal" : "text-slate-600 hover:bg-muted/50"
               }`}
             >
               <span
@@ -94,7 +94,7 @@ function SelectDropdown({
               {onDelete && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onDelete(o.value); }}
-                  className="p-0.5 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-colors border-none bg-transparent cursor-pointer"
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-muted-foreground/70 hover:bg-red-50 hover:text-red-500 transition-colors border-none bg-transparent cursor-pointer"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
@@ -104,7 +104,7 @@ function SelectDropdown({
 
           {/* Add new inline */}
           {onAdd && (
-            <div className="flex items-center gap-1.5 px-1.5 pt-1.5 mt-1 border-t border-border">
+            <div className="flex items-center gap-1.5 px-1 pt-1.5 mt-1 border-t border-border">
               <input
                 value={addValue}
                 onChange={(e) => setAddValue(e.target.value.toUpperCase())}
@@ -115,7 +115,7 @@ function SelectDropdown({
                   }
                 }}
                 placeholder={addPlaceholder || "Добавить..."}
-                className="min-w-0 flex-1 px-2.5 py-1.5 rounded-full border border-border text-[11px] font-light tracking-[0.08em] uppercase outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/70"
+                className="min-w-0 flex-1 px-2.5 py-1 rounded-lg border border-border text-[10px] leading-5 font-light tracking-[0.08em] uppercase outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/70"
                 onClick={(e) => e.stopPropagation()}
               />
               <button
@@ -123,7 +123,7 @@ function SelectDropdown({
                   if (addValue.trim()) { onAdd(addValue.trim()); setAddValue(""); }
                 }}
                 disabled={!addValue.trim()}
-                className="h-8 w-8 rounded-full bg-primary/15 text-primary cursor-pointer disabled:opacity-30 border-none flex items-center justify-center"
+                className="h-7 w-7 rounded-lg bg-primary/[0.12] text-primary cursor-pointer disabled:opacity-30 border-none flex items-center justify-center"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
