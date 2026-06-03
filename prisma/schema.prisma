@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AuthProvider {
+  TELEGRAM
+}
+
+enum TelegramLoginStatus {
+  PENDING
+  CONFIRMED
+  USED
+  EXPIRED
+}
+
+model User {
+  id               String                 @id
+  displayName      String?
+  avatarUrl        String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  identities       AuthIdentity[]
+  telegramAccounts TelegramAccount[]
+  loginRequests    TelegramLoginRequest[]
+
+  @@map("users")
+}
+
+model AuthIdentity {
+  id             String       @id @default(cuid())
+  userId         String
+  provider       AuthProvider
+  providerUserId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+  @@map("auth_identities")
+}
+
+model TelegramAccount {
+  id           String   @id @default(cuid())
+  userId       String
+  telegramId   String   @unique
+  username     String?
+  firstName    String?
+  lastName     String?
+  photoUrl     String?
+  languageCode String?
+  chatId       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("telegram_accounts")
+}
+
+model TelegramLoginRequest {
+  id          String              @id @default(cuid())
+  tokenHash   String              @unique
+  returnTo    String?
+  status      TelegramLoginStatus @default(PENDING)
+  userId      String?
+  telegramId  String?
+  chatId      String?
+  createdAt   DateTime            @default(now())
+  expiresAt   DateTime
+  confirmedAt DateTime?
+  usedAt      DateTime?
+  user        User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([telegramId])
+  @@map("telegram_login_requests")
+}

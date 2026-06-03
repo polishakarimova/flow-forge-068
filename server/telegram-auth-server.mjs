@@ -1,10 +1,11 @@
 import { createServer } from "node:http";
 import { createReadStream, existsSync, readFileSync } from "node:fs";
 import { stat } from "node:fs/promises";
-import { createHmac, pbkdf2Sync, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { extname, join, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { PrismaClient } from "@prisma/client";
 
 const root = new URL("../", import.meta.url);
 const distDir = fileURLToPath(new URL("../dist", import.meta.url));
@@ -35,11 +36,23 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || "";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 const ADMIN_TELEGRAM_IDS = new Set(String(process.env.ADMIN_TELEGRAM_IDS || "").split(",").map((id) => id.trim()).filter(Boolean));
+const SESSION_SECRET = process.env.SESSION_SECRET || TELEGRAM_WEBHOOK_SECRET || ADMIN_TOKEN || TELEGRAM_BOT_TOKEN || "";
 const cookieName = "contentmap_session";
 let telegramBotInfo = null;
 
 if (!DATABASE_URL) throw new Error("DATABASE_URL is required");
 if (!TELEGRAM_BOT_TOKEN) console.warn("TELEGRAM_BOT_TOKEN is empty: Telegram auth will be unavailable");
+if (!SESSION_SECRET) console.warn("SESSION_SECRET is empty: set it in production for stable HMAC sessions");
+
+function createPrismaDatabaseUrl(rawUrl) {
+  const parsed = new URL(rawUrl);
+  if (parsed.searchParams.get("sslmode") && !parsed.searchParams.get("sslnegotiation")) {
+    parsed.searchParams.set("sslnegotiation", "direct");
+  }
+  return parsed.toString();
+}
+
+process.env.DATABASE_URL = process.env.PRISMA_DATABASE_URL || createPrismaDatabaseUrl(DATABASE_URL);
 
 function createPgPool() {
   const parsed = new URL(DATABASE_URL);
@@ -56,6 +69,7 @@ function createPgPool() {
 }
 
 const pgPool = createPgPool();
+const prisma = new PrismaClient();
 
 function uid(bytes = 16) {
   return randomBytes(bytes).toString("hex");
@@ -63,17 +77,6 @@ function uid(bytes = 16) {
 
 function now() {
   return new Date().toISOString();
-}
-
-function hashPassword(password, salt = randomBytes(16).toString("hex")) {
-  const hash = pbkdf2Sync(password, salt, 120000, 32, "sha256").toString("hex");
-  return `${salt}:${hash}`;
-}
-
-function verifyPassword(password, passwordHash) {
-  const [salt, expected] = String(passwordHash || "").split(":");
-  if (!salt || !expected) return false;
-  return hashPassword(password, salt) === passwordHash;
 }
 
 function safeCompare(a, b) {
@@ -85,19 +88,70 @@ function safeCompare(a, b) {
 
 function publicUser(user) {
   if (!user) return null;
-  const { passwordHash, ...safe } = user;
-  return safe;
+  return {
+    id: user.id,
+    name: user.name || user.displayName || user.telegramUsername || "Пользователь",
+    email: user.email || "",
+    avatar: user.avatar || user.avatarUrl || "",
+    authProvider: user.authProvider || "telegram",
+    telegramId: user.telegramId || user.telegramAccount?.telegramId || "",
+    telegramUsername: user.telegramUsername || user.telegramAccount?.username || "",
+  };
 }
 
 async function ensureSchema() {
   await pgPool.query(`
+    create extension if not exists pgcrypto;
+    do $$ begin
+      create type "AuthProvider" as enum ('TELEGRAM');
+    exception when duplicate_object then null; end $$;
+    do $$ begin
+      create type "TelegramLoginStatus" as enum ('PENDING', 'CONFIRMED', 'USED', 'EXPIRED');
+    exception when duplicate_object then null; end $$;
+    create table if not exists users (
+      id text primary key,
+      "displayName" text,
+      "avatarUrl" text,
+      "createdAt" timestamptz not null default now(),
+      "updatedAt" timestamptz not null default now()
+    );
+    create table if not exists auth_identities (
+      id text primary key default gen_random_uuid()::text,
+      "userId" text not null references users(id) on delete cascade,
+      provider "AuthProvider" not null,
+      "providerUserId" text not null,
+      "createdAt" timestamptz not null default now(),
+      "updatedAt" timestamptz not null default now(),
+      unique(provider, "providerUserId")
+    );
+    create table if not exists telegram_accounts (
+      id text primary key default gen_random_uuid()::text,
+      "userId" text not null references users(id) on delete cascade,
+      "telegramId" text not null unique,
+      username text,
+      "firstName" text,
+      "lastName" text,
+      "photoUrl" text,
+      "languageCode" text,
+      "chatId" text,
+      "createdAt" timestamptz not null default now(),
+      "updatedAt" timestamptz not null default now()
+    );
+    create table if not exists telegram_login_requests (
+      id text primary key default gen_random_uuid()::text,
+      "tokenHash" text not null unique,
+      "returnTo" text,
+      status "TelegramLoginStatus" not null default 'PENDING',
+      "userId" text references users(id) on delete set null,
+      "telegramId" text,
+      "chatId" text,
+      "createdAt" timestamptz not null default now(),
+      "expiresAt" timestamptz not null,
+      "confirmedAt" timestamptz,
+      "usedAt" timestamptz
+    );
     create table if not exists cm_users (
       id text primary key,
-      data jsonb not null
-    );
-    create table if not exists cm_sessions (
-      token text primary key,
-      user_id text not null,
       data jsonb not null
     );
     create table if not exists cm_login_tokens (
@@ -118,7 +172,10 @@ async function ensureSchema() {
       data jsonb not null default '{}'::jsonb,
       created_at timestamptz not null default now()
     );
-    create index if not exists cm_sessions_user_id_idx on cm_sessions (user_id);
+    create index if not exists auth_identities_user_id_idx on auth_identities ("userId");
+    create index if not exists telegram_accounts_user_id_idx on telegram_accounts ("userId");
+    create index if not exists telegram_login_requests_user_id_idx on telegram_login_requests ("userId");
+    create index if not exists telegram_login_requests_telegram_id_idx on telegram_login_requests ("telegramId");
   `);
 }
 
@@ -167,25 +224,29 @@ function countUserState(data) {
 }
 
 async function readAdminOverview() {
-  const { rows } = await pgPool.query(`
-    select u.id, u.data as user_data, s.data as state_data, s.updated_at
-    from cm_users u
-    left join cm_user_state s on s.user_id = u.id and s.key = 'main'
-    order by coalesce(s.updated_at, (u.data->>'updatedAt')::timestamptz, (u.data->>'createdAt')::timestamptz, now()) desc
-  `);
-  const users = rows.map((row) => {
-    const user = row.user_data || {};
-    const stats = countUserState(row.state_data || {});
+  const prismaUsers = await prisma.user.findMany({
+    include: { telegramAccounts: { take: 1 } },
+    orderBy: { updatedAt: "desc" },
+  });
+  const ids = prismaUsers.map((user) => user.id);
+  const { rows } = ids.length
+    ? await pgPool.query("select user_id, data, updated_at from cm_user_state where key = 'main' and user_id = any($1)", [ids])
+    : { rows: [] };
+  const states = new Map(rows.map((row) => [row.user_id, row]));
+  const users = prismaUsers.map((user) => {
+    const state = states.get(user.id);
+    const telegramAccount = user.telegramAccounts[0] || null;
+    const stats = countUserState(state?.data || {});
     return {
-      id: user.id || row.id,
-      name: user.name || user.telegramUsername || user.email || "Пользователь",
-      email: user.email || "",
-      telegramId: user.telegramId || "",
-      telegramUsername: user.telegramUsername || "",
-      provider: user.authProvider || "email",
-      createdAt: user.createdAt || "",
-      updatedAt: user.updatedAt || "",
-      stateUpdatedAt: row.updated_at || "",
+      id: user.id,
+      name: user.displayName || telegramAccount?.username || "Пользователь",
+      email: telegramAccount ? `telegram:${telegramAccount.telegramId}` : "",
+      telegramId: telegramAccount?.telegramId || "",
+      telegramUsername: telegramAccount?.username ? `@${telegramAccount.username}` : "",
+      provider: "telegram",
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
+      stateUpdatedAt: state?.updated_at || "",
       stats,
     };
   });
@@ -209,30 +270,44 @@ async function saveUser(user) {
 }
 
 async function getUserById(id) {
-  const { rows } = await pgPool.query("select data from cm_users where id = $1", [id]);
-  return rows[0]?.data || null;
+  const user = await prisma.user.findUnique({
+    where: { id },
+    include: { telegramAccounts: { take: 1 } },
+  });
+  if (!user) return null;
+  const telegramAccount = user.telegramAccounts[0] || null;
+  return {
+    id: user.id,
+    name: user.displayName || [telegramAccount?.firstName, telegramAccount?.lastName].filter(Boolean).join(" ").trim() || telegramAccount?.username || "Пользователь",
+    email: telegramAccount ? `telegram:${telegramAccount.telegramId}` : "",
+    authProvider: "telegram",
+    telegramId: telegramAccount?.telegramId || "",
+    telegramUsername: telegramAccount?.username ? `@${telegramAccount.username}` : "",
+    avatar: user.avatarUrl || telegramAccount?.photoUrl || "",
+    createdAt: user.createdAt?.toISOString?.() || "",
+    updatedAt: user.updatedAt?.toISOString?.() || "",
+  };
 }
 
-async function createSession(userId) {
-  const token = uid(24);
-  const data = { token, userId, createdAt: now() };
-  await pgPool.query("insert into cm_sessions (token, user_id, data) values ($1, $2, $3::jsonb)", [
-    token,
+function signSessionPayload(payload) {
+  return createHmac("sha256", SESSION_SECRET || "dev-session-secret").update(payload).digest("base64url");
+}
+
+function createSession(userId) {
+  const payload = Buffer.from(JSON.stringify({
     userId,
-    JSON.stringify(data),
-  ]);
-  return token;
-}
-
-async function removeSession(token) {
-  await pgPool.query("delete from cm_sessions where token = $1", [token]);
+    exp: Date.now() + 30 * 24 * 60 * 60 * 1000,
+  }), "utf8").toString("base64url");
+  return `${payload}.${signSessionPayload(payload)}`;
 }
 
 async function getUserBySession(token) {
   if (!token) return null;
-  const { rows } = await pgPool.query("select user_id from cm_sessions where token = $1", [token]);
-  if (!rows[0]?.user_id) return null;
-  return await getUserById(rows[0].user_id);
+  const [payload, signature] = String(token).split(".");
+  if (!payload || !signature || !safeCompare(signature, signSessionPayload(payload))) return null;
+  const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+  if (!data.userId || !data.exp || Number(data.exp) <= Date.now()) return null;
+  return await getUserById(String(data.userId));
 }
 
 function parseCookies(req) {
@@ -249,11 +324,13 @@ function parseCookies(req) {
 }
 
 function setSessionCookie(res, token) {
-  res.setHeader("Set-Cookie", `${cookieName}=${encodeURIComponent(token)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=2592000`);
+  const secure = APP_URL.startsWith("https://") ? "; Secure" : "";
+  res.setHeader("Set-Cookie", `${cookieName}=${encodeURIComponent(token)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=2592000${secure}`);
 }
 
 function clearSessionCookie(res) {
-  res.setHeader("Set-Cookie", `${cookieName}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0`);
+  const secure = APP_URL.startsWith("https://") ? "; Secure" : "";
+  res.setHeader("Set-Cookie", `${cookieName}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0${secure}`);
 }
 
 async function body(req) {
@@ -370,64 +447,105 @@ function validateTelegramInitData(initData) {
 
 async function upsertTelegramUser(telegramUser) {
   const telegramId = String(telegramUser.id);
-  const users = await readUsers();
-  const email = `telegram:${telegramId}`;
   const name = [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(" ").trim() || telegramUser.username || `Telegram ${telegramId}`;
-  let user = users.find((item) => item.email === email || String(item.telegramId || "") === telegramId);
-  if (!user) {
-    user = {
-      id: uid(),
-      email,
-      name,
-      authProvider: "telegram",
-      telegramId,
-      telegramUsername: telegramUser.username ? `@${telegramUser.username}` : "",
-      createdAt: now(),
-    };
-  } else {
-    Object.assign(user, {
-      email,
-      name,
-      authProvider: "telegram",
-      telegramId,
-      telegramUsername: telegramUser.username ? `@${telegramUser.username}` : user.telegramUsername || "",
-      updatedAt: now(),
+  const existingAccount = await prisma.telegramAccount.findUnique({ where: { telegramId }, include: { user: true } });
+  if (existingAccount) {
+    await prisma.telegramAccount.update({
+      where: { telegramId },
+      data: {
+        username: telegramUser.username || existingAccount.username,
+        firstName: telegramUser.first_name || existingAccount.firstName,
+        lastName: telegramUser.last_name || existingAccount.lastName,
+        photoUrl: telegramUser.photo_url || existingAccount.photoUrl,
+        languageCode: telegramUser.language_code || existingAccount.languageCode,
+      },
     });
+    const user = await prisma.user.update({
+      where: { id: existingAccount.userId },
+      data: { displayName: name, avatarUrl: telegramUser.photo_url || existingAccount.user.avatarUrl || undefined },
+    });
+    return publicUser({ ...user, telegramId, telegramUsername: telegramUser.username ? `@${telegramUser.username}` : "" });
   }
-  await saveUser(user);
-  return user;
+
+  const legacyUsers = await readUsers().catch(() => []);
+  const legacy = legacyUsers.find((item) => String(item.telegramId || "") === telegramId || item.email === `telegram:${telegramId}`);
+  const userId = legacy?.id || uid();
+  const user = await prisma.user.upsert({
+    where: { id: userId },
+    update: { displayName: name, avatarUrl: telegramUser.photo_url || undefined },
+    create: { id: userId, displayName: name, avatarUrl: telegramUser.photo_url || undefined },
+  });
+  await prisma.authIdentity.upsert({
+    where: { provider_providerUserId: { provider: "TELEGRAM", providerUserId: telegramId } },
+    update: { userId: user.id },
+    create: { userId: user.id, provider: "TELEGRAM", providerUserId: telegramId },
+  });
+  await prisma.telegramAccount.create({
+    data: {
+      userId: user.id,
+      telegramId,
+      username: telegramUser.username || null,
+      firstName: telegramUser.first_name || null,
+      lastName: telegramUser.last_name || null,
+      photoUrl: telegramUser.photo_url || null,
+      languageCode: telegramUser.language_code || null,
+    },
+  });
+  return publicUser({ ...user, telegramId, telegramUsername: telegramUser.username ? `@${telegramUser.username}` : "" });
 }
 
-async function createTelegramLoginToken() {
+function tokenHash(token) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function safeReturnTo(returnTo = "") {
+  const value = String(returnTo || "").trim();
+  if (!value || value.startsWith("//")) return "/";
+  if (value.startsWith("/")) return value;
+  try {
+    const parsed = new URL(value);
+    const app = new URL(APP_URL);
+    if (parsed.origin === app.origin) return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return "/";
+  }
+  return "/";
+}
+
+async function createTelegramLoginToken(returnTo = "/") {
   const bot = TELEGRAM_BOT_TOKEN ? await getTelegramBotInfo() : null;
   if (!bot?.username) throw new Error("telegram_bot_not_configured");
   const token = uid(20);
-  const data = {
-    token,
-    userId: "",
-    createdAt: now(),
-    expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-    confirmedAt: "",
-    usedAt: "",
-  };
-  await pgPool.query("insert into cm_login_tokens (token, data) values ($1, $2::jsonb)", [token, JSON.stringify(data)]);
-  return { token, expiresAt: data.expiresAt, botLink: `https://t.me/${bot.username}?start=login_${token}` };
+  const loginRequest = await prisma.telegramLoginRequest.create({
+    data: {
+      tokenHash: tokenHash(token),
+      returnTo: safeReturnTo(returnTo),
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    },
+  });
+  return { token, expiresAt: loginRequest.expiresAt.toISOString(), returnTo: loginRequest.returnTo || "/", botLink: `https://t.me/${bot.username}?start=login_${token}` };
 }
 
 async function readLoginToken(token) {
-  const { rows } = await pgPool.query("select data from cm_login_tokens where token = $1", [token]);
-  return rows[0]?.data || null;
+  return await prisma.telegramLoginRequest.findUnique({ where: { tokenHash: tokenHash(token) } });
 }
 
 async function saveLoginToken(loginToken) {
-  await pgPool.query(
-    "insert into cm_login_tokens (token, data) values ($1, $2::jsonb) on conflict (token) do update set data = excluded.data",
-    [loginToken.token, JSON.stringify(loginToken)],
-  );
+  return await prisma.telegramLoginRequest.update({
+    where: { id: loginToken.id },
+    data: {
+      status: loginToken.status,
+      userId: loginToken.userId,
+      telegramId: loginToken.telegramId,
+      chatId: loginToken.chatId,
+      confirmedAt: loginToken.confirmedAt,
+      usedAt: loginToken.usedAt,
+    },
+  });
 }
 
 async function deleteLoginToken(token) {
-  await pgPool.query("delete from cm_login_tokens where token = $1", [token]);
+  await prisma.telegramLoginRequest.delete({ where: { tokenHash: tokenHash(token) } }).catch(() => null);
 }
 
 async function sendTelegramStart(chatId) {
@@ -464,7 +582,7 @@ async function handleTelegramWebhook(req, res) {
     if (loginMatch) {
       const token = loginMatch[1];
       const loginToken = await readLoginToken(token);
-      if (!loginToken || loginToken.usedAt || new Date(loginToken.expiresAt).getTime() <= Date.now()) {
+      if (!loginToken || loginToken.usedAt || loginToken.status === "USED" || loginToken.expiresAt.getTime() <= Date.now()) {
         await deleteLoginToken(token);
         await telegramApi("sendMessage", {
           chat_id: chatId,
@@ -474,9 +592,11 @@ async function handleTelegramWebhook(req, res) {
       }
       const user = await upsertTelegramUser(message.from);
       Object.assign(loginToken, {
+        status: "CONFIRMED",
         userId: user.id,
-        telegramChatId: String(chatId),
-        confirmedAt: now(),
+        telegramId: String(message.from.id),
+        chatId: String(chatId),
+        confirmedAt: new Date(),
       });
       await saveLoginToken(loginToken);
       await sendTelegramLoginConfirmed(chatId, token).catch(console.error);
@@ -497,41 +617,16 @@ async function api(req, res, url) {
 
   if (path === "/api/auth/register") {
     if (req.method !== "POST") return methodNotAllowed(res);
-    const input = await body(req);
-    const email = String(input.email || "").trim().toLowerCase();
-    const password = String(input.password || "");
-    if (!email || password.length < 6) return send(res, 400, { error: "invalid_credentials" });
-    const users = await readUsers();
-    if (users.some((user) => user.email === email)) return send(res, 409, { error: "email_exists" });
-    const user = {
-      id: uid(),
-      email,
-      passwordHash: hashPassword(password),
-      name: String(input.name || "").trim() || email.split("@")[0],
-      authProvider: "email",
-      createdAt: now(),
-    };
-    await saveUser(user);
-    const token = await createSession(user.id);
-    setSessionCookie(res, token);
-    return send(res, 201, { user: publicUser(user) });
+    return send(res, 410, { error: "password_auth_disabled", message: "Use Telegram auth" });
   }
 
   if (path === "/api/auth/login") {
     if (req.method !== "POST") return methodNotAllowed(res);
-    const input = await body(req);
-    const email = String(input.email || "").trim().toLowerCase();
-    const users = await readUsers();
-    const user = users.find((item) => item.email === email);
-    if (!user || !verifyPassword(String(input.password || ""), user.passwordHash)) return send(res, 401, { error: "invalid_credentials" });
-    const token = await createSession(user.id);
-    setSessionCookie(res, token);
-    return send(res, 200, { user: publicUser(user) });
+    return send(res, 410, { error: "password_auth_disabled", message: "Use Telegram auth" });
   }
 
   if (path === "/api/auth/logout") {
     if (req.method !== "POST") return methodNotAllowed(res);
-    await removeSession(parseCookies(req)[cookieName]);
     clearSessionCookie(res);
     return send(res, 200, { ok: true });
   }
@@ -553,8 +648,9 @@ async function api(req, res, url) {
   if (path === "/api/auth/telegram-login-token" || path === "/api/auth/telegram/start") {
     if (req.method !== "POST") return methodNotAllowed(res);
     try {
-      const login = await createTelegramLoginToken();
-      return send(res, 201, { ok: true, token: login.token, expiresAt: login.expiresAt, botLink: login.botLink, botUrl: login.botLink });
+      const input = await body(req).catch(() => ({}));
+      const login = await createTelegramLoginToken(input.returnTo || url.searchParams.get("returnTo") || "/");
+      return send(res, 201, { ok: true, token: login.token, expiresAt: login.expiresAt, returnTo: login.returnTo, botLink: login.botLink, botUrl: login.botLink });
     } catch (error) {
       return send(res, 500, { error: error.message || "telegram_login_token_failed" });
     }
@@ -565,19 +661,18 @@ async function api(req, res, url) {
     if (req.method !== "GET") return methodNotAllowed(res);
     const token = tokenMatch?.[1] || url.searchParams.get("token") || "";
     const loginToken = await readLoginToken(token);
-    if (!loginToken || loginToken.usedAt) return send(res, 404, { error: "login_token_not_found", status: "missing" });
-    if (new Date(loginToken.expiresAt).getTime() <= Date.now()) {
-      await deleteLoginToken(token);
+    if (!loginToken || loginToken.usedAt || loginToken.status === "USED") return send(res, 404, { error: "login_token_not_found", status: "missing" });
+    if (loginToken.expiresAt.getTime() <= Date.now()) {
+      await prisma.telegramLoginRequest.update({ where: { id: loginToken.id }, data: { status: "EXPIRED" } }).catch(() => null);
       return send(res, 410, { error: "login_token_expired", status: "expired" });
     }
     if (!loginToken.userId) return send(res, 202, { status: "pending" });
     const user = await getUserById(loginToken.userId);
     if (!user) return send(res, 404, { error: "telegram_user_not_found" });
-    const sessionToken = await createSession(user.id);
-    loginToken.usedAt = now();
-    await saveLoginToken(loginToken);
+    const sessionToken = createSession(user.id);
+    await prisma.telegramLoginRequest.update({ where: { id: loginToken.id }, data: { status: "USED", usedAt: new Date() } });
     setSessionCookie(res, sessionToken);
-    return send(res, 200, { ok: true, status: "confirmed", user: publicUser(user) });
+    return send(res, 200, { ok: true, status: "confirmed", returnTo: loginToken.returnTo || "/", user: publicUser(user) });
   }
 
   if (path === "/api/telegram/webhook" || path === "/api/auth/telegram/webhook") {

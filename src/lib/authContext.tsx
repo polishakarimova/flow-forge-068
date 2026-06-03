@@ -16,11 +16,11 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  registerWithEmail: (name: string, email: string, password: string) => Promise<{ success: boolean; message: string }>;
+  registerWithEmail: () => Promise<{ success: boolean; message: string }>;
   registerWithGoogle: () => Promise<{ success: boolean; message: string }>;
   verifyEmail: (code: string, email: string) => Promise<{ success: boolean; message: string }>;
   resendVerification: (email: string) => Promise<{ success: boolean; message: string }>;
-  login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
+  login: () => Promise<{ success: boolean; message: string }>;
   loginWithTelegram: () => Promise<{ success: boolean; message: string }>;
   logout: () => void;
 }
@@ -82,20 +82,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshMe().catch(() => setState({ user: null, isAuthenticated: false, isLoading: false }));
   }, [refreshMe]);
 
-  const registerWithEmail = useCallback(async (name: string, email: string, password: string) => {
-    setState((s) => ({ ...s, isLoading: true }));
-    try {
-      const data = await api("/api/auth/register", {
-        method: "POST",
-        body: JSON.stringify({ name, email, password }),
-      });
-      const user = mapUser(data.user);
-      setState({ user, isAuthenticated: true, isLoading: false });
-      return { success: true, message: "Аккаунт создан" };
-    } catch (error) {
-      setState((s) => ({ ...s, isLoading: false }));
-      return { success: false, message: error instanceof Error ? error.message : "Не удалось зарегистрироваться" };
-    }
+  const registerWithEmail = useCallback(async () => {
+    return { success: false, message: "Вход по паролю отключён. Используйте Telegram." };
   }, []);
 
   const registerWithGoogle = useCallback(async () => {
@@ -110,20 +98,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { success: true, message: "Подтверждение не требуется" };
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    setState((s) => ({ ...s, isLoading: true }));
-    try {
-      const data = await api("/api/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-      });
-      const user = mapUser(data.user);
-      setState({ user, isAuthenticated: true, isLoading: false });
-      return { success: true, message: "Вход выполнен" };
-    } catch (error) {
-      setState((s) => ({ ...s, isLoading: false }));
-      return { success: false, message: error instanceof Error ? error.message : "Не удалось войти" };
-    }
+  const login = useCallback(async () => {
+    return { success: false, message: "Вход по паролю отключён. Используйте Telegram." };
   }, []);
 
   const loginWithTelegram = useCallback(async () => {
@@ -139,7 +115,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: true, message: "Вход через Telegram выполнен" };
       }
 
-      const start = await api("/api/auth/telegram-login-token", { method: "POST" });
+      const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      const start = await api("/api/auth/telegram-login-token", {
+        method: "POST",
+        body: JSON.stringify({ returnTo }),
+      });
       if (webApp?.openTelegramLink) {
         webApp.openTelegramLink(start.botLink);
       } else {
@@ -151,7 +131,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const response = await fetch(`/api/auth/telegram-login-token/${encodeURIComponent(start.token)}`, { credentials: "include" });
         if (response.status === 202) continue;
         if (response.ok) {
+          const data = await response.json().catch(() => ({}));
           await refreshMe();
+          if (data.returnTo && data.returnTo !== window.location.pathname) {
+            window.location.assign(data.returnTo);
+          }
           return { success: true, message: "Вход через Telegram выполнен" };
         }
         return { success: false, message: "Токен входа устарел. Попробуйте ещё раз." };
