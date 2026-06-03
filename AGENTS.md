@@ -22,12 +22,37 @@
 - `docs/design/KARTA_KONTENTA_UI_RULES.md`
 - `docs/design/KARTA_KONTENTA_VISUAL_CHECKLIST.md`
 - `docs/design/KARTA_KONTENTA_COMPONENT_MAP.md`
+- `docs/design/KARTA_KONTENTA_REFERENCE_ANALYSIS.md`
+- `docs/design/KARTA_KONTENTA_DESIGN_QUALITY_RUBRIC.md`
+- `docs/design/KARTA_KONTENTA_SELF_REVIEW_PROCESS.md`
+- `docs/design/KARTA_KONTENTA_DO_NOT_REPEAT.md`
 
 Дополнительные проектные документы:
 
 - `DESIGN_SYSTEM.md`
 - `SERVICE_STRUCTURE.md`
 - `TELEGRAM_AUTH_SETUP.md`
+
+## Дизайн-процесс Karta Kontenta
+
+Перед любой задачей по дизайну, UI, бренду, мобильной вёрстке, карточкам, модалкам, dropdown, чипам, админке или визуальной системе обязательно прочитай:
+
+- `docs/design/KARTA_KONTENTA_REFERENCE_ANALYSIS.md`
+- `docs/design/KARTA_KONTENTA_DESIGN_QUALITY_RUBRIC.md`
+- `docs/design/KARTA_KONTENTA_SELF_REVIEW_PROCESS.md`
+- `docs/design/KARTA_KONTENTA_DO_NOT_REPEAT.md`
+
+После любой дизайн-задачи обязательно сделай self-review по 100-балльной шкале из `KARTA_KONTENTA_DESIGN_QUALITY_RUBRIC.md`.
+
+Если результат ниже 85/100, не завершай задачу: сначала исправь слабые места.
+
+Главный ориентир:
+
+Сначала ясная система продуктов, контента, CTA и воронок.
+
+Потом компактный рабочий слой.
+
+Никогда не наоборот.
 
 ## Что нельзя делать
 
