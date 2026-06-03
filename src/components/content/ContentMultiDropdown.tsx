@@ -43,7 +43,7 @@ export function ContentMultiDropdown({ values, onChange, options, placeholder, w
     <div ref={ref} className="relative shrink-0" style={{ width }}>
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full h-8 flex items-center justify-between gap-1 px-2 rounded-lg sm:rounded-xl border border-border bg-card text-[11px] font-light tracking-wide cursor-pointer transition-all duration-200 hover:border-primary/40 ${
+        className={`w-full h-[26px] flex items-center justify-between gap-1 px-2 rounded-[9px] sm:rounded-lg border border-border/80 bg-card text-[11px] font-light tracking-wide cursor-pointer transition-all duration-200 hover:border-primary/40 ${
           has ? "text-foreground" : "text-muted-foreground"
         }`}
       >
@@ -75,13 +75,13 @@ export function ContentMultiDropdown({ values, onChange, options, placeholder, w
 
       {open && (
         <div
-          className="absolute top-[calc(100%+4px)] left-0 bg-card border border-border/60 rounded-xl z-50 p-1 animate-in fade-in slide-in-from-top-2 duration-200 shadow-[0_12px_40px_rgba(0,0,0,.08),0_2px_8px_rgba(0,0,0,.04)] overflow-hidden"
-          style={{ width: Math.max(width, 148), maxWidth: "calc(100vw - 2rem)" }}
+          className="absolute top-[calc(100%+4px)] left-0 bg-card border border-border/60 rounded-lg sm:rounded-xl z-50 p-1 animate-in fade-in slide-in-from-top-2 duration-200 shadow-[0_12px_40px_rgba(0,0,0,.08),0_2px_8px_rgba(0,0,0,.04)] overflow-hidden"
+          style={{ width: Math.max(width, 132), maxWidth: "calc(100vw - 2rem)" }}
         >
           {has && (
             <div
               onClick={() => onChange([])}
-              className="px-2 py-1 rounded-lg text-[10px] font-light tracking-wide cursor-pointer text-muted-foreground border-b border-border mb-0.5 hover:bg-muted/50 transition-all duration-150"
+              className="px-2 py-0.5 rounded-md text-[10px] font-light tracking-wide cursor-pointer text-muted-foreground border-b border-border mb-0.5 hover:bg-muted/50 transition-all duration-150"
             >
               Сбросить все
             </div>
@@ -92,7 +92,7 @@ export function ContentMultiDropdown({ values, onChange, options, placeholder, w
               <div
                 key={o.value}
                 onClick={() => toggle(o.value)}
-                className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-light tracking-wide cursor-pointer transition-all duration-150 ${
+                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-light tracking-wide cursor-pointer transition-all duration-150 ${
                   checked ? "violet-surface" : "hover:bg-muted/50"
                 }`}
               >

@@ -119,7 +119,7 @@ const Products = () => {
           </header>
 
           {/* Content */}
-          <main className="flex-1 w-full mx-auto py-5 md:py-6 px-4 md:px-6 pb-20 md:pb-6 max-w-[1400px]">
+          <main className="flex-1 w-full mx-auto py-4 md:py-6 px-4 md:px-6 pb-20 md:pb-6 max-w-[1400px]">
             {/* Filters */}
             <div className="flex gap-1.5 mb-3 items-center overflow-visible">
               <ContentMultiDropdown
@@ -127,21 +127,21 @@ const Products = () => {
                 onChange={setTypeFilters}
                 options={typeOptions}
                 placeholder="Тип"
-                width={86}
+                width={78}
               />
               <ContentMultiDropdown
                 values={formatFilters}
                 onChange={setFormatFilters}
                 options={formatOptions}
                 placeholder="Формат"
-                width={88}
+                width={82}
               />
               <ContentMultiDropdown
                 values={statusFilters}
                 onChange={setStatusFilters}
                 options={statusOptions}
                 placeholder="Статус"
-                width={88}
+                width={82}
               />
               {hasFilters && (
                 <button
