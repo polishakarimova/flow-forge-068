@@ -115,6 +115,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: true, message: "Вход через Telegram выполнен" };
       }
 
+      const popup = webApp?.openTelegramLink ? null : window.open("about:blank", "_blank");
+      if (popup) popup.opener = null;
       const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
       const start = await api("/api/auth/telegram-login-token", {
         method: "POST",
@@ -122,8 +124,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       if (webApp?.openTelegramLink) {
         webApp.openTelegramLink(start.botLink);
+      } else if (popup) {
+        popup.location.href = start.botLink;
       } else {
-        window.open(start.botLink, "_blank", "noopener,noreferrer");
+        return { success: false, message: `Браузер заблокировал открытие Telegram. Откройте бота вручную: ${start.botLink}` };
       }
 
       for (let attempt = 0; attempt < 60; attempt += 1) {

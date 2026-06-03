@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/lib/authContext";
@@ -9,6 +9,40 @@ export default function Login() {
   const { loginWithTelegram, isLoading } = useAuth();
   const [error, setError] = useState("");
   const [isTelegramLoading, setIsTelegramLoading] = useState(false);
+
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get("telegramLoginToken");
+    if (!token) return;
+    let cancelled = false;
+
+    const complete = async () => {
+      setError("");
+      setIsTelegramLoading(true);
+      try {
+        for (let attempt = 0; attempt < 12; attempt += 1) {
+          const response = await fetch(`/api/auth/telegram-login-token/${encodeURIComponent(token)}`, { credentials: "include" });
+          if (response.status === 202) {
+            await new Promise((resolve) => window.setTimeout(resolve, 1000));
+            continue;
+          }
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.error || "Не удалось завершить вход через Telegram");
+          if (!cancelled) window.location.assign(data.returnTo || "/products");
+          return;
+        }
+        throw new Error("Telegram ещё не подтвердил вход. Нажмите кнопку входа ещё раз.");
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Не удалось завершить вход через Telegram");
+      } finally {
+        if (!cancelled) setIsTelegramLoading(false);
+      }
+    };
+
+    complete();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleTelegram = async () => {
     setError("");
