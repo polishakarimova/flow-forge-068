@@ -170,7 +170,7 @@ const Content = () => {
                 </div>
                 <button
                   onClick={() => setShowCreate(true)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary/90 transition-colors shadow-sm"
+                  className="inline-flex h-10 w-10 sm:h-auto sm:w-auto items-center justify-center sm:justify-start gap-1.5 px-0 sm:px-4 sm:py-2 rounded-xl bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary/90 transition-colors shadow-sm"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Новая тема</span>

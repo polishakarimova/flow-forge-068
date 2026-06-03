@@ -109,7 +109,7 @@ const Products = () => {
                 </div>
                 <button
                   onClick={() => setShowCreate(true)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary/90 transition-colors shadow-sm"
+                  className="inline-flex h-10 w-10 sm:h-auto sm:w-auto items-center justify-center sm:justify-start gap-1.5 px-0 sm:px-4 sm:py-2 rounded-xl bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary/90 transition-colors shadow-sm"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Новый продукт</span>
@@ -121,27 +121,27 @@ const Products = () => {
           {/* Content */}
           <main className="flex-1 w-full mx-auto py-5 md:py-6 px-4 md:px-6 pb-20 md:pb-6 max-w-[1400px]">
             {/* Filters */}
-            <div className="flex gap-1.5 mb-3 items-center">
+            <div className="flex gap-1.5 mb-3 items-center overflow-visible">
               <ContentMultiDropdown
                 values={typeFilters}
                 onChange={setTypeFilters}
                 options={typeOptions}
                 placeholder="Тип"
-                width={100}
+                width={86}
               />
               <ContentMultiDropdown
                 values={formatFilters}
                 onChange={setFormatFilters}
                 options={formatOptions}
                 placeholder="Формат"
-                width={100}
+                width={88}
               />
               <ContentMultiDropdown
                 values={statusFilters}
                 onChange={setStatusFilters}
                 options={statusOptions}
                 placeholder="Статус"
-                width={100}
+                width={88}
               />
               {hasFilters && (
                 <button
@@ -151,7 +151,7 @@ const Products = () => {
                   ✕
                 </button>
               )}
-              <span className="ml-auto text-[11px] text-muted-foreground shrink-0">
+              <span className="ml-auto text-[11px] leading-none text-muted-foreground shrink-0">
                 {filtered.length} из {products.length}
               </span>
             </div>

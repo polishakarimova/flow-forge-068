@@ -272,7 +272,7 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
       <div className="bg-card rounded-t-[28px] sm:rounded-3xl w-full max-w-[540px] max-h-[calc(100svh-72px)] sm:max-h-[90vh] overflow-auto animate-in slide-in-from-bottom-3 duration-300" style={{ boxShadow: "0 24px 60px rgba(0,0,0,.15)" }}>
         <div className="px-4 sm:px-7 pt-4 sm:pt-6">
           {/* Header */}
-          <div className="flex justify-between items-center mb-5">
+          <div className="flex justify-between items-center mb-3 sm:mb-5">
             <h2 className="text-lg font-bold text-foreground">{isEdit ? "Редактировать воронку" : "Новая воронка"}</h2>
             <button
               onClick={onClose}
@@ -283,8 +283,8 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
           </div>
 
           {/* ─── Keyword dropdown ─── */}
-          <div className="mb-4">
-            <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">Кодовое слово</label>
+          <div className="mb-3 sm:mb-4">
+            <label className="block text-[12px] sm:text-[13px] font-semibold text-muted-foreground mb-1 sm:mb-1.5">Кодовое слово</label>
             <SelectDropdown
               value={selectedKeyword}
               onChange={(v) => setSelectedKeyword(v as string | null)}
@@ -297,14 +297,14 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
           </div>
 
           {/* ─── Badge color ─── */}
-          <div className="mb-5">
-            <label className="block text-[13px] font-semibold text-muted-foreground mb-2">Цвет</label>
-            <div className="flex gap-2">
+          <div className="mb-4 sm:mb-5">
+            <label className="block text-[12px] sm:text-[13px] font-semibold text-muted-foreground mb-1.5 sm:mb-2">Цвет</label>
+            <div className="flex gap-1.5 sm:gap-2">
               {BADGE_COLORS.map((bc) => (
                 <button
                   key={bc.value}
                   onClick={() => setBadgeColor(bc.value)}
-                  className="w-8 h-8 rounded-full cursor-pointer transition-all duration-200 border-2"
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full cursor-pointer transition-all duration-200 border-2"
                   style={{
                     background: bc.hex,
                     borderColor: badgeColor === bc.value ? "hsl(var(--foreground))" : "transparent",
@@ -327,8 +327,8 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
             }));
 
             return (
-              <div key={step.field} className="mb-2 rounded-2xl border border-border/70 bg-muted/15 px-3 py-2">
-                <div className="mb-1.5 flex items-baseline gap-1.5">
+              <div key={step.field} className="mb-1.5 sm:mb-2 rounded-xl sm:rounded-2xl border border-border/70 bg-muted/15 px-2.5 py-1.5 sm:px-3 sm:py-2">
+                <div className="mb-1 flex items-baseline gap-1.5">
                   <label className="text-[12px] font-semibold text-muted-foreground leading-4">{step.label}</label>
                   <span className="text-[10px] font-light text-muted-foreground/60">(необязательно)</span>
                 </div>
@@ -349,8 +349,8 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
           })}
 
           {/* ─── Content selection with search ─── */}
-          <div className="mb-4 mt-3 rounded-2xl border border-border/70 bg-muted/10 px-3 py-2.5">
-            <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">
+          <div className="mb-3 sm:mb-4 mt-2 sm:mt-3 rounded-xl sm:rounded-2xl border border-border/70 bg-muted/10 px-2.5 py-2 sm:px-3 sm:py-2.5">
+            <label className="block text-[12px] sm:text-[13px] font-semibold text-muted-foreground mb-1 sm:mb-1.5">
               Контент для воронки
               {selectedContentIds.size > 0 && (
                 <span className="text-primary ml-1">({selectedContentIds.size})</span>

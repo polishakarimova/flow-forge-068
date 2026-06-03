@@ -37,7 +37,7 @@ export function FormatSelector({ value, onChange, formats, onAddFormat, onDelete
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full px-3 py-2 rounded-xl border-[1.5px] border-border text-[13px] leading-5 font-medium cursor-pointer flex items-center justify-between transition-all duration-200 bg-transparent ${
+        className={`w-full px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] border-border text-[13px] leading-5 font-medium cursor-pointer flex items-center justify-between transition-all duration-200 bg-transparent ${
           value ? "text-foreground" : "text-muted-foreground"
         }`}
       >
@@ -51,7 +51,7 @@ export function FormatSelector({ value, onChange, formats, onAddFormat, onDelete
       </button>
 
       {open && (
-        <div className="absolute top-[calc(100%+4px)] left-0 right-0 min-w-0 bg-card border border-border/60 rounded-2xl z-[60] p-1.5 animate-in fade-in slide-in-from-top-2 duration-200 shadow-[0_12px_40px_rgba(0,0,0,.08),0_2px_8px_rgba(0,0,0,.04)] max-h-[280px] overflow-y-auto overflow-x-hidden">
+        <div className="absolute top-[calc(100%+4px)] left-0 right-0 min-w-0 bg-card border border-border/60 rounded-xl sm:rounded-2xl z-[60] p-1.5 animate-in fade-in slide-in-from-top-2 duration-200 shadow-[0_12px_40px_rgba(0,0,0,.08),0_2px_8px_rgba(0,0,0,.04)] max-h-[240px] sm:max-h-[280px] overflow-y-auto overflow-x-hidden">
           {formats.map((f) => (
             <div
               key={f}
@@ -61,7 +61,7 @@ export function FormatSelector({ value, onChange, formats, onAddFormat, onDelete
             >
               <div
                 onClick={() => { onChange(f); setOpen(false); }}
-                className={`min-w-0 flex-1 px-3 py-[7px] rounded-lg text-[12px] font-normal cursor-pointer leading-5 truncate ${
+                className={`min-w-0 flex-1 px-2.5 sm:px-3 py-1.5 sm:py-[7px] rounded-lg text-[12px] font-normal cursor-pointer leading-5 truncate ${
                   value === f ? "violet-surface text-primary" : "text-slate-600 hover:bg-muted/50"
                 }`}
               >
