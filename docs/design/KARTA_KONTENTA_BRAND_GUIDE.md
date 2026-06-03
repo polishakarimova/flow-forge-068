@@ -1,121 +1,188 @@
 # Karta Kontenta Brand Guide
 
-## Essence
+## Суть бренда
 
-Karta Kontenta is a compact creator/business workspace for experts who need to connect products, content, CTA keywords, funnels, and publishing plans in one clear system.
+«Карта контента» — это digital-сервис для экспертов, авторов и малых команд, которые хотят собрать продукты, темы, контент, CTA-слова, воронки и календарь в одну понятную систему.
 
-The interface should feel:
+Сценарии:
 
-- clean;
-- focused;
-- practical;
-- soft, but not childish;
-- creator-friendly, but still SaaS-like;
-- especially comfortable inside Telegram Mini App.
+- продуктовая линейка;
+- контент-план;
+- банк идей;
+- CTA-слова;
+- воронки;
+- карта связей;
+- календарь публикаций;
+- контекст эксперта и аудитории;
+- Telegram Mini App-кабинет.
 
-The app is not a marketing website. The first screen after login should feel like a working dashboard.
+Для пользователя сервис выглядит как рабочая карта контента и продаж.
 
-## Naming
+Для владельца сервиса он работает как аккуратный слой управления: пользователи, авторизации, данные, рассылки, состояние системы.
 
-User-facing names:
+## Главная идея
 
-- Russian: `Карта контента`
-- Short product name in UI/logo: `Content Map`
-- Domain: `kartakontenta.ru`
-- Telegram bot context: `Карта контента бот`
+Не «CRM для контента», а:
 
-Avoid old project names in UI and docs unless referencing repository history.
+> продукты + контент + CTA + воронки + карта связей в одном спокойном рабочем пространстве.
 
-## Audience
+## Визуальный характер
 
-Primary users:
+- светлый;
+- компактный;
+- технологичный, но не холодный;
+- мягкий, но не игрушечный;
+- creator-friendly, но не декоративный;
+- аккуратный SaaS, но без тяжёлой CRM-атмосферы;
+- особенно удобный в Telegram Mini App.
 
-- experts;
-- creators;
-- educators;
-- consultants;
-- marketers;
-- small product teams.
+## Главный образ
 
-They use the app to understand what they sell, what content leads where, and how funnels connect.
+Главный образ интерфейса — карта связей.
 
-## Tone
+Сущности должны ощущаться связанными:
 
-Text should be calm, useful, and direct.
+- контекст задаёт направление;
+- продукты показывают, что продаём;
+- контент ведёт к CTA;
+- CTA-слова ведут в воронки;
+- воронки связывают контент с продуктами;
+- карта показывает систему целиком;
+- календарь превращает систему в план.
 
-Use:
+## Название
 
-- `Создать продукт`
-- `Новое слово...`
-- `Куда постим?`
-- `Нет продуктов типа «Трипваер»`
-- `Выберите формат`
+Основное название:
 
-Avoid:
+`Карта контента`
 
-- long explanations inside forms;
-- corporate wording;
-- technical database/auth words in the user interface;
-- jokes in critical states;
-- vague labels like `Данные`, `Объект`, `Элемент`.
+Допустимые версии:
 
-## Visual Personality
+`Content Map`
 
-The visual language is a light SaaS workspace with a purple accent.
+`Карта контента бот`
 
-Core feeling:
+Домен:
 
-- white and near-white surfaces;
-- thin gray borders;
-- soft purple selected states;
-- compact controls;
-- clear iconography;
-- small motion on press/hover;
-- dense but breathable mobile layouts.
+`kartakontenta.ru`
 
-Purple is the accent, not the whole atmosphere.
+## Фраза бренда
 
-## Color Direction
+Главная фраза:
 
-Primary:
+«Из хаоса контента — в понятную карту продаж»
 
-- purple/violet for selected states, main actions, active nav, and focus rings.
+Дополнительные формулировки:
 
-Supporting:
+- «Продукты, контент и воронки в одной карте»
+- «Свяжите идеи, посты и продажи»
+- «Контент, который ведёт к продуктам»
+- «Соберите систему из продуктов, тем и CTA»
 
-- gray for labels, placeholders, helper text, counters, metadata.
-- soft lilac backgrounds for selected list rows.
-- green only for success/ready.
-- amber only for drafts, ideas, or in-progress highlights.
-- red only for destructive actions and errors.
+## Символ
 
-Avoid:
+Если нужен фирменный знак, он должен опираться на:
 
-- full-screen purple gradients in app screens;
-- heavy beige/brown palettes;
-- large decorative blobs or orbs;
-- low-contrast gray text.
+- точки;
+- узлы;
+- линии;
+- карту;
+- блоки контента;
+- путь воронки;
+- связку «идея -> CTA -> продукт».
 
-## Typography
+Знак не должен быть:
 
-Use a compact interface rhythm.
+- цветком;
+- абстрактной AI-звёздочкой без смысла;
+- тяжёлым графиком роста;
+- копией логотипа соцсети;
+- техническим радаром.
 
-- Page titles: 15-18px.
-- Section labels: 13-14px, semibold.
-- Inputs: 14-15px.
-- Chips/buttons: 11-13px.
-- Technical text/placeholders: 12-13px, regular, gray.
-- Empty state title: 18-22px.
+## Палитра
 
-Do not use hero-scale type inside modals, cards, filters, or mobile workspaces.
+Основные цвета:
 
-## Mobile Mini App Principles
+- Фон: `#FAFAFB`
+- Поверхность: `#FFFFFF`
+- Primary violet: `#8B5CF6`
+- Deep violet: `#7C3AED`
+- Soft lilac: `#F4F0FF`
+- Border: `rgba(84, 72, 117, 0.14)`
+- Graphite: `#25222B`
+- Muted text: `#7A7485`
+- Success: `#22C55E`
+- Warning/idea: `#F59E0B`
+- Destructive: `#EF4444`
 
-On mobile, every vertical pixel matters.
+Использовать аккуратно:
 
-- Remove unnecessary helper phrases.
-- Keep controls short and dense.
-- Avoid huge rounded pills around short labels.
-- Keep modal content scrollable without layout jumps.
-- Do not let Telegram header/bottom nav collide with app controls.
-- Important actions must stay reachable above the mobile nav or keyboard.
+- фиолетовый — для CTA, выбранных состояний, фокуса и активной навигации;
+- soft lilac — для выбранных строк и мягких подсветок;
+- серый — для подписей, placeholder, технического текста и metadata;
+- зелёный — только для успеха/готово;
+- красный — только для ошибок и удаления.
+
+Не делать:
+
+- весь интерфейс фиолетовым;
+- тяжёлые полноэкранные градиенты;
+- декоративные blob/orb-фоны;
+- кислотные акценты;
+- бежево-коричневый wellness-стиль.
+
+## Типографика
+
+UI:
+
+- clean sans;
+- компактные подписи;
+- аккуратные чипы;
+- короткие заголовки;
+- технические фразы тонким серым шрифтом.
+
+Рекомендуемые размеры:
+
+- page title: 15-18px;
+- section label: 13-14px;
+- input text: 14-15px;
+- chip text: 11-13px;
+- dropdown item: 12-13px;
+- placeholder/helper: 12-13px;
+- empty state title: 18-22px.
+
+Не использовать hero-size типографику внутри карточек, модалок, фильтров и рабочих экранов.
+
+## Язык интерфейса
+
+Предпочтительные тексты:
+
+- «Создать продукт»
+- «Создать тему»
+- «Новая воронка»
+- «Куда постим?»
+- «Новое слово...»
+- «Выберите формат»
+- «Нет продуктов типа «Трипваер»»
+- «Контент для воронки»
+- «Ссылка скопирована»
+- «Войти через Telegram»
+
+Избегать:
+
+- «CRM»
+- «панель управления» в пользовательских рабочих экранах;
+- «объект», «сущность», «данные»;
+- длинных объяснений внутри формы;
+- технических слов про базу, cookie, webhook, Prisma в UI.
+
+## Mobile Mini App
+
+На мобильном экране каждый пиксель важен.
+
+- Убирать лишние helper-фразы.
+- Делать строки компактными.
+- Не делать чипы огромными.
+- Не допускать горизонтального скролла.
+- Не перекрывать кнопки клавиатурой и нижней навигацией.
+- Проверять Telegram Mini App viewport отдельно от обычного браузера.

@@ -1,172 +1,269 @@
 # Karta Kontenta UI Rules
 
-## Global Layout
+## Общий принцип
 
-- Build real app screens, not landing sections.
-- Use full-width workspace layouts with constrained content where needed.
-- Keep headers sticky and quiet.
-- Avoid nesting cards inside cards.
-- Avoid giant page spacing in app flows.
-- Keep desktop useful, but optimize first for 360-430px mobile width.
+UI должен выглядеть как компактная карта контента и воронок, а не как CRM, лендинг или декоративный шаблон.
 
-## Density
+Сначала — ясность системы: продукты, контент, CTA, воронки.
 
-Controls should be compact.
+Потом — функции управления.
 
-Recommended mobile heights:
+Потом — аналитика и админский слой.
+
+## Карточки
+
+Карточки нужны только там, где они действительно оформляют объект:
+
+- продукт;
+- тема;
+- единица контента;
+- воронка;
+- этап воронки;
+- строка пользователя в админке;
+- модалка.
+
+Правила карточек:
+
+- мягкий radius 8-16px;
+- белая или почти белая поверхность;
+- тонкая рамка;
+- мягкая тень только при необходимости;
+- компактные внутренние отступы на mobile;
+- без карточек внутри карточек, если это не реальная вложенная сущность.
+
+## Компактность
+
+Рекомендуемые mobile-высоты:
 
 - text input: 42-48px;
-- compact select/filter: 38-44px;
-- chips: 30-36px;
-- dropdown option: 36-42px;
-- list row in picker: 42-52px;
-- modal vertical section gap: 14-18px.
+- compact select/filter: 36-44px;
+- chip: 30-36px;
+- dropdown option: 34-42px;
+- picker/list row: 40-52px;
+- modal section gap: 14-18px.
 
-Avoid controls where the top/bottom padding is visually larger than the text itself.
+Не должно быть ситуации, где воздуха сверху и снизу больше, чем высота текста.
 
-## Forms
+Особенно проверять:
 
-- Labels sit close to their controls.
-- Required missing fields should be softly highlighted after the user tries to submit.
-- Disabled submit buttons should still communicate what is missing after tap/click.
-- Placeholder text should be gray, regular weight, and technical.
-- Do not show long helper text unless it prevents a real mistake.
+- фильтры `Тип`, `Формат`, `Статус`;
+- чипы типов продукта;
+- чипы площадок контента;
+- dropdown форматов;
+- dropdown ключевых слов;
+- блоки этапов воронки;
+- поля в мобильных модалках.
 
-Validation:
+## Формы
 
-- Use soft red/lilac focus styling, not harsh blocks.
-- Highlight the exact missing group: product type, format, title, platform, keyword, etc.
-- Add one concise helper line only when needed.
+- Label должен быть близко к полю.
+- Placeholder — тонкий, серый, технический.
+- Disabled submit не должен оставлять пользователя в догадках.
+- После попытки нажать disabled submit подсвечивать незаполненные поля.
+- Ошибка должна быть мягкой и точечной.
+- Не добавлять длинные объяснения, если достаточно короткой подсказки.
 
-## Chips And Pills
+## Чипы
 
-Use chips for:
+Чипы использовать для:
 
-- product types;
-- content platforms;
-- statuses;
-- selected filters;
-- small selectable categories.
+- типов продукта;
+- площадок контента;
+- статусов;
+- фильтров;
+- небольших категорий.
 
-Chip rules:
+Правила:
 
-- compact padding;
-- border radius around 10-14px, not huge bubble shapes;
-- icon size 12-14px;
-- label size 11-13px;
-- selected chip gets purple border/background;
-- unselected chip stays white/gray.
+- компактный padding;
+- radius 10-14px;
+- icon 12-14px;
+- text 11-13px;
+- selected: фиолетовая рамка/фон;
+- unselected: белый/серый;
+- лёгкая press/hover-анимация.
 
-When a chip group is editable:
+Редактируемые группы:
 
-- put a small gear icon beside the section label;
-- gear changes to a check icon in edit mode;
-- delete icons appear only in edit mode;
-- destructive delete requires confirmation;
-- add control appears as a compact dashed/soft row or small plus chip.
+- рядом с названием секции маленькая шестерёнка;
+- в edit mode шестерёнка превращается в галочку;
+- удалить можно только в edit mode;
+- удаление только с подтверждением;
+- добавление через компактный dashed/soft row или plus-chip.
 
-## Dropdowns
+## Dropdown
 
-Dropdowns must never create horizontal scrolling.
+Dropdown не должен создавать горизонтальный scroll.
 
-Rules:
+Правила:
 
-- menu width must fit the trigger or viewport;
-- options are compact and left-aligned;
-- no separate phrase like `Выберите слово...` inside a keyword menu if the label already explains the field;
-- add-new row uses thinner gray placeholder text;
-- plus button is square/circle and stays inside the menu bounds;
-- selected rows may use soft lilac background, but not a tall oversized block.
+- ширина меню не больше viewport;
+- опции компактные;
+- выбранная строка не должна быть огромной;
+- не писать лишнее `Выберите слово...`, если поле уже называется `Кодовое слово`;
+- add-row: `Новое слово...` тонким серым шрифтом;
+- plus-кнопка остаётся внутри меню;
+- delete-icon не должен ломать ширину строки.
 
-## Product Creation
+## Создание продукта
 
-Product creation needs:
+Обязательные зоны:
 
-- title;
-- product type;
-- format;
-- price/status/date/link as compact fields.
+- название продукта;
+- тип продукта;
+- формат;
+- цена/status/date/link как компактные поля.
 
-Product type editor:
+`Тип продукта`:
 
-- section title `Тип продукта` with a small gear beside it;
-- in edit mode, gear becomes check;
-- chips become removable;
-- add type chip/row appears at the end;
-- deletion asks for confirmation.
+- label + маленькая шестерёнка рядом;
+- edit mode через gear/check;
+- пользовательские типы сохраняются;
+- удаление с подтверждением;
+- чипы компактные и единые во всех местах.
 
-Keep product type chips compact and consistent across product cards, filters, and modals.
+Если пользователь забыл тип или формат, блок подсвечивается после попытки создать продукт.
 
-## Funnel Creation
+## Создание контента
 
-Funnels are built from:
+Обязательные зоны:
 
-- keyword;
-- optional product steps;
-- content items.
+- тема/название;
+- структура/текст;
+- площадки `Куда постим?`.
 
-Each product step should read as its own block:
+Площадки должны выглядеть как типы продукта:
 
-- lead magnet;
-- tripwire;
-- mid-ticket;
-- flagship;
-- consultation/private work.
+- тот же размер;
+- тот же шрифт;
+- тот же rhythm;
+- та же edit-модель gear/check;
+- add/delete только в edit mode.
 
-Do not let all funnel fields become one long text sheet. Use thin bordered blocks with compact padding.
+Если пользователь нажал disabled `Создать тему`, подсветить недостающие поля так же, как в продуктах.
 
-Keyword picker:
+## Создание воронки
 
-- no extra `Выберите слово...` phrase in the open menu;
-- selected keyword row height should be compact;
-- add keyword row uses `Новое слово...`;
-- delete keyword requires confirmation.
+Воронка состоит из:
 
-## Content Creation
+- кодового слова;
+- этапов продуктов;
+- контента для воронки.
 
-Content creation needs:
+Этапы продуктов должны быть отдельными понятными блоками:
 
-- topic/title;
-- content body or structure;
-- posting platforms.
+- лид-магнит;
+- трипваер;
+- средний чек;
+- флагман;
+- консультация / личная работа.
 
-Platform chips should visually match product type chips:
+Не превращать модалку в длинное полотно текста. Этапы должны читаться как структура.
 
-- same density;
-- same font rhythm;
-- same edit behavior;
-- gear beside `Куда постим?`;
-- add/delete platform in edit mode.
+Кодовые слова:
 
-If the user taps disabled `Создать тему`, highlight missing title/platforms the same way product creation does.
+- убрать лишнюю фразу `Выберите слово...` в открытом меню;
+- строка выбранного слова компактная;
+- `Новое слово...` тонким серым шрифтом;
+- удаление с подтверждением;
+- без горизонтального scroll.
 
-## Admin Panel
+## Фильтры
 
-Admin is an operational screen, not a demo page.
+Фильтры на страницах должны быть компактными.
 
-It should show:
+Не делать большие округлые блоки с маленьким текстом внутри.
 
-- users;
-- auth/provider info;
+Для mobile лучше:
+
+- 3 фильтра в строке, если помещаются;
+- либо горизонтальный compact-scroll без лишней высоты;
+- текст 12-13px;
+- высота 36-42px.
+
+## Админ-панель
+
+Админка — операционный экран, а не демонстрационная витрина.
+
+Показывать:
+
+- пользователей;
+- Telegram/auth identities;
 - app data counts;
-- broadcasts/notifications if implemented;
-- system status where useful.
+- рассылки, если подключены;
+- состояние сервера/API;
+- последние действия, если подключены.
 
-Avoid fake-looking metrics if real API data is available. If a section is not wired, mark it clearly as empty or not connected.
+Не добавлять фейковые метрики, если можно показать пустое или неподключённое состояние.
 
-## Icons
+## Кнопки
 
-Use `lucide-react`.
+Primary:
 
-Preferred icons:
+- фиолетовый фон;
+- белый текст;
+- компактная высота;
+- мягкий radius;
+- лёгкий hover/press.
 
-- settings: `Settings2` or `Settings`;
-- confirm edit: `Check`;
-- add: `Plus`;
-- delete: `Trash2`;
-- close: `X`;
-- Telegram/send: `Send`;
-- search: `Search`;
-- dropdown: `ChevronDown` / `ChevronUp`.
+Secondary:
 
-Do not use text buttons where a familiar icon button is clearer.
+- белый фон;
+- тонкая рамка;
+- графитовый текст.
+
+Icon button:
+
+- lucide icon;
+- 32-40px;
+- tooltip на desktop, если смысл не очевиден.
+
+## Иконки
+
+Использовать `lucide-react`.
+
+Подходящие:
+
+- `Settings2`;
+- `Check`;
+- `Plus`;
+- `Trash2`;
+- `X`;
+- `Send`;
+- `Search`;
+- `ChevronDown`;
+- `ChevronUp`;
+- `Calendar`;
+- `Map`;
+- `Workflow`;
+- `Package`;
+- `FileText`.
+
+## Анимации
+
+Допустимые:
+
+- subtle hover;
+- мягкий selected transition;
+- лёгкий press;
+- smooth dropdown;
+- copy feedback;
+- validation highlight.
+
+Запрещены:
+
+- резкие bounce-анимации;
+- confetti;
+- flashy-эффекты;
+- сильное движение в рабочих формах.
+
+## Адаптив
+
+Mobile:
+
+- одна колонка в модалках;
+- компактные поля;
+- чипы переносятся аккуратно;
+- кнопки доступны над нижней навигацией;
+- клавиатура не должна прятать основной action;
+- без горизонтального scroll.

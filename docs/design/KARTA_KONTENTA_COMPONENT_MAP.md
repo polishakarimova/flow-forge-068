@@ -1,23 +1,30 @@
 # Karta Kontenta Component Map
 
-This map shows where to make common product and UI changes.
+## Recommended Hierarchy
+
+1. Product/content/funnel workflow first.
+2. Mobile Telegram Mini App experience second.
+3. Map/calendar visualization third.
+4. Admin and system management last.
+
+Админка не должна задавать основной визуальный стиль продукта.
 
 ## App Shell
 
 - Routes: `src/App.tsx`
 - Desktop sidebar: `src/components/AppSidebar.tsx`
-- Mobile top/bottom navigation: `src/components/MobileNav.tsx`
-- Global styles/tokens: `src/index.css`
+- Mobile navigation: `src/components/MobileNav.tsx`
+- Global styles: `src/index.css`
 - Tailwind tokens: `tailwind.config.ts`
 
 ## Auth
 
-- Frontend auth context: `src/lib/authContext.tsx`
+- Auth context: `src/lib/authContext.tsx`
 - Login page: `src/pages/Login.tsx`
 - Telegram button: `src/components/TelegramLoginButton.tsx`
-- Backend auth/API server: `server/telegram-auth-server.mjs`
-- Prisma auth models: `prisma/schema.prisma`
-- Env instructions: `TELEGRAM_AUTH_SETUP.md`
+- Backend auth server: `server/telegram-auth-server.mjs`
+- Prisma models: `prisma/schema.prisma`
+- Env/setup docs: `TELEGRAM_AUTH_SETUP.md`
 
 Key endpoints:
 
@@ -32,11 +39,11 @@ Key endpoints:
 
 - Main app data: `src/lib/dataStore.tsx`
 - Context/profile data: `src/lib/contextStore.tsx`
-- Product seed/types: `src/lib/productData.ts`
-- Content seed/types: `src/lib/contentData.ts`
-- Funnel seed/types: `src/lib/funnelData.ts`
+- Product data/types: `src/lib/productData.ts`
+- Content data/types: `src/lib/contentData.ts`
+- Funnel data/types: `src/lib/funnelData.ts`
 
-Current persisted app groups:
+Persisted groups:
 
 - products;
 - formats;
@@ -46,7 +53,7 @@ Current persisted app groups:
 - funnels;
 - expert/context data.
 
-## Products
+## Product Components
 
 - Page: `src/pages/Products.tsx`
 - Create modal: `src/components/products/CreateProductModal.tsx`
@@ -58,13 +65,22 @@ Current persisted app groups:
 - Status selector: `src/components/products/ProductStatusSelect.tsx`
 - Status dot: `src/components/products/StatusDot.tsx`
 
+Recommended extracted patterns:
+
+- `ProductTypeChip`
+- `ProductTypeEditor`
+- `ProductFormatDropdown`
+- `ProductMissingFieldHint`
+- `CompactFilterSelect`
+
 Design notes:
 
-- Keep filters and form inputs compact.
-- Product type chips are the reference style for similar chip groups.
-- User-created product types must persist and be removable with confirmation.
+- Product type chips are the reference for other chip groups.
+- User-created product types must persist.
+- Delete must require confirmation.
+- Filters must stay compact on mobile.
 
-## Content
+## Content Components
 
 - Page: `src/pages/Content.tsx`
 - Create topic modal: `src/components/content/CreateTopicModal.tsx`
@@ -77,13 +93,20 @@ Design notes:
 - Status selector: `src/components/content/StatusSelect.tsx`
 - Dropdowns: `src/components/content/ContentDropdown.tsx`, `src/components/content/ContentMultiDropdown.tsx`
 
+Recommended extracted patterns:
+
+- `PlatformChip`
+- `PlatformEditor`
+- `ContentMissingFieldHint`
+- `CompactContentPicker`
+
 Design notes:
 
 - Platform chips should match product type chips.
-- `Куда постим?` should support gear/check edit mode when platform editing is available.
+- `Куда постим?` should support the same gear/check edit mode.
 - Missing title/platform validation should mirror product modal validation.
 
-## Funnels
+## Funnel Components
 
 - Page/list: `src/pages/Index.tsx`
 - Create/edit modal: `src/components/funnels/CreateFunnelModal.tsx`
@@ -91,11 +114,20 @@ Design notes:
 - Funnel map: `src/components/FunnelMap.tsx`
 - Map page: `src/pages/FunnelMapPage.tsx`
 
+Recommended extracted patterns:
+
+- `KeywordPicker`
+- `KeywordEditorRow`
+- `FunnelStageBlock`
+- `FunnelContentPicker`
+- `FunnelMissingFieldHint`
+
 Design notes:
 
 - Keyword picker must be compact.
-- Product steps should be visually separated as blocks.
-- Keyword add/delete should persist and require confirmation on delete.
+- Product stages should be visually separated as blocks.
+- Keyword add/delete should persist.
+- Keyword delete requires confirmation.
 
 ## Calendar
 
@@ -113,22 +145,30 @@ Context screens collect expert, niche, audience, references, and source material
 
 - Page: `src/pages/Profile.tsx`
 
-Profile should show account/session state and app preferences without exposing technical auth internals.
+Profile should show account/session state and preferences without exposing technical auth internals.
 
 ## Admin
 
 - Page: `src/pages/Admin.tsx`
 
-Admin should eventually be backed by real API data:
+Recommended admin components:
+
+- `AdminUserList`
+- `AdminMetricStrip`
+- `AdminAuthIdentityRow`
+- `AdminBroadcastPanel`
+- `AdminSystemStatus`
+
+Admin should be backed by real API data when possible:
 
 - users;
 - Telegram accounts;
 - login identities;
 - app state counts;
 - broadcasts;
-- basic system health.
+- system health.
 
-Avoid adding more fake metrics. Prefer empty connected sections over decorative mock data.
+Avoid fake metrics. Prefer empty connected sections over decorative mock data.
 
 ## Shared UI Primitives
 
@@ -136,4 +176,6 @@ shadcn/Radix primitives live in:
 
 - `src/components/ui/*`
 
-Use them for dialogs, buttons, inputs, selects, popovers, drawers, checkboxes, tabs, and tooltips. Keep app-specific styling in feature components when the primitive is generic.
+Use them for dialogs, buttons, inputs, selects, popovers, drawers, checkboxes, tabs, and tooltips.
+
+Keep app-specific styling in feature components when the primitive is generic.

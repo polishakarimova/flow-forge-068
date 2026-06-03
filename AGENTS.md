@@ -1,87 +1,114 @@
-# Karta Kontenta Agent Guide
+# AGENTS.md — правила для Codex в проекте «Карта контента»
 
-This repository is the `Karta Kontenta` / `Content Map` service for building product lines, content plans, CTA keywords, funnels, a visual funnel map, and a publishing calendar.
+## Главный принцип
 
-## Product Rules
+«Карта контента» — это не CRM, не обычный календарь постов и не админка ради админки.
 
-- Treat the app as a working SaaS tool, not a landing page.
-- The main user flow is: Context -> Products -> Content -> Funnels -> Map -> Calendar.
-- The interface must stay compact, especially inside Telegram Mini App on mobile.
-- Users should not have to understand technical deployment, database, or Telegram auth details.
-- Do not add password, SMS, or unrelated auth flows. Telegram auth is the primary auth.
-- Persist user data through the backend API and PostgreSQL/Prisma models, not through new local-only storage.
+Это компактный SaaS-сервис для экспертов и создателей, который помогает связать контекст, продукты, контент, CTA-слова, воронки, карту связей и календарь в одну понятную систему продаж.
 
-## Codebase
+Для пользователя продукт должен выглядеть как спокойная рабочая карта: что продаём, каким контентом ведём, через какие слова и в какие продукты.
 
-- Frontend: Vite, React, TypeScript, React Router, Tailwind, shadcn/Radix primitives, lucide-react.
-- Backend: `server/telegram-auth-server.mjs`.
-- Database layer: Prisma schema in `prisma/schema.prisma` plus existing server API routes.
-- Main app state: `src/lib/dataStore.tsx` and `src/lib/contextStore.tsx`.
-- Auth context: `src/lib/authContext.tsx`.
-- Product UI: `src/pages/Products.tsx` and `src/components/products/*`.
-- Content UI: `src/pages/Content.tsx` and `src/components/content/*`.
-- Funnel UI: `src/pages/Index.tsx` and `src/components/funnels/*`.
-- Admin UI: `src/pages/Admin.tsx`.
+Для владельца сервиса админский слой должен быть аккуратным и вторым планом: пользователи, авторизации, данные, рассылки, состояние системы.
 
-## Design Source Of Truth
+Главная фраза бренда:
 
-Before making visual changes, read:
+«Из хаоса контента — в понятную карту продаж»
+
+## Обязательные дизайн-документы
+
+Перед любыми дизайн-правками обязательно прочитай:
 
 - `docs/design/KARTA_KONTENTA_BRAND_GUIDE.md`
 - `docs/design/KARTA_KONTENTA_UI_RULES.md`
 - `docs/design/KARTA_KONTENTA_VISUAL_CHECKLIST.md`
 - `docs/design/KARTA_KONTENTA_COMPONENT_MAP.md`
 
-Existing legacy references:
+Дополнительные проектные документы:
 
 - `DESIGN_SYSTEM.md`
 - `SERVICE_STRUCTURE.md`
 - `TELEGRAM_AUTH_SETUP.md`
 
-## UI Priorities
+## Что нельзя делать
 
-- Mobile first: check narrow screens around 360-430px width.
-- Dense controls: inputs, dropdowns, chips, and list rows should not have excessive vertical padding.
-- Use gray technical text for placeholders, helper text, optional labels, metadata, and empty states.
-- Use purple only for primary actions, selected states, and small accents.
-- Avoid huge cards, oversized headings, nested cards, and decorative empty space in working screens.
-- Do not add explanatory marketing text inside core app workflows.
-- Use lucide icons for icon buttons, compact controls, settings, delete, confirm, and add actions.
+- Не превращать интерфейс в тяжёлую CRM-таблицу.
+- Не делать сайт похожим на дешёвый Canva/Lovable-шаблон.
+- Не делать маркетинговую лендинг-страницу вместо рабочего экрана.
+- Не делать всё фиолетовым: фиолетовый — акцент, а не атмосфера целиком.
+- Не добавлять декоративные blob/orb-фоны и лишние иллюстрации в рабочие экраны.
+- Не перегружать первый экран аналитикой, пока пользователь не создал продукты/контент/воронки.
+- Не делать desktop-only интерфейс, который ломается в Telegram Mini App.
+- Не добавлять пароли, SMS или другие лишние способы входа.
+- Не ломать существующую бизнес-логику ради визуала.
+
+## Границы дизайн-документации
+
+Если задача просит добавить или обновить постоянные дизайн-инструкции:
+
+- не менять страницы сайта;
+- не менять бизнес-логику;
+- не менять API;
+- не менять базу данных;
+- не менять текущие компоненты;
+- не делать редизайн сейчас;
+- менять только документацию и инструкции.
+
+## Как работать
+
+- Дизайн-изменения делать постепенно.
+- Сначала обновлять или создавать изолированные компоненты.
+- Не менять глобальные стили без необходимости.
+- Использовать существующие Tailwind/shadcn/Radix/lucide-паттерны проекта.
+- Любые новые правила интерфейса сверять с мобильной версией 360-430px.
+- После работы запускать доступные проверки: `npm run build`, `npm run lint`, а для auth/backend — `node --check server/telegram-auth-server.mjs`.
+- Не коммитить `dist`, если задача явно не просит собранные файлы.
+- В конце писать отчёт: что изменено, какие файлы тронуты, какие проверки запущены.
+
+## Текущий визуальный вектор
+
+Compact creator SaaS / content-funnel workspace / Telegram Mini App utility.
+
+Ключевые ощущения:
+
+- светлый рабочий интерфейс;
+- белые и почти белые поверхности;
+- тонкие серо-лиловые линии;
+- компактные поля, чипы и dropdown;
+- спокойный фиолетовый акцент;
+- понятная карта связей;
+- меньше воздуха в мобильных формах;
+- технические подписи тонким серым шрифтом;
+- админский слой аккуратно и вторым планом.
+
+## Технологии и ключевые зоны
+
+- Frontend: Vite, React, TypeScript, React Router, Tailwind, shadcn/Radix, lucide-react.
+- Backend: `server/telegram-auth-server.mjs`.
+- Database: Prisma schema in `prisma/schema.prisma`.
+- Auth: `src/lib/authContext.tsx`, `src/pages/Login.tsx`, `src/components/TelegramLoginButton.tsx`.
+- Products: `src/pages/Products.tsx`, `src/components/products/*`.
+- Content: `src/pages/Content.tsx`, `src/components/content/*`.
+- Funnels: `src/pages/Index.tsx`, `src/components/funnels/*`.
+- Admin: `src/pages/Admin.tsx`.
 
 ## Telegram Auth
 
-Required behavior:
+Обязательное поведение:
 
-- Telegram Mini App auth through `Telegram.WebApp.initData`.
-- Browser login through bot login token.
-- Session cookie signed by HMAC.
-- `/api/auth/me` and `/api/auth/logout`.
-- Webhook protected by `TELEGRAM_WEBHOOK_SECRET`.
-- Preserve `returnTo`.
-- No passwords and no SMS.
+- Telegram Mini App auth через `Telegram.WebApp.initData`;
+- вход через Telegram-бота с одноразовым login token;
+- session cookie через HMAC;
+- `/api/auth/me`;
+- `/api/auth/logout`;
+- webhook с проверкой `TELEGRAM_WEBHOOK_SECRET`;
+- сохранение `returnTo`;
+- без паролей и SMS.
 
-If auth breaks, first inspect:
+## Финальный отчёт
 
-- `src/lib/authContext.tsx`
-- `src/pages/Login.tsx`
-- `src/components/TelegramLoginButton.tsx`
-- `server/telegram-auth-server.mjs`
-- `prisma/schema.prisma`
+В конце design-doc-only задач нужно подтвердить:
 
-## Verification
-
-Run the smallest useful checks for the change:
-
-```bash
-npm run build
-npm run lint
-node --check server/telegram-auth-server.mjs
-```
-
-For Prisma/auth changes also run:
-
-```bash
-npx prisma generate
-```
-
-Do not commit `dist` changes unless the task explicitly asks for built assets.
+1. Какие файлы созданы или обновлены.
+2. Где лежат дизайн-инструкции.
+3. Как Codex должен использовать их в следующих задачах.
+4. Что страницы, компоненты, API и база данных не изменялись.

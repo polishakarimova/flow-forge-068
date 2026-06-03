@@ -1,83 +1,104 @@
 # Karta Kontenta Visual Checklist
 
-Use this checklist before finishing visual/UI work.
+Перед завершением любой дизайн-задачи проверь:
 
-## Mobile First
+## 1. Бренд
 
-- Checked at 360px width.
-- Checked at 390-430px width.
-- Checked inside a short viewport with keyboard/open modal if the changed screen has inputs.
-- No horizontal scroll in the page, dropdown, modal, or picker.
-- Bottom navigation does not cover primary actions.
-- Telegram Mini App header area does not collide with page content.
+- Выглядит ли это как рабочая карта контента и воронок?
+- Не похоже ли это на CRM?
+- Не похоже ли это на шаблонный лендинг?
+- Не выглядит ли всё слишком фиолетовым?
+- Помогает ли интерфейс понять связь продуктов, контента и CTA?
 
-## Compactness
+## 2. Пользователь
 
-- Inputs are not taller than needed.
-- Dropdown rows are compact.
-- Chips do not look like oversized bubbles.
-- Labels sit close to controls.
-- Empty space does not dominate short text.
-- Lists show enough items without endless scrolling.
+- Понятно ли, что делать дальше?
+- Понятно ли, где создать продукт?
+- Понятно ли, где создать контент?
+- Понятно ли, как выбрать CTA/кодовое слово?
+- Понятно ли, какие поля не заполнены?
 
-## Consistency
+## 3. Продукты
 
-- Product type chips, content platform chips, filters, and selectable statuses use one shared visual rhythm.
-- Edit controls use the same gear/check pattern.
-- Add rows use the same plus pattern.
-- Delete always has confirmation for user-defined items.
-- Placeholder and technical text use the same gray, thin style.
+- Чипы типов продукта компактные?
+- Шестерёнка рядом с `Тип продукта`, а не отдельно в странном блоке?
+- Edit mode понятен?
+- Удаление требует подтверждения?
+- Формат не создаёт горизонтальный scroll?
+- Фильтры `Тип`, `Формат`, `Статус` не слишком высокие?
 
-## Readability
+## 4. Контент
 
-- Text does not overlap with icons or neighboring controls.
-- Long Russian labels wrap or truncate gracefully.
-- Buttons keep labels inside their bounds.
-- Font sizes match the component scale.
-- Disabled states are visible but still readable.
+- Чипы площадок похожи на чипы типов продукта?
+- `Куда постим?` имеет такую же edit-модель?
+- Disabled create подсвечивает недостающие поля?
+- Поля и dropdown компактные?
 
-## States
+## 5. Воронки
 
-For every changed interactive component, check:
+- Кодовое слово выбирается компактно?
+- Нет лишней фразы `Выберите слово...` внутри меню?
+- `Новое слово...` написано тонким серым шрифтом?
+- Строка выбранного слова не слишком высокая?
+- Этапы воронки визуально разделены блоками?
+- Контент для воронки не выглядит как бесконечный список с лишним воздухом?
+
+## 6. Mobile
+
+- Проверено на 360px?
+- Проверено на 390-430px?
+- Ничего не вылезает за экран?
+- Нет горизонтального scroll?
+- Нижняя навигация не перекрывает действия?
+- Telegram Mini App header не конфликтует с контентом?
+- Клавиатура не ломает модалку?
+
+## 7. Визуальная чистота
+
+- Не слишком много текста?
+- Не слишком много пустого воздуха?
+- Не слишком большие поля?
+- Не слишком жирные шрифты?
+- Иконки одного стиля?
+- Ошибки и disabled states читаются?
+- Empty state полезный, а не декоративный?
+
+## 8. Цвета
+
+- Фон светлый?
+- Фиолетовый используется как акцент?
+- Серый текст читается?
+- Красный только для ошибок/удаления?
+- Зелёный только для успеха/активного состояния?
+- Нет кислотных цветов?
+
+## 9. Состояния
+
+Для каждого изменённого интерактивного элемента проверить:
 
 - default;
-- hover/focus where relevant;
+- hover/focus;
 - selected;
 - disabled;
 - loading;
 - empty state;
 - validation error;
-- edit mode if available.
+- edit mode.
 
-## Forms
+## 10. Проверки
 
-- Tapping/clicking disabled submit reveals missing fields.
-- Missing fields are highlighted softly and specifically.
-- Error text is short.
-- Successful auth/save/create flow returns the user to the expected screen.
-
-## Auth
-
-- Browser Telegram login opens the bot.
-- Telegram Mini App auth uses `initData`.
-- Returning from bot with `telegramLoginToken` completes login.
-- `/api/auth/me` returns the correct user or `null`.
-- `/api/auth/logout` clears session.
-
-## Final Checks
-
-Run:
+Для визуальных задач:
 
 ```bash
 npm run build
 npm run lint
 ```
 
-For auth/backend changes:
+Для auth/backend:
 
 ```bash
 node --check server/telegram-auth-server.mjs
 npx prisma generate
 ```
 
-Do not leave generated `dist` files in the commit unless explicitly requested.
+Не оставлять `dist` в коммите, если задача не просит собранные файлы.
