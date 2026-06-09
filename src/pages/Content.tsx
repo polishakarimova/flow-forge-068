@@ -183,11 +183,12 @@ const Content = () => {
                   <button
                     key={t.key}
                     onClick={() => setTab(t.key)}
-                    className={`shrink-0 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
+                    className={`shrink-0 h-5 min-h-0 px-1.5 py-0 rounded-[7px] text-[11px] leading-none font-light tracking-wide transition-colors ${
                       tab === t.key
                         ? "violet-surface text-primary"
                         : "text-muted-foreground hover:text-foreground/70"
                     }`}
+                    style={{ height: 20, minHeight: 0, paddingTop: 0, paddingBottom: 0, fontSize: 11, lineHeight: "11px" }}
                   >
                     {t.label} ({t.count})
                   </button>

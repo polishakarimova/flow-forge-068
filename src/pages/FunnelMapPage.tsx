@@ -383,7 +383,7 @@ function ContentNode({ node }: { node: MapNode }) {
           <PlatformIcon platformId={node.platformId} size={18} />
         </foreignObject>
       )}
-      <text x={32} y={node.h / 2 + 1} fontSize={11} fontWeight={500} fill="hsl(var(--foreground))" dominantBaseline="middle" fontFamily="Inter, system-ui, sans-serif">
+      <text x={32} y={node.h / 2 + 1} fontSize={11} fontWeight={300} fill="hsl(var(--foreground))" dominantBaseline="middle" fontFamily="Inter, system-ui, sans-serif">
         {label}
       </text>
     </g>
@@ -394,7 +394,7 @@ function KeywordNode({ node }: { node: MapNode }) {
   return (
     <g>
       <rect x={0} y={0} width={node.w} height={node.h} rx={node.h / 2} fill={node.color} />
-      <text x={node.w / 2} y={node.h / 2 + 1} fontSize={11} fontWeight={700} fill="#fff" textAnchor="middle" dominantBaseline="middle" fontFamily="Inter, system-ui, sans-serif" letterSpacing="0.05em">
+      <text x={node.w / 2} y={node.h / 2 + 1} fontSize={11} fontWeight={300} fill="#fff" textAnchor="middle" dominantBaseline="middle" fontFamily="Inter, system-ui, sans-serif" letterSpacing="0">
         {node.label}
       </text>
     </g>
@@ -414,7 +414,7 @@ function TopicNode({ node }: { node: MapNode }) {
           <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
         </svg>
       </foreignObject>
-      <text x={28} y={16} fontSize={11} fontWeight={600} fill="hsl(var(--foreground))" dominantBaseline="middle" fontFamily="Inter, system-ui, sans-serif">
+      <text x={28} y={16} fontSize={11} fontWeight={300} fill="hsl(var(--foreground))" dominantBaseline="middle" fontFamily="Inter, system-ui, sans-serif">
         {label}
       </text>
       {/* Count badge + platform icons */}
@@ -847,18 +847,23 @@ const FunnelMapPage = () => {
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <span className="bg-muted px-2 py-0.5 rounded-md text-[11px] font-semibold text-muted-foreground">
+                  <span
+                    className="inline-flex h-5 min-h-0 items-center rounded-[7px] bg-muted px-1.5 py-0 text-[11px] font-light leading-none tracking-wide text-muted-foreground"
+                    style={{ height: 20, minHeight: 0, paddingTop: 0, paddingBottom: 0, fontSize: 11, lineHeight: "11px" }}
+                  >
                     {Math.round(zoom * 100)}%
                   </span>
                   <button
                     onClick={() => setZoom((z) => Math.min(2.5, z * 1.25))}
-                    className="w-7 h-7 rounded-md bg-muted text-muted-foreground text-sm font-bold hover:bg-muted/80 transition-colors"
+                    className="h-5 min-h-0 w-5 rounded-[7px] bg-muted p-0 text-[11px] font-light leading-none text-muted-foreground hover:bg-muted/80 transition-colors"
+                    style={{ height: 20, minHeight: 0, width: 20, padding: 0, fontSize: 11, lineHeight: "11px" }}
                   >
                     +
                   </button>
                   <button
                     onClick={() => setZoom((z) => Math.max(0.2, z * 0.8))}
-                    className="w-7 h-7 rounded-md bg-muted text-muted-foreground text-sm font-bold hover:bg-muted/80 transition-colors"
+                    className="h-5 min-h-0 w-5 rounded-[7px] bg-muted p-0 text-[11px] font-light leading-none text-muted-foreground hover:bg-muted/80 transition-colors"
+                    style={{ height: 20, minHeight: 0, width: 20, padding: 0, fontSize: 11, lineHeight: "11px" }}
                   >
                     −
                   </button>
@@ -870,7 +875,8 @@ const FunnelMapPage = () => {
                       localStorage.removeItem(STORAGE_KEY_VIEW);
                       setNodes(initialNodes);
                     }}
-                    className="px-2 py-1 rounded-md bg-muted text-[11px] font-semibold text-muted-foreground hover:bg-muted/80 transition-colors"
+                    className="h-5 min-h-0 rounded-[7px] bg-muted px-1.5 py-0 text-[11px] font-light leading-none tracking-wide text-muted-foreground hover:bg-muted/80 transition-colors"
+                    style={{ height: 20, minHeight: 0, paddingTop: 0, paddingBottom: 0, fontSize: 11, lineHeight: "11px" }}
                   >
                     Сброс
                   </button>
@@ -881,7 +887,7 @@ const FunnelMapPage = () => {
 
           {showHint && (
             <div
-              className="fixed bottom-16 md:bottom-4 left-1/2 -translate-x-1/2 bg-foreground text-background px-3.5 py-2 rounded-lg text-[11px] font-medium z-[200] whitespace-nowrap animate-fade-in shadow-lg cursor-pointer"
+              className="fixed bottom-16 md:bottom-4 left-1/2 -translate-x-1/2 bg-foreground text-background px-3 py-1.5 rounded-[7px] text-[11px] font-light leading-none tracking-wide z-[200] whitespace-nowrap animate-fade-in shadow-lg cursor-pointer"
               onClick={() => setShowHint(false)}
             >
               {isMobile

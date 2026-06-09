@@ -515,10 +515,10 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
             <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-primary/10 flex items-center justify-center">
               <FileText className="w-2 h-2 md:w-2.5 md:h-2.5 text-primary" />
             </div>
-            <span className="text-[9px] md:text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[10px] md:text-[11px] font-light leading-none text-muted-foreground tracking-wide">
               Контент
             </span>
-            <span className="text-[9px] md:text-[10px] text-muted-foreground/60">({contentItems.length})</span>
+            <span className="text-[10px] md:text-[11px] font-light leading-none text-muted-foreground/60">({contentItems.length})</span>
           </div>
           <div className="space-y-0.5 md:space-y-1.5">
             {contentPreview.map((item) => (
@@ -549,7 +549,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
               <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-primary/10 flex items-center justify-center">
                 <Send className="w-2 h-2 md:w-2.5 md:h-2.5 text-primary" />
               </div>
-              <span className="text-[9px] md:text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <span className="text-[10px] md:text-[11px] font-light leading-none text-muted-foreground tracking-wide">
                 CTA
               </span>
             </div>
@@ -579,7 +579,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
               >
                 <div className="flex items-center gap-1 md:gap-1.5 mb-1 md:mb-1.5">
                   <ProductTypeIcon typeId={typeId} size={16} />
-                  <span className="text-[9px] md:text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  <span className="text-[10px] md:text-[11px] font-light leading-none text-muted-foreground tracking-wide">
                     {label}
                   </span>
                 </div>
