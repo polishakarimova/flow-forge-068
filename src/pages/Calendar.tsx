@@ -143,27 +143,28 @@ function PickerDropdown({
   const selected = options.find((o) => o.value === value);
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative shrink-0">
       <button
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-1 cursor-pointer transition-colors border-none ${
+        className={`flex h-5 min-h-0 items-center gap-0.5 rounded-[7px] border border-primary/10 px-1.5 py-0 text-[11px] font-light leading-none tracking-wide text-primary cursor-pointer transition-colors ${
           badge
-            ? "px-3 py-1 rounded-full bg-primary/[0.08] text-[12px] font-light tracking-wide text-primary hover:bg-primary/[0.15]"
-            : "px-2.5 py-1.5 rounded-xl text-[12px] font-light tracking-wide text-foreground hover:bg-muted/60 bg-transparent"
+            ? "bg-primary/[0.08] hover:bg-primary/[0.14]"
+            : "bg-primary/[0.06] hover:bg-primary/[0.12]"
         }`}
+        style={{ height: 20, minHeight: 0, paddingTop: 0, paddingBottom: 0, fontSize: 11, fontWeight: 300, lineHeight: "11px" }}
       >
         {selected?.label ?? value}
-        <ChevronDown className="w-3 h-3 text-muted-foreground" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+        <ChevronDown className="h-3 w-3 shrink-0 text-primary/55" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} strokeWidth={1.6} />
       </button>
 
       {open && (
-        <div className="absolute top-[calc(100%+4px)] left-0 bg-card border border-border/60 rounded-2xl z-50 p-1 animate-in fade-in slide-in-from-top-2 duration-200 shadow-[0_12px_40px_rgba(0,0,0,.08)] max-h-[240px] overflow-auto min-w-[100px]">
+        <div className="absolute top-[calc(100%+4px)] left-0 bg-card border border-border/60 rounded-lg z-50 p-1 animate-in fade-in slide-in-from-top-2 duration-200 shadow-[0_12px_40px_rgba(0,0,0,.08)] max-h-[240px] overflow-auto min-w-[100px]">
           {options.map((o) => (
             <div
               key={o.value}
               onClick={() => { onChange(o.value); setOpen(false); }}
-              className={`px-3 py-1.5 rounded-xl text-[12px] font-light tracking-wide cursor-pointer transition-all duration-150 ${
-                o.value === value ? "violet-surface text-primary !font-medium" : "text-foreground hover:bg-muted/50"
+              className={`px-2 py-0.5 rounded-md text-[11px] font-light tracking-wide cursor-pointer transition-all duration-150 ${
+                o.value === value ? "violet-surface text-primary" : "text-foreground hover:bg-muted/50"
               }`}
             >
               {o.label}
@@ -349,16 +350,23 @@ const Calendar = () => {
                 </div>
 
                 {/* View mode tabs */}
-                <div className="flex items-center gap-1 bg-muted/50 rounded-xl p-0.5">
+                <div className="flex items-center gap-1 rounded-[8px] bg-primary/[0.05] p-0.5">
                   {(["month", "week", "day"] as ViewMode[]).map((m) => (
                     <button
                       key={m}
                       onClick={() => setViewMode(m)}
-                      className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-200 border-none cursor-pointer"
+                      className="h-5 min-h-0 rounded-[7px] px-1.5 py-0 text-[11px] font-light leading-none tracking-wide transition-all duration-200 border-none cursor-pointer"
                       style={{
-                        background: viewMode === m ? "hsl(var(--card))" : "transparent",
-                        color: viewMode === m ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))",
-                        boxShadow: viewMode === m ? "0 1px 3px rgba(0,0,0,.08)" : "none",
+                        height: 20,
+                        minHeight: 0,
+                        paddingTop: 0,
+                        paddingBottom: 0,
+                        fontSize: 11,
+                        fontWeight: 300,
+                        lineHeight: "11px",
+                        background: viewMode === m ? "hsl(var(--primary) / 0.10)" : "transparent",
+                        color: viewMode === m ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))",
+                        boxShadow: viewMode === m ? "0 1px 2px rgba(99,102,241,.10)" : "none",
                       }}
                     >
                       {m === "month" ? "Месяц" : m === "week" ? "Неделя" : "День"}
