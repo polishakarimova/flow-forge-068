@@ -39,12 +39,12 @@ export function ContentDropdown({ value, onChange, options, placeholder, width =
     <div ref={ref} className="relative shrink-0" style={{ width }}>
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full h-5 min-h-0 py-0 flex items-center justify-between gap-0.5 px-1.5 rounded-[7px] border border-border/80 bg-card text-[11px] leading-none font-light tracking-wide cursor-pointer transition-all duration-200 hover:border-primary/40 ${
+        className={`w-full h-5 min-h-0 py-0 flex items-center gap-0 pl-1.5 pr-1 rounded-[7px] border border-border/80 bg-card text-[11px] leading-none font-light tracking-wide cursor-pointer transition-all duration-200 hover:border-primary/40 ${
           selected ? "text-foreground" : "text-muted-foreground"
         }`}
         style={{ height: 20, minHeight: 0, paddingTop: 0, paddingBottom: 0, fontSize: 11, fontWeight: 300, lineHeight: "11px" }}
       >
-        <span className="flex min-w-0 h-full items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap leading-none">
+        <span className="flex min-w-0 flex-1 h-full items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap leading-none">
           {selected?.platformId ? <PlatformIcon platformId={selected.platformId} size={12} /> : selected?.iconNode ? selected.iconNode : selected?.iconSrc ? <img src={selected.iconSrc} alt="" width={12} height={12} className="shrink-0" /> : selected?.icon ? <span className="text-[12px]">{selected.icon}</span> : null}
           {selected?.dot && (
             <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: selected.dot }} />
@@ -52,7 +52,7 @@ export function ContentDropdown({ value, onChange, options, placeholder, width =
           {selected ? selected.label : placeholder}
         </span>
         <ChevronDown
-          className="h-3 w-3 shrink-0 text-muted-foreground/45 transition-transform duration-200"
+          className="ml-0.5 h-3 w-3 shrink-0 text-muted-foreground/45 transition-transform duration-200"
           style={{ transform: open ? "rotate(180deg)" : "none" }}
           strokeWidth={1.6}
         />

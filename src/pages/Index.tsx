@@ -84,14 +84,14 @@ const Index = () => {
                     onChange={setKeywordFilters}
                     options={keywordOptions}
                     placeholder="Все слова"
-                    width={88}
+                    width={96}
                   />
                   <ContentMultiDropdown
                     values={productFilters}
                     onChange={setProductFilters}
                     options={productOptions}
                     placeholder="Все продукты"
-                    width={106}
+                    width={116}
                   />
                   {hasFilters && (
                     <button
