@@ -43,11 +43,11 @@ export function ContentMultiDropdown({ values, onChange, options, placeholder, w
     <div ref={ref} className="relative shrink-0" style={{ width }}>
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full h-[23px] flex items-center justify-between gap-0.5 px-1.5 rounded-[8px] border border-border/80 bg-card text-[11px] font-light tracking-wide cursor-pointer transition-all duration-200 hover:border-primary/40 ${
+        className={`w-full h-5 min-h-0 py-0 flex items-center justify-between gap-0.5 px-1.5 rounded-[7px] border border-border/80 bg-card text-[11px] leading-none font-light tracking-wide cursor-pointer transition-all duration-200 hover:border-primary/40 ${
           has ? "text-foreground" : "text-muted-foreground"
         }`}
       >
-        <span className="flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap leading-none">
+        <span className="flex min-w-0 h-full items-center gap-1 overflow-hidden whitespace-nowrap leading-none">
           {has ? (
             selected.length <= 2 ? (
               selected.map((o, i) => (

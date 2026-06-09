@@ -109,7 +109,7 @@ const Products = () => {
                 </div>
                 <button
                   onClick={() => setShowCreate(true)}
-                  className="inline-flex h-10 w-10 sm:h-auto sm:w-auto items-center justify-center sm:justify-start gap-1.5 px-0 sm:px-4 sm:py-2 rounded-[8px] bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary/90 transition-colors shadow-sm"
+                  className="inline-flex h-10 w-10 sm:h-auto sm:w-auto items-center justify-center sm:justify-start gap-1.5 px-0 sm:px-4 sm:py-2 rounded-[7px] bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary/90 transition-colors shadow-sm"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Новый продукт</span>
@@ -164,7 +164,7 @@ const Products = () => {
                 <div className="text-[13px] text-muted-foreground mb-4 max-w-xs mx-auto">Лид-магнит, трипвайер, флагман — добавьте продукт, чтобы начать строить воронку</div>
                 <button
                   onClick={() => setShowCreate(true)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-[8px] hover:bg-primary/90 transition-colors border-none cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-[7px] hover:bg-primary/90 transition-colors border-none cursor-pointer"
                 >
                   + Создать продукт
                 </button>
