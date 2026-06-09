@@ -39,7 +39,7 @@ export function ProductTypeSelector({ value, productTypes, onChange, onAddType, 
         showError ? "p-2 bg-gradient-to-br from-violet-50 via-white to-rose-50 ring-2 ring-primary/25" : ""
       }`}
     >
-      <div className="mb-1.5 flex items-center gap-1.5">
+      <div className="mb-1 flex items-center gap-1.5">
         <label className="block text-[12px] font-semibold text-muted-foreground">Тип продукта</label>
         <button
           type="button"
@@ -48,7 +48,7 @@ export function ProductTypeSelector({ value, productTypes, onChange, onAddType, 
             setPendingDeleteId(null);
             setIsAdding(false);
           }}
-          className={`flex h-[18px] w-[18px] items-center justify-center rounded-md border transition-colors ${
+          className={`flex h-4 w-4 min-h-0 items-center justify-center rounded-[5px] border p-0 leading-none transition-colors ${
             editing
               ? "border-primary/30 bg-primary/10 text-primary"
               : "border-border bg-background text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -74,14 +74,14 @@ export function ProductTypeSelector({ value, productTypes, onChange, onAddType, 
                   }
                   onChange(selected ? "" : t.id);
                 }}
-                className="flex items-center gap-1 px-2 py-[3px] rounded-lg text-[10px] font-light leading-4 tracking-[0.01em] cursor-pointer transition-all duration-200"
+                className="flex h-[20px] min-h-0 items-center gap-1 rounded-[8px] px-1.5 py-0 text-[10px] font-light leading-none tracking-[0.01em] cursor-pointer transition-all duration-200"
                 style={{
                   border: pendingDelete ? "1px solid #fecaca" : selected ? "1px solid hsl(var(--primary))" : "1px solid hsl(var(--border))",
                   background: pendingDelete ? "#fff1f2" : selected ? "hsl(var(--primary) / 0.08)" : "transparent",
                   color: pendingDelete ? "#e11d48" : selected ? "hsl(var(--primary))" : "#64748b",
                 }}
               >
-                <ProductTypeIcon typeId={t.id} size={11} />
+                <ProductTypeIcon typeId={t.id} size={10} />
                 <span className="uppercase">{pendingDelete ? "Удалить?" : t.label}</span>
                 {selected && !pendingDelete && <span>✓</span>}
               </button>
@@ -121,7 +121,7 @@ export function ProductTypeSelector({ value, productTypes, onChange, onAddType, 
         })}
 
         {editing && isAdding ? (
-          <div className="flex items-center gap-1 rounded-full border border-dashed border-primary/40 bg-primary/5 px-2 py-0.5">
+          <div className="flex h-[20px] min-h-0 items-center gap-1 rounded-[8px] border border-dashed border-primary/40 bg-primary/5 px-1.5 py-0">
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
@@ -131,7 +131,7 @@ export function ProductTypeSelector({ value, productTypes, onChange, onAddType, 
               }}
               placeholder="Новый тип"
               autoFocus
-              className="w-24 bg-transparent text-[10px] leading-5 text-slate-700 outline-none placeholder:text-slate-400"
+              className="w-24 bg-transparent text-[10px] leading-none text-slate-700 outline-none placeholder:text-slate-400"
             />
             <button type="button" onClick={submit} className="text-primary">
               <Plus className="h-3 w-3" />
@@ -144,7 +144,7 @@ export function ProductTypeSelector({ value, productTypes, onChange, onAddType, 
           <button
             type="button"
             onClick={() => setIsAdding(true)}
-            className="flex items-center gap-1 rounded-full border border-dashed border-border bg-transparent px-2 py-0.5 text-[10px] font-normal leading-5 text-slate-500 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors"
+            className="flex h-[20px] min-h-0 items-center gap-1 rounded-[8px] border border-dashed border-border bg-transparent px-1.5 py-0 text-[10px] font-normal leading-none text-slate-500 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors"
           >
             <Plus className="h-3 w-3" />
             Добавить тип
