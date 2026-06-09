@@ -35,22 +35,23 @@ export function ContentDropdown({ value, onChange, options, placeholder, width =
   const selected = options.find((o) => o.value === value);
 
   return (
-    <div ref={ref} className="relative" style={{ width }}>
+    <div ref={ref} className="relative shrink-0" style={{ width }}>
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full flex items-center justify-between gap-1 px-2.5 py-1.5 rounded-lg border border-border bg-card text-[11px] font-light tracking-wide cursor-pointer transition-all duration-200 hover:border-primary/40 hover:shadow-sm ${
+        className={`w-full h-5 min-h-0 py-0 flex items-center justify-between gap-0.5 px-1.5 rounded-[7px] border border-border/80 bg-card text-[11px] leading-none font-light tracking-wide cursor-pointer transition-all duration-200 hover:border-primary/40 ${
           selected ? "text-foreground" : "text-muted-foreground"
         }`}
+        style={{ height: 20, minHeight: 0, paddingTop: 0, paddingBottom: 0, fontSize: 11, lineHeight: "11px" }}
       >
-        <span className="flex items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
-          {selected?.platformId ? <PlatformIcon platformId={selected.platformId} size={15} /> : selected?.iconNode ? selected.iconNode : selected?.iconSrc ? <img src={selected.iconSrc} alt="" width={15} height={15} className="shrink-0" /> : selected?.icon ? <span className="text-[15px]">{selected.icon}</span> : null}
+        <span className="flex min-w-0 h-full items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap leading-none">
+          {selected?.platformId ? <PlatformIcon platformId={selected.platformId} size={12} /> : selected?.iconNode ? selected.iconNode : selected?.iconSrc ? <img src={selected.iconSrc} alt="" width={12} height={12} className="shrink-0" /> : selected?.icon ? <span className="text-[12px]">{selected.icon}</span> : null}
           {selected?.dot && (
-            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: selected.dot }} />
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: selected.dot }} />
           )}
           {selected ? selected.label : placeholder}
         </span>
         <span
-          className="text-[10px] text-muted-foreground transition-transform duration-200"
+          className="text-[13px] leading-none text-muted-foreground/45 transition-transform duration-200 shrink-0"
           style={{ transform: open ? "rotate(180deg)" : "none" }}
         >
           ▾
@@ -58,10 +59,10 @@ export function ContentDropdown({ value, onChange, options, placeholder, width =
       </button>
 
       {open && (
-        <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-card border border-border/60 rounded-xl z-50 p-1 animate-in fade-in slide-in-from-top-2 duration-200 shadow-[0_12px_40px_rgba(0,0,0,.08),0_2px_8px_rgba(0,0,0,.04)]">
+        <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-card border border-border/60 rounded-lg z-50 p-1 animate-in fade-in slide-in-from-top-2 duration-200 shadow-[0_12px_40px_rgba(0,0,0,.08),0_2px_8px_rgba(0,0,0,.04)]">
           <div
             onClick={() => { onChange(null); setOpen(false); }}
-            className={`px-2.5 py-1.5 rounded-lg text-[11px] font-light tracking-wide cursor-pointer transition-all duration-150 ${
+            className={`px-2 py-0.5 rounded-md text-[11px] font-light tracking-wide cursor-pointer transition-all duration-150 ${
               value === null ? "violet-surface text-primary" : "text-muted-foreground hover:bg-muted/50"
             }`}
           >
@@ -71,11 +72,11 @@ export function ContentDropdown({ value, onChange, options, placeholder, width =
             <div
               key={o.value}
               onClick={() => { onChange(o.value); setOpen(false); }}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-light tracking-wide cursor-pointer transition-all duration-150 ${
+              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-light tracking-wide cursor-pointer transition-all duration-150 ${
                 value === o.value ? "violet-surface text-primary" : "text-foreground hover:bg-muted/50"
               }`}
             >
-              {o.platformId ? <PlatformIcon platformId={o.platformId} size={14} /> : o.iconNode ? o.iconNode : o.iconSrc ? <img src={o.iconSrc} alt="" width={14} height={14} className="shrink-0" /> : o.icon ? <span className="text-[13px]">{o.icon}</span> : null}
+              {o.platformId ? <PlatformIcon platformId={o.platformId} size={12} /> : o.iconNode ? o.iconNode : o.iconSrc ? <img src={o.iconSrc} alt="" width={12} height={12} className="shrink-0" /> : o.icon ? <span className="text-[12px]">{o.icon}</span> : null}
               {o.dot && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: o.dot }} />}
               <span className="flex-1">{o.label}</span>
               {o.count != null && <span className="text-[10px] text-muted-foreground/60">{o.count}</span>}

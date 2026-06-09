@@ -46,6 +46,7 @@ export function ContentMultiDropdown({ values, onChange, options, placeholder, w
         className={`w-full h-5 min-h-0 py-0 flex items-center justify-between gap-0.5 px-1.5 rounded-[7px] border border-border/80 bg-card text-[11px] leading-none font-light tracking-wide cursor-pointer transition-all duration-200 hover:border-primary/40 ${
           has ? "text-foreground" : "text-muted-foreground"
         }`}
+        style={{ height: 20, minHeight: 0, paddingTop: 0, paddingBottom: 0, fontSize: 11, lineHeight: "11px" }}
       >
         <span className="flex min-w-0 h-full items-center gap-1 overflow-hidden whitespace-nowrap leading-none">
           {has ? (

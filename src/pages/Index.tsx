@@ -77,32 +77,32 @@ const Index = () => {
               </div>
 
               {/* Dropdown filters */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pb-3 sm:pb-4">
-                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+              <div className="flex items-center gap-1.5 pb-3 sm:pb-4">
+                <div className="flex items-center gap-1.5 w-auto min-w-0">
                   <ContentMultiDropdown
                     values={keywordFilters}
                     onChange={setKeywordFilters}
                     options={keywordOptions}
                     placeholder="Все слова"
-                    width={140}
+                    width={88}
                   />
                   <ContentMultiDropdown
                     values={productFilters}
                     onChange={setProductFilters}
                     options={productOptions}
                     placeholder="Все продукты"
-                    width={160}
+                    width={106}
                   />
                   {hasFilters && (
                     <button
                       onClick={() => { setKeywordFilters([]); setProductFilters([]); }}
-                      className="text-[11px] sm:text-[12px] text-muted-foreground bg-transparent border-none cursor-pointer underline hover:text-foreground transition-colors whitespace-nowrap"
+                      className="text-[10px] leading-none text-muted-foreground bg-transparent border-none cursor-pointer underline hover:text-foreground transition-colors whitespace-nowrap"
                     >
-                      Сбросить
+                      ✕
                     </button>
                   )}
                 </div>
-                <span className="text-[10px] sm:text-[11px] text-muted-foreground sm:ml-auto">
+                <span className="ml-auto shrink-0 text-[11px] leading-none text-muted-foreground">
                   {filtered.length} из {funnels.length}
                 </span>
               </div>

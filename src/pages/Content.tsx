@@ -231,30 +231,30 @@ const Content = () => {
             {/* Content tab */}
             {tab === "content" && (
               <div>
-                <div className="flex gap-2 mb-3 items-center">
+                <div className="flex gap-1.5 mb-3 items-center">
                   <ContentMultiDropdown
                     values={platformFilters}
                     onChange={setPlatformFilters}
                     options={platformOptions}
                     placeholder="Все площадки"
-                    width={190}
+                    width={112}
                   />
                   <ContentMultiDropdown
                     values={statusFilters}
                     onChange={setStatusFilters}
                     options={statusOptions}
                     placeholder="Все статусы"
-                    width={160}
+                    width={104}
                   />
                   {hasFilters && (
                     <button
                       onClick={() => { setPlatformFilters([]); setStatusFilters([]); }}
-                      className="text-[12px] text-muted-foreground bg-transparent border-none cursor-pointer underline hover:text-foreground transition-colors"
+                      className="text-[10px] leading-none text-muted-foreground bg-transparent border-none cursor-pointer underline hover:text-foreground transition-colors shrink-0"
                     >
-                      Сбросить
+                      ✕
                     </button>
                   )}
-                  <span className="ml-auto text-[11px] text-muted-foreground">
+                  <span className="ml-auto shrink-0 text-[11px] leading-none text-muted-foreground">
                     {filteredContent.length} из {allContent.length}
                   </span>
                 </div>
