@@ -39,7 +39,7 @@ export function ContentDropdown({ value, onChange, options, placeholder, width =
     <div ref={ref} className="relative shrink-0" style={{ width }}>
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full h-5 min-h-0 py-0 flex items-center gap-0 pl-1.5 pr-1 rounded-[7px] border border-border/80 bg-card text-[11px] leading-none font-light tracking-wide cursor-pointer transition-all duration-200 hover:border-primary/40 ${
+        className={`kk-compact-control w-full h-5 min-h-0 py-0 flex items-center gap-0 pl-1.5 pr-1 rounded-[7px] border border-border/80 bg-card text-[11px] leading-none font-light tracking-wide cursor-pointer transition-all duration-200 hover:border-primary/40 ${
           selected ? "text-foreground" : "text-muted-foreground"
         }`}
         style={{ height: 20, minHeight: 0, paddingTop: 0, paddingBottom: 0, fontSize: 11, fontWeight: 300, lineHeight: "11px" }}

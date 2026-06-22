@@ -183,7 +183,7 @@ const Content = () => {
                   <button
                     key={t.key}
                     onClick={() => setTab(t.key)}
-                    className={`shrink-0 h-5 min-h-0 px-1.5 py-0 rounded-[7px] text-[11px] leading-none font-light tracking-wide transition-colors ${
+                    className={`kk-compact-control shrink-0 h-5 min-h-0 px-1.5 py-0 rounded-[7px] text-[11px] leading-none font-light tracking-wide transition-colors ${
                       tab === t.key
                         ? "violet-surface text-primary"
                         : "text-muted-foreground hover:text-foreground/70"

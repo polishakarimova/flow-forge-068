@@ -26,6 +26,8 @@ export function CreateProductModal({ onClose, onCreate, formats, onAddFormat, on
   const canCreate = name.trim() && typeId;
   const showNameError = submitAttempted && !name.trim();
   const showTypeError = submitAttempted && !typeId;
+  const filledCount = [name.trim(), typeId, format, price.trim(), link.trim(), description.trim()].filter(Boolean).length;
+  const progress = Math.round((filledCount / 6) * 100);
 
   return (
     <div
@@ -44,6 +46,16 @@ export function CreateProductModal({ onClose, onCreate, formats, onAddFormat, on
             </button>
           </div>
 
+          <div className="mb-3 rounded-xl border border-border/70 bg-muted/20 px-2.5 py-2">
+            <div className="mb-1.5 flex items-center justify-between text-[10px] font-light leading-none tracking-wide text-muted-foreground">
+              <span>Заполнено</span>
+              <span>{filledCount} из 6</span>
+            </div>
+            <div className="kk-progress-rail">
+              <div className="kk-progress-fill" style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+
           {/* Name */}
           <div className="mb-3 sm:mb-4">
             <label className="block text-[12px] sm:text-[13px] font-semibold text-muted-foreground mb-1 sm:mb-1.5">Название продукта</label>
@@ -51,7 +63,7 @@ export function CreateProductModal({ onClose, onCreate, formats, onAddFormat, on
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Например: Наставничество 1 на 1"
-              className={`w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] text-[14px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] ${
+              className={`kk-compact-field w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] text-[14px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] ${
                 showNameError ? "border-primary bg-primary/5 shadow-[0_0_0_3px_hsl(var(--primary)/0.08)]" : "border-border"
               }`}
               autoFocus
@@ -83,7 +95,7 @@ export function CreateProductModal({ onClose, onCreate, formats, onAddFormat, on
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="2 990 ₽ или бесплатно"
-                className="w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] border-border text-[13px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+                className="kk-compact-field w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] border-border text-[13px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
               />
             </div>
           </div>
@@ -95,7 +107,7 @@ export function CreateProductModal({ onClose, onCreate, formats, onAddFormat, on
               value={link}
               onChange={(e) => setLink(e.target.value)}
               placeholder="https://..."
-              className="w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] border-border text-[14px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+              className="kk-compact-field w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] border-border text-[14px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
             />
           </div>
 
@@ -107,7 +119,7 @@ export function CreateProductModal({ onClose, onCreate, formats, onAddFormat, on
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Что входит в продукт, для кого, результат..."
               rows={3}
-              className="w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] border-border text-[14px] outline-none resize-y leading-5 transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+              className="kk-compact-textarea w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] border-border text-[14px] outline-none resize-y leading-5 transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
             />
           </div>
         </div>

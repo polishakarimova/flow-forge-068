@@ -37,7 +37,7 @@ export function FormatSelector({ value, onChange, formats, onAddFormat, onDelete
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] border-border text-[13px] leading-5 font-medium cursor-pointer flex items-center justify-between transition-all duration-200 bg-transparent ${
+        className={`kk-compact-field w-full px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] border-border text-[13px] leading-5 font-light cursor-pointer flex items-center justify-between transition-all duration-200 bg-transparent ${
           value ? "text-foreground" : "text-muted-foreground"
         }`}
       >
@@ -61,7 +61,7 @@ export function FormatSelector({ value, onChange, formats, onAddFormat, onDelete
             >
               <div
                 onClick={() => { onChange(f); setOpen(false); }}
-                className={`min-w-0 flex-1 px-2.5 sm:px-3 py-1.5 sm:py-[7px] rounded-lg text-[12px] font-normal cursor-pointer leading-5 truncate ${
+                className={`kk-compact-row min-w-0 flex-1 px-2.5 sm:px-3 py-1 rounded-lg text-[12px] font-normal cursor-pointer leading-5 truncate ${
                   value === f ? "violet-surface text-primary" : "text-slate-600 hover:bg-muted/50"
                 }`}
               >
@@ -71,7 +71,7 @@ export function FormatSelector({ value, onChange, formats, onAddFormat, onDelete
               {hoverDelete === f && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onDeleteFormat(f); if (value === f) onChange(""); }}
-                  className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 mr-1 cursor-pointer bg-red-50 text-red-500 border-none hover:bg-red-100 transition-colors"
+                  className="kk-compact-icon w-5 h-5 rounded-md flex items-center justify-center shrink-0 mr-1 cursor-pointer bg-red-50 text-red-500 border-none hover:bg-red-100 transition-colors"
                   title="Удалить формат"
                 >
                   <X className="w-3 h-3" />
@@ -85,12 +85,12 @@ export function FormatSelector({ value, onChange, formats, onAddFormat, onDelete
               onChange={(e) => setNewFormat(e.target.value)}
               placeholder="Свой формат..."
               onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
-              className="min-w-0 flex-1 px-2.5 py-1.5 rounded-full border border-border text-[12px] font-normal text-slate-600 outline-none transition-all duration-200 focus:border-primary bg-transparent placeholder:text-slate-400"
+              className="kk-compact-field min-w-0 flex-1 px-2.5 py-1.5 rounded-lg border border-border text-[12px] font-normal text-slate-600 outline-none transition-all duration-200 focus:border-primary bg-transparent placeholder:text-slate-400"
             />
             <button
               onClick={handleAdd}
               disabled={!newFormat.trim()}
-              className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 cursor-pointer border border-dashed transition-colors disabled:cursor-not-allowed"
+              className="kk-compact-field w-8 h-8 rounded-lg flex items-center justify-center shrink-0 cursor-pointer border border-dashed transition-colors disabled:cursor-not-allowed"
               style={{
                 background: newFormat.trim() ? "hsl(var(--primary) / 0.08)" : "transparent",
                 borderColor: newFormat.trim() ? "hsl(var(--primary) / 0.45)" : "hsl(var(--border))",

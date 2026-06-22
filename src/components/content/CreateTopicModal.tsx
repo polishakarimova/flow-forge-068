@@ -20,6 +20,8 @@ export function CreateTopicModal({ onClose, onCreate, platforms, onAddPlatform, 
   const canCreateTopic = hasTitle && selected.length > 0;
   const showTitleError = !!submitAttempted && !hasTitle;
   const showPlatformError = submitAttempted === "topic" && selected.length === 0;
+  const filledCount = [title.trim(), thesisPlan.trim(), selected.length > 0].filter(Boolean).length;
+  const progress = Math.round((filledCount / 3) * 100);
 
   const handleCreate = (isBank: boolean) => {
     setSubmitAttempted(isBank ? "bank" : "topic");
@@ -52,13 +54,23 @@ export function CreateTopicModal({ onClose, onCreate, platforms, onAddPlatform, 
             </button>
           </div>
 
+          <div className="mb-3 rounded-xl border border-border/70 bg-muted/20 px-2.5 py-2">
+            <div className="mb-1.5 flex items-center justify-between text-[10px] font-light leading-none tracking-wide text-muted-foreground">
+              <span>Заполнено</span>
+              <span>{filledCount} из 3</span>
+            </div>
+            <div className="kk-progress-rail">
+              <div className="kk-progress-fill" style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+
           <div className="mb-3 sm:mb-4">
             <label className="block text-[13px] font-semibold text-muted-foreground mb-1.5">Название темы</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Например: Кейс 1,4 ляма"
-              className={`w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] text-[14px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] ${
+              className={`kk-compact-field w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] text-[14px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] ${
                 showTitleError ? "border-primary bg-primary/5 shadow-[0_0_0_3px_hsl(var(--primary)/0.08)]" : "border-border"
               }`}
               autoFocus
@@ -73,7 +85,7 @@ export function CreateTopicModal({ onClose, onCreate, platforms, onAddPlatform, 
               onChange={(e) => setThesisPlan(e.target.value)}
               placeholder={"— Что было до\n— Что сделали\n— Результат"}
               rows={3}
-              className="w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] border-border text-[14px] outline-none resize-y leading-5 transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+              className="kk-compact-textarea w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] border-border text-[14px] outline-none resize-y leading-5 transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
             />
           </div>
 

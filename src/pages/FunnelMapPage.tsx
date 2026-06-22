@@ -848,21 +848,21 @@ const FunnelMapPage = () => {
 
                 <div className="flex items-center gap-1.5">
                   <span
-                    className="inline-flex h-5 min-h-0 items-center rounded-[7px] bg-muted px-1.5 py-0 text-[11px] font-light leading-none tracking-wide text-muted-foreground"
+                    className="kk-compact-control inline-flex h-5 min-h-0 items-center rounded-[7px] bg-muted px-1.5 py-0 text-[11px] font-light leading-none tracking-wide text-muted-foreground"
                     style={{ height: 20, minHeight: 0, paddingTop: 0, paddingBottom: 0, fontSize: 11, lineHeight: "11px" }}
                   >
                     {Math.round(zoom * 100)}%
                   </span>
                   <button
                     onClick={() => setZoom((z) => Math.min(2.5, z * 1.25))}
-                    className="h-5 min-h-0 w-5 rounded-[7px] bg-muted p-0 text-[11px] font-light leading-none text-muted-foreground hover:bg-muted/80 transition-colors"
+                    className="kk-compact-control h-5 min-h-0 w-5 rounded-[7px] bg-muted p-0 text-[11px] font-light leading-none text-muted-foreground hover:bg-muted/80 transition-colors"
                     style={{ height: 20, minHeight: 0, width: 20, padding: 0, fontSize: 11, lineHeight: "11px" }}
                   >
                     +
                   </button>
                   <button
                     onClick={() => setZoom((z) => Math.max(0.2, z * 0.8))}
-                    className="h-5 min-h-0 w-5 rounded-[7px] bg-muted p-0 text-[11px] font-light leading-none text-muted-foreground hover:bg-muted/80 transition-colors"
+                    className="kk-compact-control h-5 min-h-0 w-5 rounded-[7px] bg-muted p-0 text-[11px] font-light leading-none text-muted-foreground hover:bg-muted/80 transition-colors"
                     style={{ height: 20, minHeight: 0, width: 20, padding: 0, fontSize: 11, lineHeight: "11px" }}
                   >
                     −
@@ -875,7 +875,7 @@ const FunnelMapPage = () => {
                       localStorage.removeItem(STORAGE_KEY_VIEW);
                       setNodes(initialNodes);
                     }}
-                    className="h-5 min-h-0 rounded-[7px] bg-muted px-1.5 py-0 text-[11px] font-light leading-none tracking-wide text-muted-foreground hover:bg-muted/80 transition-colors"
+                    className="kk-compact-control h-5 min-h-0 rounded-[7px] bg-muted px-1.5 py-0 text-[11px] font-light leading-none tracking-wide text-muted-foreground hover:bg-muted/80 transition-colors"
                     style={{ height: 20, minHeight: 0, paddingTop: 0, paddingBottom: 0, fontSize: 11, lineHeight: "11px" }}
                   >
                     Сброс

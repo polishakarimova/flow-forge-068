@@ -48,7 +48,7 @@ export function ProductTypeSelector({ value, productTypes, onChange, onAddType, 
             setPendingDeleteId(null);
             setIsAdding(false);
           }}
-          className={`flex h-4 w-4 min-h-0 items-center justify-center rounded-[5px] border p-0 leading-none transition-colors ${
+          className={`kk-compact-icon flex h-4 w-4 min-h-0 items-center justify-center rounded-[5px] border p-0 leading-none transition-colors ${
             editing
               ? "border-primary/30 bg-primary/10 text-primary"
               : "border-border bg-background text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -74,7 +74,7 @@ export function ProductTypeSelector({ value, productTypes, onChange, onAddType, 
                   }
                   onChange(selected ? "" : t.id);
                 }}
-                className="flex h-[20px] min-h-0 items-center gap-1 rounded-[8px] px-1.5 py-0 text-[10px] font-light leading-none tracking-[0.01em] cursor-pointer transition-all duration-200"
+                className="kk-compact-chip flex h-[20px] min-h-0 items-center gap-1 rounded-[8px] px-1.5 py-0 text-[10px] font-light leading-none tracking-[0.01em] cursor-pointer transition-all duration-200"
                 style={{
                   border: pendingDelete ? "1px solid #fecaca" : selected ? "1px solid hsl(var(--primary))" : "1px solid hsl(var(--border))",
                   background: pendingDelete ? "#fff1f2" : selected ? "hsl(var(--primary) / 0.08)" : "transparent",
@@ -91,7 +91,7 @@ export function ProductTypeSelector({ value, productTypes, onChange, onAddType, 
                     <button
                       type="button"
                       onClick={() => confirmDelete(t.id)}
-                      className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-100"
+                    className="kk-compact-icon flex h-[18px] w-[18px] items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-100"
                       title="Подтвердить удаление"
                     >
                       <Check className="h-2.5 w-2.5" />
@@ -99,7 +99,7 @@ export function ProductTypeSelector({ value, productTypes, onChange, onAddType, 
                     <button
                       type="button"
                       onClick={() => setPendingDeleteId(null)}
-                      className="flex h-[18px] w-[18px] items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+                      className="kk-compact-icon flex h-[18px] w-[18px] items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
                       title="Отмена"
                     >
                       <X className="h-2.5 w-2.5" />
@@ -109,7 +109,7 @@ export function ProductTypeSelector({ value, productTypes, onChange, onAddType, 
                   <button
                     type="button"
                     onClick={() => setPendingDeleteId(t.id)}
-                    className="absolute -right-1 -top-1.5 flex h-[18px] w-[18px] items-center justify-center rounded-full border border-red-100 bg-white text-red-500 shadow-sm hover:bg-red-50"
+                    className="kk-compact-icon absolute -right-1 -top-1.5 flex h-[18px] w-[18px] items-center justify-center rounded-full border border-red-100 bg-white text-red-500 shadow-sm hover:bg-red-50"
                     title="Удалить тип"
                   >
                     <Trash2 className="h-2.5 w-2.5" />
@@ -121,7 +121,7 @@ export function ProductTypeSelector({ value, productTypes, onChange, onAddType, 
         })}
 
         {editing && isAdding ? (
-          <div className="flex h-[20px] min-h-0 items-center gap-1 rounded-[8px] border border-dashed border-primary/40 bg-primary/5 px-1.5 py-0">
+          <div className="kk-compact-chip flex h-[20px] min-h-0 items-center gap-1 rounded-[8px] border border-dashed border-primary/40 bg-primary/5 px-1.5 py-0">
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
@@ -144,7 +144,7 @@ export function ProductTypeSelector({ value, productTypes, onChange, onAddType, 
           <button
             type="button"
             onClick={() => setIsAdding(true)}
-            className="flex h-[20px] min-h-0 items-center gap-1 rounded-[8px] border border-dashed border-border bg-transparent px-1.5 py-0 text-[10px] font-normal leading-none text-slate-500 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors"
+            className="kk-compact-chip flex h-[20px] min-h-0 items-center gap-1 rounded-[8px] border border-dashed border-border bg-transparent px-1.5 py-0 text-[10px] font-normal leading-none text-slate-500 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors"
           >
             <Plus className="h-3 w-3" />
             Добавить тип

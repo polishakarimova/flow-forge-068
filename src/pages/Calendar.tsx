@@ -146,7 +146,7 @@ function PickerDropdown({
     <div ref={ref} className="relative shrink-0">
       <button
         onClick={() => setOpen(!open)}
-        className={`flex h-5 min-h-0 items-center gap-0.5 rounded-[7px] border border-primary/10 px-1.5 py-0 text-[11px] font-light leading-none tracking-wide text-primary cursor-pointer transition-colors ${
+        className={`kk-compact-control flex h-5 min-h-0 items-center gap-0.5 rounded-[7px] border border-primary/10 px-1.5 py-0 text-[11px] font-light leading-none tracking-wide text-primary cursor-pointer transition-colors ${
           badge
             ? "bg-primary/[0.08] hover:bg-primary/[0.14]"
             : "bg-primary/[0.06] hover:bg-primary/[0.12]"
@@ -355,7 +355,7 @@ const Calendar = () => {
                     <button
                       key={m}
                       onClick={() => setViewMode(m)}
-                      className="h-5 min-h-0 rounded-[7px] px-1.5 py-0 text-[11px] font-light leading-none tracking-wide transition-all duration-200 border-none cursor-pointer"
+                      className="kk-compact-control h-5 min-h-0 rounded-[7px] px-1.5 py-0 text-[11px] font-light leading-none tracking-wide transition-all duration-200 border-none cursor-pointer"
                       style={{
                         height: 20,
                         minHeight: 0,
@@ -554,7 +554,7 @@ function MonthView({
                   {/* Day number */}
                   <div className="flex justify-end mb-0.5">
                     <span
-                      className={`text-[11px] font-medium w-5 h-5 flex items-center justify-center rounded-full ${
+                      className={`kk-compact-control text-[11px] font-medium w-5 h-5 flex items-center justify-center rounded-full ${
                         isToday
                           ? "bg-primary text-primary-foreground font-bold"
                           : isCurrentMonth
@@ -597,7 +597,7 @@ function MonthView({
             </h3>
             <button
               onClick={() => setSelectedDate(null)}
-              className="text-[10px] text-muted-foreground hover:text-foreground px-2 py-0.5 rounded-lg hover:bg-muted/50 transition-colors border-none cursor-pointer bg-transparent"
+              className="kk-compact-control text-[10px] text-muted-foreground hover:text-foreground px-2 py-0.5 rounded-lg hover:bg-muted/50 transition-colors border-none cursor-pointer bg-transparent"
             >
               Скрыть
             </button>

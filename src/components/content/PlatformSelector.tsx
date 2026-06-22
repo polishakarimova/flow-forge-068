@@ -61,7 +61,7 @@ export function PlatformSelector({
             setPendingDeleteId(null);
             setIsAdding(false);
           }}
-          className={`flex h-[18px] w-[18px] items-center justify-center rounded-md border transition-colors ${
+          className={`kk-compact-icon flex h-[18px] w-[18px] items-center justify-center rounded-md border transition-colors ${
             editing
               ? "border-primary/30 bg-primary/10 text-primary"
               : "border-border bg-background text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -87,7 +87,7 @@ export function PlatformSelector({
                   }
                   toggle(platform.id);
                 }}
-                className="flex items-center gap-1 px-2 py-[3px] rounded-lg text-[10px] font-light leading-4 tracking-[0.01em] cursor-pointer transition-all duration-200"
+                className="kk-compact-chip flex items-center gap-1 px-1.5 py-0 rounded-lg text-[10px] font-light leading-none tracking-[0.01em] cursor-pointer transition-all duration-200"
                 style={{
                   border: pendingDelete ? "1px solid #fecaca" : selected ? "1px solid hsl(var(--primary))" : "1px solid hsl(var(--border))",
                   background: pendingDelete ? "#fff1f2" : selected ? "hsl(var(--primary) / 0.08)" : "transparent",
@@ -104,7 +104,7 @@ export function PlatformSelector({
                     <button
                       type="button"
                       onClick={() => confirmDelete(platform.id)}
-                      className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-100"
+                      className="kk-compact-icon flex h-[18px] w-[18px] items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-100"
                       title="Подтвердить удаление"
                     >
                       <Check className="h-2.5 w-2.5" />
@@ -112,7 +112,7 @@ export function PlatformSelector({
                     <button
                       type="button"
                       onClick={() => setPendingDeleteId(null)}
-                      className="flex h-[18px] w-[18px] items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+                      className="kk-compact-icon flex h-[18px] w-[18px] items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
                       title="Отмена"
                     >
                       <X className="h-2.5 w-2.5" />
@@ -122,7 +122,7 @@ export function PlatformSelector({
                   <button
                     type="button"
                     onClick={() => setPendingDeleteId(platform.id)}
-                    className="absolute -right-1 -top-1.5 flex h-[18px] w-[18px] items-center justify-center rounded-full border border-red-100 bg-white text-red-500 shadow-sm hover:bg-red-50"
+                    className="kk-compact-icon absolute -right-1 -top-1.5 flex h-[18px] w-[18px] items-center justify-center rounded-full border border-red-100 bg-white text-red-500 shadow-sm hover:bg-red-50"
                     title="Удалить площадку"
                   >
                     <Trash2 className="h-2.5 w-2.5" />
@@ -134,7 +134,7 @@ export function PlatformSelector({
         })}
 
         {editing && isAdding ? (
-          <div className="flex items-center gap-1 rounded-full border border-dashed border-primary/40 bg-primary/5 px-2 py-0.5">
+          <div className="kk-compact-chip flex items-center gap-1 rounded-[8px] border border-dashed border-primary/40 bg-primary/5 px-1.5 py-0">
             <input
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
@@ -157,7 +157,7 @@ export function PlatformSelector({
           <button
             type="button"
             onClick={() => setIsAdding(true)}
-            className="flex items-center gap-1 rounded-full border border-dashed border-border bg-transparent px-2 py-0.5 text-[10px] font-normal leading-5 text-slate-500 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors"
+            className="kk-compact-chip flex items-center gap-1 rounded-[8px] border border-dashed border-border bg-transparent px-1.5 py-0 text-[10px] font-normal leading-none text-slate-500 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors"
           >
             <Plus className="h-3 w-3" />
             Добавить площадку
