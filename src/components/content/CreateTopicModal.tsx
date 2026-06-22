@@ -20,8 +20,6 @@ export function CreateTopicModal({ onClose, onCreate, platforms, onAddPlatform, 
   const canCreateTopic = hasTitle && selected.length > 0;
   const showTitleError = !!submitAttempted && !hasTitle;
   const showPlatformError = submitAttempted === "topic" && selected.length === 0;
-  const filledCount = [title.trim(), thesisPlan.trim(), selected.length > 0].filter(Boolean).length;
-  const progress = Math.round((filledCount / 3) * 100);
 
   const handleCreate = (isBank: boolean) => {
     setSubmitAttempted(isBank ? "bank" : "topic");
@@ -52,16 +50,6 @@ export function CreateTopicModal({ onClose, onCreate, platforms, onAddPlatform, 
             >
               ✕
             </button>
-          </div>
-
-          <div className="mb-3 rounded-xl border border-border/70 bg-muted/20 px-2.5 py-2">
-            <div className="mb-1.5 flex items-center justify-between text-[10px] font-light leading-none tracking-wide text-muted-foreground">
-              <span>Заполнено</span>
-              <span>{filledCount} из 3</span>
-            </div>
-            <div className="kk-progress-rail">
-              <div className="kk-progress-fill" style={{ width: `${progress}%` }} />
-            </div>
           </div>
 
           <div className="mb-3 sm:mb-4">

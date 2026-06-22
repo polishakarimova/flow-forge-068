@@ -263,9 +263,6 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
   };
 
   const canCreate = !!selectedKeyword;
-  const selectedProductCount = Object.values(selectedProducts).filter(Boolean).length;
-  const filledCount = [selectedKeyword, selectedProductCount > 0, selectedContentIds.size > 0].filter(Boolean).length;
-  const progress = Math.round((filledCount / 3) * 100);
 
   return (
     <div
@@ -283,16 +280,6 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
             >
               ✕
             </button>
-          </div>
-
-          <div className="mb-3 rounded-xl border border-border/70 bg-muted/20 px-2.5 py-2">
-            <div className="mb-1.5 flex items-center justify-between text-[10px] font-light leading-none tracking-wide text-muted-foreground">
-              <span>Заполнено</span>
-              <span>{filledCount} из 3</span>
-            </div>
-            <div className="kk-progress-rail">
-              <div className="kk-progress-fill" style={{ width: `${progress}%` }} />
-            </div>
           </div>
 
           {/* ─── Keyword dropdown ─── */}

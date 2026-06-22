@@ -75,6 +75,11 @@ export function ContentDropdown({ value, onChange, options, placeholder, width =
           >
             Все
           </div>
+          {options.length === 0 && (
+            <div className="px-2 py-1 rounded-md text-[11px] font-light tracking-wide text-muted-foreground/70">
+              Пока нет вариантов
+            </div>
+          )}
           {options.map((o) => (
             <div
               key={o.value}
