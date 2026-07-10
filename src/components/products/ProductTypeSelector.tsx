@@ -83,7 +83,7 @@ export function ProductTypeSelector({ value, productTypes, onChange, onAddType, 
               >
                 <ProductTypeIcon typeId={t.id} size={10} />
                 <span className="uppercase">{pendingDelete ? "Удалить?" : t.label}</span>
-                {selected && !pendingDelete && <span>✓</span>}
+                {selected && !pendingDelete && <Check className="h-2.5 w-2.5" strokeWidth={1.8} />}
               </button>
               {editing && (
                 pendingDelete ? (

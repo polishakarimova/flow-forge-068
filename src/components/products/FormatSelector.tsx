@@ -1,4 +1,4 @@
-import { Plus, X } from "lucide-react";
+import { Check, ChevronDown, Plus, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 interface FormatSelectorProps {
@@ -42,12 +42,11 @@ export function FormatSelector({ value, onChange, formats, onAddFormat, onDelete
         }`}
       >
         {value || "Выбери формат"}
-        <span
-          className="text-[9px] text-muted-foreground transition-transform duration-150"
+        <ChevronDown
+          className="h-3.5 w-3.5 shrink-0 text-muted-foreground/55 transition-transform duration-150"
           style={{ transform: open ? "rotate(180deg)" : "none" }}
-        >
-          ▾
-        </span>
+          strokeWidth={1.6}
+        />
       </button>
 
       {open && (
@@ -61,12 +60,12 @@ export function FormatSelector({ value, onChange, formats, onAddFormat, onDelete
             >
               <div
                 onClick={() => { onChange(f); setOpen(false); }}
-                className={`kk-compact-row min-w-0 flex-1 px-2.5 sm:px-3 py-1 rounded-lg text-[12px] font-normal cursor-pointer leading-5 truncate ${
+                className={`kk-compact-row min-w-0 flex-1 px-2.5 sm:px-3 py-1 rounded-lg text-[12px] font-normal cursor-pointer leading-5 flex items-center gap-2 ${
                   value === f ? "violet-surface text-primary" : "text-slate-600 hover:bg-muted/50"
                 }`}
               >
-                {f}
-                {value === f && <span className="float-right text-[10px]">✓</span>}
+                <span className="min-w-0 flex-1 truncate">{f}</span>
+                {value === f && <Check className="h-3 w-3 shrink-0" strokeWidth={1.8} />}
               </div>
               {hoverDelete === f && (
                 <button

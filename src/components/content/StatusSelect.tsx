@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { Check, ChevronDown } from "lucide-react";
 import { STATUSES, STATUS_ORDER, type ContentStatusKey } from "@/lib/contentData";
 
 interface StatusSelectProps {
@@ -29,7 +30,7 @@ export function StatusSelect({ value, onChange }: StatusSelectProps) {
       >
         <span className="w-1.5 h-1.5 rounded-full" style={{ background: cur.color }} />
         {cur.label}
-        <span className="text-[8px] ml-0.5">▾</span>
+        <ChevronDown className="ml-0.5 h-3 w-3 opacity-55" strokeWidth={1.6} />
       </button>
 
       {open && (
@@ -53,7 +54,7 @@ export function StatusSelect({ value, onChange }: StatusSelectProps) {
               >
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.color }} />
                 {s.label}
-                {active && <span className="ml-auto text-[10px]">✓</span>}
+                {active && <Check className="ml-auto h-3 w-3" strokeWidth={1.8} />}
               </div>
             );
           })}

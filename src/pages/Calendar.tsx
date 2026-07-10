@@ -376,12 +376,12 @@ const Calendar = () => {
               </div>
 
               {/* Navigation + Date pickers */}
-              <div className="flex items-center gap-2 pb-3">
+              <div className="flex flex-wrap items-center gap-2 pb-3">
                 {/* Date selectors with arrows on sides */}
-                <div className="flex items-center gap-1.5">
+                <div className="flex min-w-0 items-center gap-1.5">
                   <button
                     onClick={() => navigate(-1)}
-                    className="w-7 h-7 rounded-full flex items-center justify-center bg-primary/[0.08] hover:bg-primary/[0.15] transition-colors border-none cursor-pointer"
+                    className="kk-compact-icon w-7 h-7 rounded-full flex items-center justify-center bg-primary/[0.08] hover:bg-primary/[0.15] transition-colors border-none cursor-pointer"
                   >
                     <ChevronLeft className="w-3.5 h-3.5 text-primary/70" />
                   </button>
@@ -390,7 +390,7 @@ const Calendar = () => {
 
                   <button
                     onClick={() => navigate(1)}
-                    className="w-7 h-7 rounded-full flex items-center justify-center bg-primary/[0.08] hover:bg-primary/[0.15] transition-colors border-none cursor-pointer"
+                    className="kk-compact-icon w-7 h-7 rounded-full flex items-center justify-center bg-primary/[0.08] hover:bg-primary/[0.15] transition-colors border-none cursor-pointer"
                   >
                     <ChevronRight className="w-3.5 h-3.5 text-primary/70" />
                   </button>
@@ -401,7 +401,7 @@ const Calendar = () => {
                   )}
                 </div>
 
-                <div className="ml-auto flex items-center gap-2">
+                <div className="ml-0 flex min-w-0 items-center gap-2 sm:ml-auto">
                   <button
                     onClick={() => { setShowAddEvent(true); setNewEventDate(toDateStr(currentDate)); }}
                     className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-[11px] font-semibold hover:bg-primary/20 transition-colors border-none cursor-pointer"
@@ -457,40 +457,40 @@ const Calendar = () => {
           className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] animate-in fade-in duration-200"
           onClick={(e) => { if (e.target === e.currentTarget) setShowAddEvent(false); }}
         >
-          <div className="bg-card rounded-2xl w-full max-w-[380px] p-5 mx-4 shadow-xl animate-in slide-in-from-bottom-3 duration-300">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-card rounded-2xl w-full max-w-[380px] p-4 mx-4 shadow-xl animate-in slide-in-from-bottom-3 duration-300">
+            <div className="flex items-center justify-between mb-3">
               <h3 className="text-[14px] font-bold text-foreground">Новое событие</h3>
-              <button onClick={() => setShowAddEvent(false)} className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:bg-muted/80 transition-colors border-none cursor-pointer">
+              <button onClick={() => setShowAddEvent(false)} className="kk-compact-icon w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:bg-muted/80 transition-colors border-none cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <input
                 type="text"
                 value={newEventTitle}
                 onChange={(e) => setNewEventTitle(e.target.value)}
                 placeholder="Название события"
-                className="w-full px-3 py-2.5 bg-muted/30 border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40 transition-colors"
+                className="kk-compact-field w-full px-3 bg-muted/30 border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40 transition-colors"
                 autoFocus
               />
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <input
                   type="date"
                   value={newEventDate}
                   onChange={(e) => setNewEventDate(e.target.value)}
-                  className="flex-1 px-3 py-2.5 bg-muted/30 border border-border rounded-xl text-sm text-foreground focus:outline-none focus:border-primary/40 transition-colors"
+                  className="kk-compact-field min-w-0 w-full px-3 bg-muted/30 border border-border rounded-xl text-sm text-foreground focus:outline-none focus:border-primary/40 transition-colors"
                 />
                 <input
                   type="time"
                   value={newEventTime}
                   onChange={(e) => setNewEventTime(e.target.value)}
-                  className="w-28 px-3 py-2.5 bg-muted/30 border border-border rounded-xl text-sm text-foreground focus:outline-none focus:border-primary/40 transition-colors"
+                  className="kk-compact-field min-w-0 w-full px-3 bg-muted/30 border border-border rounded-xl text-sm text-foreground focus:outline-none focus:border-primary/40 transition-colors"
                 />
               </div>
               <button
                 onClick={addCustomEvent}
                 disabled={!newEventTitle.trim() || !newEventDate}
-                className="w-full py-2.5 bg-primary text-primary-foreground font-semibold rounded-xl text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 border-none cursor-pointer"
+                className="kk-compact-field w-full bg-primary text-primary-foreground font-semibold rounded-xl text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 border-none cursor-pointer"
               >
                 Добавить
               </button>

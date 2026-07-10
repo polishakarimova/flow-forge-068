@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, type ReactNode } from "react";
-import { ChevronDown } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { PlatformIcon } from "./PlatformIcon";
 
 export interface MultiDropdownOption {
@@ -72,13 +72,6 @@ export function ContentMultiDropdown({ values, onChange, options, placeholder, w
           style={{ transform: open ? "rotate(180deg)" : "none" }}
           strokeWidth={1.6}
         />
-        <span
-          aria-hidden="true"
-          className="hidden text-[13px] leading-none text-muted-foreground/45 transition-transform duration-200 shrink-0"
-          style={{ transform: open ? "rotate(180deg)" : "none" }}
-        >
-          ▾
-        </span>
       </button>
 
       {open && (
@@ -116,7 +109,7 @@ export function ContentMultiDropdown({ values, onChange, options, placeholder, w
                     background: checked ? "hsl(var(--primary))" : "hsl(var(--card))",
                   }}
                 >
-                  {checked ? "✓" : ""}
+                  {checked ? <Check className="h-2 w-2" strokeWidth={2} /> : null}
                 </span>
                 {o.platformId ? <PlatformIcon platformId={o.platformId} size={12} /> : o.iconNode ? o.iconNode : o.icon ? <span className="text-[12px]">{o.icon}</span> : null}
                 {o.dot && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: o.dot }} />}

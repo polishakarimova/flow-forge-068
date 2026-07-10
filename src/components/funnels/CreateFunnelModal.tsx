@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { Plus, Trash2, AlertTriangle, Search, ChevronDown } from "lucide-react";
+import { Plus, Trash2, AlertTriangle, Search, ChevronDown, Check } from "lucide-react";
 import { useDataStore } from "@/lib/dataStore";
 import type { Product } from "@/lib/productData";
 import { PLATFORMS } from "@/lib/contentData";
@@ -399,7 +399,7 @@ export function CreateFunnelModal({ onClose, editFunnel }: CreateFunnelModalProp
                               color: sel ? "white" : "transparent",
                             }}
                           >
-                            ✓
+                            <Check className="h-3 w-3" strokeWidth={2} />
                           </span>
                           {plat && (
                             <PlatformIcon platformId={ci.platformId} size={14} />

@@ -56,13 +56,6 @@ export function ContentDropdown({ value, onChange, options, placeholder, width =
           style={{ transform: open ? "rotate(180deg)" : "none" }}
           strokeWidth={1.6}
         />
-        <span
-          aria-hidden="true"
-          className="hidden text-[13px] leading-none text-muted-foreground/45 transition-transform duration-200 shrink-0"
-          style={{ transform: open ? "rotate(180deg)" : "none" }}
-        >
-          ▾
-        </span>
       </button>
 
       {open && (

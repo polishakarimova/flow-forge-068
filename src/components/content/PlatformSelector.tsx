@@ -96,7 +96,7 @@ export function PlatformSelector({
               >
                 <PlatformIcon platformId={platform.id} size={11} />
                 <span className="uppercase">{pendingDelete ? "Удалить?" : platform.label}</span>
-                {selected && !pendingDelete && <span>✓</span>}
+                {selected && !pendingDelete && <Check className="h-2.5 w-2.5" strokeWidth={1.8} />}
               </button>
               {editing && (
                 pendingDelete ? (
