@@ -1,4 +1,5 @@
-import { FileText, GitBranch, Package, Map, CalendarDays, User, GraduationCap, Brain, type LucideIcon } from "lucide-react";
+import { FileText, House, CalendarDays, GraduationCap, type LucideIcon } from "lucide-react";
+import { SalesNavigation } from '@/components/SalesNavigation';
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { resetTour } from "@/components/OnboardingTour";
@@ -10,15 +11,12 @@ export function MobileNav() {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card/95 backdrop-blur-sm border-t border-border safe-area-bottom">
+    <nav aria-label="Основные разделы" className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card/95 backdrop-blur-sm border-t border-border safe-area-bottom">
       <div className="flex items-center justify-around h-16 px-1">
-        <TabLink url="/context" icon={Brain} title="Контекст" pathname={location.pathname} />
-        <TabLink url="/products" icon={Package} title="Продукты" pathname={location.pathname} />
+        <TabLink url="/home" icon={House} title="Главная" pathname={location.pathname} />
         <TabLink url="/content" icon={FileText} title="Контент" pathname={location.pathname} />
-        <TabLink url="/dashboard" icon={GitBranch} title="Воронки" pathname={location.pathname} />
-        <TabLink url="/map" icon={Map} title="Карта" pathname={location.pathname} />
         <TabLink url="/calendar" icon={CalendarDays} title="Календарь" pathname={location.pathname} />
-        <TabLink url="/profile" icon={User} title="Профиль" pathname={location.pathname} />
+        <SalesNavigation />
       </div>
     </nav>
   );
@@ -52,7 +50,7 @@ export function MobileHeader() {
   return (
     <div className="md:hidden fixed top-0 left-0 right-0 flex items-center justify-between px-3 h-8 bg-card border-b border-border/60 z-[60]">
       <button
-        onClick={() => navigate("/")}
+        onClick={() => navigate("/home")}
         className="logo-gradient text-[14px] leading-none cursor-pointer bg-transparent border-none p-0"
       >
         Карта контента

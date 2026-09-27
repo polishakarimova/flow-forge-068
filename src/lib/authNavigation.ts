@@ -1,5 +1,5 @@
-const routes = new Set(['/calendar', '/products', '/content', '/context', '/dashboard', '/map', '/profile', '/admin']);
-export function safeAuthReturn(value: string | null | undefined, fallback = '/products') {
+const routes = new Set(['/home', '/calendar', '/products', '/content', '/context', '/dashboard', '/map', '/profile', '/admin']);
+export function safeAuthReturn(value: string | null | undefined, fallback = '/home') {
   try {
     const url = new URL(value || fallback, 'https://app.invalid');
     if (url.origin === 'https://app.invalid' && routes.has(url.pathname)) return url.pathname + url.search;

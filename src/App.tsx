@@ -15,6 +15,7 @@ import Products from "./pages/Products.tsx";
 import FunnelMapPage from "./pages/FunnelMapPage.tsx";
 import Publications from "./pages/Publications.tsx";
 import Welcome from "./pages/Welcome.tsx";
+import Home from "./pages/Home.tsx";
 import Profile from "./pages/Profile.tsx";
 import Register from "./pages/Register.tsx";
 import Login from "./pages/Login.tsx";
@@ -57,6 +58,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<Welcome />} />
         <Route element={<RequireAuth />}>
+        <Route path="/home" element={<Home />} />
         <Route path="/context" element={<ContextPage />} />
         <Route path="/dashboard" element={<Index />} />
         <Route path="/content" element={<Content />} />
