@@ -346,7 +346,7 @@ const Calendar = () => {
                 <div className="flex items-center gap-3">
                   <SidebarTrigger className="hidden md:flex" />
                   <AppBackButton />
-                  <h1 className="text-[15px] md:text-base font-semibold text-foreground tracking-tight">
+                  <h1 className="kk-page-title text-[15px] md:text-base font-semibold text-foreground tracking-tight">
                     Календарь
                   </h1>
                 </div>

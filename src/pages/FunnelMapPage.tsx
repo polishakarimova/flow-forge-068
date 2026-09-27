@@ -843,7 +843,7 @@ const FunnelMapPage = () => {
                 <div className="flex items-center gap-3">
                   <SidebarTrigger className="hidden md:flex" />
                   <AppBackButton />
-                  <span className="text-[12px] font-extrabold text-foreground tracking-[0.08em]">
+                  <span className="kk-page-title text-[12px] font-extrabold text-foreground tracking-[0.08em]">
                     КАРТА ВОРОНОК
                   </span>
                 </div>

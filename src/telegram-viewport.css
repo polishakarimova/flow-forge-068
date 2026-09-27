@@ -1,6 +1,7 @@
 /* Only Telegram gets safe-area layout changes; normal browser pages stay intact. */
 html[data-telegram-app] {
-  --app-safe-top: calc(max(env(safe-area-inset-top, 0px), var(--app-system-top, 0px)) + var(--app-content-top, 0px));
+  /* Telegram's system and content insets overlap; adding both leaves a large blank band. */
+  --app-safe-top: calc(max(env(safe-area-inset-top, 0px), var(--app-system-top, 0px), var(--app-content-top, 0px)) + 28px);
   --app-safe-bottom: calc(max(env(safe-area-inset-bottom, 0px), var(--app-system-bottom, 0px)) + var(--app-content-bottom, 0px));
   --app-safe-left: calc(max(env(safe-area-inset-left, 0px), var(--app-system-left, 0px)) + var(--app-content-left, 0px));
   --app-safe-right: calc(max(env(safe-area-inset-right, 0px), var(--app-system-right, 0px)) + var(--app-content-right, 0px));
@@ -32,4 +33,29 @@ html[data-telegram-app] [role="dialog"][class*="bottom-0"] {
   padding-bottom: max(16px, var(--app-safe-bottom));
   max-height: calc(100dvh - var(--app-safe-top) - 16px);
   overflow-y: auto;
+}
+
+/* One mobile title rhythm across the existing screens; desktop typography is unchanged. */
+@media (max-width: 767px) {
+  html .kk-page-title {
+    font-size: 17px;
+    line-height: 22px;
+    font-weight: 600;
+    letter-spacing: -0.012em;
+  }
+
+  /* Override the old global 64px header rule without changing page contents. */
+  html[data-telegram-app] header.sticky.surface-glass > div > div:first-child {
+    height: 52px;
+    min-height: 52px;
+  }
+
+  html[data-telegram-app] .pub-header { padding-top: 4px; }
+  html[data-telegram-app] .pub-heading > div:first-child { height: 44px; min-height: 44px; }
+  html[data-telegram-app] .pub-heading h1 { font-size: 17px; line-height: 22px; font-weight: 600; }
+
+  /* Use the available viewport height rather than a fixed 102px per week. */
+  html[data-telegram-app] .pub-grid .pub-cell {
+    height: clamp(72px, calc((var(--app-viewport-height, 100dvh) - var(--app-safe-top) - var(--app-safe-bottom) - 260px) / var(--month-rows, 5)), 102px);
+  }
 }

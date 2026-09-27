@@ -161,7 +161,7 @@ export default function Admin() {
                   <AppBackButton />
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-primary" />
-                    <h1 className="text-[15px] md:text-base font-semibold text-foreground tracking-tight">Админ</h1>
+                    <h1 className="kk-page-title text-[15px] md:text-base font-semibold text-foreground tracking-tight">Админ</h1>
                     <span className="text-[12px] text-muted-foreground">/ реальные данные</span>
                   </div>
                 </div>

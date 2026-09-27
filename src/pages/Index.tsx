@@ -59,7 +59,7 @@ const Index = () => {
                   <SidebarTrigger className="hidden md:flex" />
                   <AppBackButton />
                   <div className="flex items-baseline gap-1 sm:gap-2 min-w-0">
-                    <h1 className="text-sm sm:text-[15px] md:text-base font-semibold text-foreground tracking-tight truncate">
+                    <h1 className="kk-page-title text-sm sm:text-[15px] md:text-base font-semibold text-foreground tracking-tight truncate">
                       Воронки
                     </h1>
                     <span className="text-xs sm:text-[13px] text-muted-foreground whitespace-nowrap">

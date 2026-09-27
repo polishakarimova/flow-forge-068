@@ -101,7 +101,7 @@ const Products = () => {
                   <SidebarTrigger className="hidden md:flex" />
                   <AppBackButton />
                   <div className="flex items-baseline gap-2">
-                    <h1 className="text-[15px] md:text-base font-semibold text-foreground tracking-tight">
+                    <h1 className="kk-page-title text-[15px] md:text-base font-semibold text-foreground tracking-tight">
                       Продукты
                     </h1>
                     <span className="text-[13px] text-muted-foreground">
