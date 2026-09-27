@@ -31,7 +31,8 @@ function RequireAuth() {
   if (isLoading) return <div role="status" className="p-5 text-sm text-muted-foreground">Проверяем вход…</div>;
   if (!isAuthenticated) return <Navigate replace to={`/?returnTo=${encodeURIComponent(location.pathname + location.search)}`} />;
   const store = location.pathname === '/context' ? context : main;
-  if (location.pathname !== '/calendar') {
+  const usesPublicationsStore = location.pathname === '/calendar' && new URLSearchParams(location.search).get('view') !== 'legacy';
+  if (!usesPublicationsStore) {
     if (store.stateError) return <div role="alert" className="max-w-sm mx-auto p-5 text-sm space-y-3"><p>{store.stateError}</p><button className="text-primary underline" onClick={() => window.location.reload()}>Повторить загрузку</button></div>;
     if (!store.stateReady) return <div role="status" className="p-5 text-sm text-muted-foreground">Загружаем материалы…</div>;
   }
