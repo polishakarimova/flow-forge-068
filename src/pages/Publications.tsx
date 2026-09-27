@@ -114,12 +114,12 @@ function Workspace({ userId }: { userId: string }) {
   const cells = Array.from({ length: rows * 7 }, (_, i) => new Date(year, month - 1, i - offset + 1));
   const savedLabel = { loading: 'Загрузка…', saved: 'Сохранено', pending: 'Сохраняем…', saving: 'Сохраняем…', error: 'Не сохранено', conflict: 'Есть новая версия' }[store.status];
 
-  return <SidebarProvider><div className="pub-app min-h-screen flex w-full bg-background">
+  return <SidebarProvider><div className="pub-app min-h-screen flex w-full bg-background" data-save-state={store.status}>
     <div className="hidden md:block"><AppSidebar /></div>
     <div className="pub-workspace">
       <header className="pub-header surface-glass">
-        <div className="pub-heading"><div className="flex items-center gap-2"><AppBackButton onBack={view.screen !== 'month' ? () => navigate({ screen: view.screen === 'publication' ? 'day' : 'month' }) : undefined}/><div><h1>Календарь</h1><span className="pub-save" role="status">{savedLabel}</span></div></div>
-          <div className="pub-tools"><button aria-label="Скачать календарь" title="Скачать календарь" onClick={() => download(store.data)} disabled={!store.ready}><Download /></button><button aria-label="Загрузить контент" title="Загрузить контент" onClick={() => { setError(''); setDialog('import'); }} disabled={!store.ready}><Upload /></button><button className="pub-primary" aria-label="Новая публикация" onClick={() => { setError(''); setDialog('add'); }} disabled={!store.ready}><Plus /></button></div>
+        <div className="pub-heading"><div className="flex items-center gap-2"><AppBackButton onBack={view.screen !== 'month' ? () => navigate({ screen: view.screen === 'publication' ? 'day' : 'month' }) : undefined}/><div><h1>Календарь</h1>{store.status !== 'saved' && <span className="pub-save" role="status">{savedLabel}</span>}</div></div>
+          <div className="pub-tools"><button className="pub-primary" aria-label="Новая публикация" onClick={() => { setError(''); setDialog('add'); }} disabled={!store.ready}><Plus /></button></div>
         </div>
         <div className="pub-tabs"><span aria-current="page">Публикации</span><Link to="/calendar?view=legacy">Общий календарь</Link></div>
       </header>
@@ -132,6 +132,7 @@ function Workspace({ userId }: { userId: string }) {
             <div className="pub-weekdays">{['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => <span key={d}>{d}</span>)}</div>
             <div className="pub-grid">{cells.map(date => { const key = dayKey(date); const list = store.data.items.filter(i => i.date === key); return <button key={key} className={`pub-cell ${date.getMonth() !== month - 1 ? 'pub-outside' : ''} ${key === dayKey(new Date()) ? 'pub-today' : ''}`} aria-label={`${dateLabel(key)}, публикаций: ${list.length}`} onClick={() => navigate({ date: key, screen: 'day' })}><span className="pub-day-number">{date.getDate()}</span><span className="pub-cell-items">{list.slice(0, 3).map(i => <span key={i.id} className={`pub-chip pub-type-${publicationFormats.indexOf(i.format)} ${done(i) ? 'pub-done-chip' : ''}`}>{done(i) ? '✓ ' : ''}{i.format}</span>)}{list.length > 3 && <span className="pub-more">ещё {list.length - 3}</span>}</span></button>; })}</div>
             <div className="pub-month-summary"><CalendarDays size={15} /><span>{store.data.items.filter(i => i.date.startsWith(view.month)).length} публикаций в этом месяце</span></div>
+            <details className="text-xs text-muted-foreground mb-3"><summary className="cursor-pointer py-2">Работа с файлами</summary><div className="flex flex-wrap gap-4 py-2"><button className="inline-flex items-center gap-1 min-h-9" onClick={() => download(store.data)}><Download size={14}/>Скачать календарь</button><button className="inline-flex items-center gap-1 min-h-9" onClick={() => { setError(''); setDialog('import'); }}><Upload size={14}/>Загрузить контент</button></div></details>
             {!store.data.items.length && <div className="pub-empty"><h3>Здесь будет твой контент</h3><p>Выбери день и добавь публикацию или загрузи подготовленные тексты.</p><button onClick={() => { setError(''); setDialog('import'); }}>Загрузить контент <Upload size={14} /></button></div>}
           </> : <>
             <div className="pub-breadcrumb"><button onClick={() => navigate({ screen: view.screen === 'publication' ? 'day' : 'month' })}><ArrowLeft />{view.screen === 'publication' ? dateLabel(view.date) : 'Месяц'}</button>{view.screen === 'day' && dayItems.length > 0 && <button onClick={() => openMove(dayItems.map(i => i.id))}>Перенести день</button>}</div>

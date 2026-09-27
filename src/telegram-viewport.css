@@ -1,0 +1,35 @@
+/* Only Telegram gets safe-area layout changes; normal browser pages stay intact. */
+html[data-telegram-app] {
+  --app-safe-top: calc(max(env(safe-area-inset-top, 0px), var(--app-system-top, 0px)) + var(--app-content-top, 0px));
+  --app-safe-bottom: calc(max(env(safe-area-inset-bottom, 0px), var(--app-system-bottom, 0px)) + var(--app-content-bottom, 0px));
+  --app-safe-left: calc(max(env(safe-area-inset-left, 0px), var(--app-system-left, 0px)) + var(--app-content-left, 0px));
+  --app-safe-right: calc(max(env(safe-area-inset-right, 0px), var(--app-system-right, 0px)) + var(--app-content-right, 0px));
+  scroll-padding-top: calc(var(--app-safe-top) + 64px);
+}
+html[data-telegram-app] #root {
+  padding: var(--app-safe-top) var(--app-safe-right) 0 var(--app-safe-left);
+}
+html[data-telegram-app] #root .min-h-screen,
+html[data-telegram-app] #root .min-h-svh {
+  min-height: calc(var(--app-viewport-height, 100dvh) - var(--app-safe-top));
+}
+html[data-telegram-app] header.sticky,
+html[data-telegram-app] .pub-header { top: var(--app-safe-top); }
+html[data-telegram-app] .safe-area-bottom { padding-bottom: var(--app-safe-bottom); }
+html[data-telegram-app] nav[aria-label="Основные разделы"] {
+  padding-left: var(--app-safe-left);
+  padding-right: var(--app-safe-right);
+}
+html[data-telegram-app] .pub-workspace { padding-bottom: calc(84px + var(--app-safe-bottom)); }
+html[data-telegram-app] .pb-24 { padding-bottom: calc(6rem + var(--app-safe-bottom)); }
+html[data-telegram-app] .pub-toast { bottom: calc(82px + var(--app-safe-bottom)); }
+html[data-telegram-app] [role="dialog"][class*="top-[50%]"] {
+  top: calc((100dvh + var(--app-safe-top) - var(--app-safe-bottom)) / 2);
+  max-height: calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 24px);
+  overflow-y: auto;
+}
+html[data-telegram-app] [role="dialog"][class*="bottom-0"] {
+  padding-bottom: max(16px, var(--app-safe-bottom));
+  max-height: calc(100dvh - var(--app-safe-top) - 16px);
+  overflow-y: auto;
+}

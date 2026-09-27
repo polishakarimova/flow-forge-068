@@ -35,7 +35,7 @@ try{
   localStorage.setItem('karta-publications-view:navigation-test',JSON.stringify({date:today,month:today.slice(0,7),screen:'publication',item:items[0].id,open:[`${items[0].id}:part1`],lastCopied:'',scroll:0}));
  },{today,items});
  await page.goto('http://127.0.0.1:8080/');await page.waitForURL('**/home');
- await page.getByRole('link',{name:'Все 5'}).waitFor();
+ await page.getByRole('link',{name:'Продолжить: Тест: Сторис'}).waitFor();
  assert.equal(await page.getByRole('button',{name:'Начать',exact:true}).count(),0);
  assert.equal(authStarts,0,'Restored session should not sign in again');
  assert.equal(writes,0,'Home must not write calendar publications');
@@ -49,7 +49,7 @@ try{
  await page.getByRole('link',{name:'Продолжить: Тест: Сторис'}).click();
  await page.getByText('Текст для проверки навигации',{exact:true}).waitFor();
  await page.getByRole('navigation',{name:'Основные разделы'}).getByRole('link',{name:'Главная',exact:true}).click();
- await page.getByRole('link',{name:'Все 5'}).click();await page.locator('.pub-publication').first().waitFor();assert.equal(await page.locator('.pub-publication').count(),5);
+ await page.getByRole('link',{name:'Открыть план публикаций'}).click();await page.locator('.pub-publication').first().waitFor();assert.equal(await page.locator('.pub-publication').count(),5);
  await page.getByRole('navigation',{name:'Основные разделы'}).getByRole('link',{name:'Главная',exact:true}).click();
  await page.getByRole('link',{name:'Записать идею'}).click();await page.getByRole('heading',{name:'Новая тема'}).waitFor();
  await page.getByRole('button',{name:'В банк идей',exact:false}).waitFor();
