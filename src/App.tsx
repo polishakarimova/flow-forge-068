@@ -13,7 +13,7 @@ import Content from "./pages/Content.tsx";
 import ContextPage from "./pages/ContextPage.tsx";
 import Products from "./pages/Products.tsx";
 import FunnelMapPage from "./pages/FunnelMapPage.tsx";
-import Calendar from "./pages/Calendar.tsx";
+import Publications from "./pages/Publications.tsx";
 import Welcome from "./pages/Welcome.tsx";
 import Profile from "./pages/Profile.tsx";
 import Register from "./pages/Register.tsx";
@@ -48,7 +48,7 @@ function AppRoutes() {
         <Route path="/content" element={<Content />} />
         <Route path="/products" element={<Products />} />
         <Route path="/map" element={<FunnelMapPage />} />
-        <Route path="/calendar" element={<Calendar />} />
+        <Route path="/calendar" element={<Publications />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />

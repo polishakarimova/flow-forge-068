@@ -29,6 +29,7 @@ function TabLink({ url, icon: Icon, title, pathname }: { url: string; icon: Luci
   return (
     <NavLink
       to={url}
+      aria-label={title}
       end
       className={`flex flex-col items-center gap-1 px-2 py-2 rounded-lg transition-all duration-200 min-w-0 flex-1 ${
         isActive
