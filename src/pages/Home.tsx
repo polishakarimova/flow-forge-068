@@ -37,10 +37,10 @@ function HomeWorkspace({ userId, name }: { userId: string; name: string }) {
   const firstName = name.trim().split(/\s+/)[0];
   return <SidebarProvider><div className="min-h-screen flex w-full bg-background">
     <div className="hidden md:block"><AppSidebar /></div>
-    <main className="flex-1 min-w-0 pt-4 md:pt-6 px-4 pb-24 md:pb-8" data-home>
+    <main className="flex-1 min-w-0 pt-1 md:pt-6 px-4 pb-24 md:pb-8" data-home>
       <div className="max-w-lg mx-auto">
         <header className="flex items-center justify-between gap-3 mb-4">
-          <h1 className="min-w-0 text-xl font-semibold tracking-tight break-words">{firstName ? `${firstName}, привет` : 'Главная'}</h1>
+          <h1 className="kk-page-title min-w-0 text-xl font-semibold tracking-tight break-words">{firstName ? `${firstName}, привет` : 'Главная'}</h1>
           <Link to="/profile" aria-label="Мой профиль" className="shrink-0 w-11 h-11 rounded-full bg-primary/10 text-primary flex items-center justify-center"><UserRound size={22} /></Link>
         </header>
         {overview.status === 'ready' && resume && <Link to="/calendar" className="flex items-center gap-3 p-3 mb-4 rounded-2xl bg-primary/10 text-foreground" aria-label={`Продолжить: ${resume.title}`}>

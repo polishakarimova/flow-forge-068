@@ -1161,7 +1161,7 @@ export default function ContextPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-baseline gap-2">
-                      <h1 className="text-[15px] md:text-base font-semibold text-foreground tracking-tight">Контекст</h1>
+                      <h1 className="kk-page-title text-[15px] md:text-base font-semibold text-foreground tracking-tight">Контекст</h1>
                       <span className="text-[12px] text-muted-foreground">{isContextLoading ? "загрузка..." : `Заполнено ${completionScore}%`}</span>
                     </div>
                     <p className="text-[12px] text-muted-foreground hidden sm:block">
