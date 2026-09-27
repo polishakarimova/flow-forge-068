@@ -20,7 +20,8 @@ import {
 import { useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { MobileHeader, MobileNav } from "@/components/MobileNav";
+import { MobileNav } from "@/components/MobileNav";
+import { AppBackButton } from "@/components/AppBackButton";
 import { useToast } from "@/hooks/use-toast";
 import { useDataStore } from "@/lib/dataStore";
 import {
@@ -1148,12 +1149,13 @@ export default function ContextPage() {
           <AppSidebar />
         </div>
 
-        <div className="flex-1 flex flex-col min-w-0 pt-8 md:pt-0">
+        <div className="flex-1 flex flex-col min-w-0">
           <header className="sticky top-0 z-50 surface-glass border-b border-border">
             <div className="w-full px-4 md:px-6 max-w-[1400px] mx-auto">
               <div className="flex items-center justify-between min-h-16 py-3 gap-4">
                 <div className="flex items-center gap-3 min-w-0">
                   <SidebarTrigger className="hidden md:flex" />
+                  <AppBackButton />
                   <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                     <Brain className="w-5 h-5" />
                   </div>
@@ -1520,7 +1522,6 @@ export default function ContextPage() {
           )}
         </div>
 
-        <MobileHeader />
         <MobileNav />
       </div>
     </SidebarProvider>

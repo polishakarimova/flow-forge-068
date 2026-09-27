@@ -1,9 +1,7 @@
-import { FileText, House, CalendarDays, GraduationCap, type LucideIcon } from "lucide-react";
+import { FileText, House, CalendarDays, type LucideIcon } from "lucide-react";
 import { SalesNavigation } from '@/components/SalesNavigation';
 import { NavLink } from "@/components/NavLink";
-import { useLocation, useNavigate } from "react-router-dom";
-import { resetTour } from "@/components/OnboardingTour";
-import { useTour } from "@/App";
+import { useLocation } from "react-router-dom";
 
 /* ── Bottom tabs ─────────────────────────────────── */
 
@@ -38,30 +36,5 @@ function TabLink({ url, icon: Icon, title, pathname }: { url: string; icon: Luci
       <Icon className={`w-5 h-5 ${isActive ? "scale-110" : ""} transition-transform`} />
       <span className="text-[10px] font-medium truncate">{title}</span>
     </NavLink>
-  );
-}
-
-/* ── Top header (mobile only) ────────────────────── */
-
-export function MobileHeader() {
-  const navigate = useNavigate();
-  const { startTour } = useTour();
-
-  return (
-    <div className="md:hidden fixed top-0 left-0 right-0 flex items-center justify-between px-3 h-8 bg-card border-b border-border/60 z-[60]">
-      <button
-        onClick={() => navigate("/home")}
-        className="logo-gradient text-[14px] leading-none cursor-pointer bg-transparent border-none p-0"
-      >
-        Карта контента
-      </button>
-      <button
-        onClick={() => { resetTour(); startTour(); }}
-        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] text-muted-foreground hover:text-foreground transition-colors bg-transparent border-none cursor-pointer"
-      >
-        <GraduationCap className="w-3 h-3" />
-        Обучение
-      </button>
-    </div>
   );
 }

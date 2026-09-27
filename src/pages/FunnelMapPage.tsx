@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { MobileNav, MobileHeader } from "@/components/MobileNav";
+import { MobileNav } from "@/components/MobileNav";
+import { AppBackButton } from "@/components/AppBackButton";
 import type { BadgeColor, Funnel } from "@/lib/funnelData";
 import { resolveFunnelContent } from "@/lib/funnelData";
 import { useDataStore } from "@/lib/dataStore";
@@ -835,12 +836,13 @@ const FunnelMapPage = () => {
           <AppSidebar />
         </div>
 
-        <div className="flex-1 flex flex-col min-w-0 pt-8 md:pt-0" style={{ touchAction: "none" }}>
+        <div className="flex-1 flex flex-col min-w-0" style={{ touchAction: "none" }}>
           <header className="sticky top-0 z-50 surface-glass border-b border-border">
             <div className="w-full px-4 md:px-6">
               <div className="flex items-center justify-between h-[44px]">
                 <div className="flex items-center gap-3">
                   <SidebarTrigger className="hidden md:flex" />
+                  <AppBackButton />
                   <span className="text-[12px] font-extrabold text-foreground tracking-[0.08em]">
                     КАРТА ВОРОНОК
                   </span>
@@ -951,7 +953,6 @@ const FunnelMapPage = () => {
           </svg>
         </div>
 
-        <MobileHeader />
         <MobileNav />
       </div>
 
