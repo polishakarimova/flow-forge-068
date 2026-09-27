@@ -1,5 +1,15 @@
 # Telegram auth setup
 
+## Recovery mode (27 September 2026)
+
+The Mini App loads the official Telegram Web App SDK in `index.html`; `AuthProvider` verifies its signed `initData` with the existing backend when no session exists. Never authenticate from `initDataUnsafe`.
+
+When incoming webhook connections time out, set `TELEGRAM_UPDATES_MODE=polling` for the app service. Startup removes the webhook **without dropping queued updates**, then receives updates via authenticated Bot API long polling. Processing and login validation remain shared with the webhook handler. Failed updates are retried before acknowledgement. Use exactly one application instance in polling mode. Reverting the variable to `webhook` and restarting restores webhook delivery.
+
+The browser stores only its own pending, short-lived request in sessionStorage and resumes it after a blocked popup. A second click must not create a different login request. Login expiry remains ten minutes; no auth validation is bypassed.
+
+References: https://core.telegram.org/bots/api#getupdates and https://core.telegram.org/bots/webapps#initializing-mini-apps.
+
 Проект использует только Telegram-авторизацию:
 
 - Telegram Mini App: сервер проверяет `Telegram.WebApp.initData`.

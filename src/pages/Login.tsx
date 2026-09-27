@@ -6,9 +6,15 @@ import { TelegramLoginButton } from "@/components/TelegramLoginButton";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { loginWithTelegram, isLoading } = useAuth();
+  const { loginWithTelegram, isLoading, isAuthenticated } = useAuth();
+  const requestedReturn = new URLSearchParams(window.location.search).get("returnTo") || "/calendar";
+  const returnTo = requestedReturn.startsWith("/") && !requestedReturn.startsWith("//") ? requestedReturn : "/calendar";
   const [error, setError] = useState("");
   const [isTelegramLoading, setIsTelegramLoading] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) navigate(returnTo, { replace: true });
+  }, [isAuthenticated, navigate, returnTo]);
 
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get("telegramLoginToken");
@@ -50,7 +56,7 @@ export default function Login() {
     const result = await loginWithTelegram();
     setIsTelegramLoading(false);
     if (result.success) {
-      navigate("/products");
+      navigate(returnTo);
     } else {
       setError(result.message);
     }

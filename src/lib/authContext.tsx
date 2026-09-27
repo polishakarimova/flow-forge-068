@@ -79,7 +79,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    refreshMe().catch(() => setState({ user: null, isAuthenticated: false, isLoading: false }));
+    const restoreSession = async () => {
+      const user = await refreshMe();
+      const initData = (window as TelegramWindow).Telegram?.WebApp?.initData;
+      if (!user && initData) {
+        await api("/api/auth/telegram-mini-app", {
+          method: "POST",
+          body: JSON.stringify({ initData }),
+        });
+        await refreshMe();
+      }
+    };
+    restoreSession().catch(() => setState({ user: null, isAuthenticated: false, isLoading: false }));
   }, [refreshMe]);
 
   const registerWithEmail = useCallback(async () => {
@@ -115,26 +126,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: true, message: "Вход через Telegram выполнен" };
       }
 
-      const popup = webApp?.openTelegramLink ? null : window.open("about:blank", "_blank");
+      const pendingKey = "contentmap_pending_login";
+      let pending: { token: string; expiresAt: string; botLink: string } | null = null;
+      try { pending = JSON.parse(sessionStorage.getItem(pendingKey) || "null"); } catch { /* storage may be unavailable */ }
+      if (!pending?.token || !Number.isFinite(Date.parse(pending.expiresAt)) || Date.parse(pending.expiresAt) <= Date.now()) pending = null;
+      const popup = pending || webApp?.openTelegramLink ? null : window.open("about:blank", "_blank");
       if (popup) popup.opener = null;
-      const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-      const start = await api("/api/auth/telegram-login-token", {
+      const requestedReturn = new URLSearchParams(window.location.search).get("returnTo") || "/calendar";
+      const returnTo = requestedReturn.startsWith("/") && !requestedReturn.startsWith("//") ? requestedReturn : "/calendar";
+      const start = pending || await api("/api/auth/telegram-login-token", {
         method: "POST",
         body: JSON.stringify({ returnTo }),
       });
-      if (webApp?.openTelegramLink) {
+      try { sessionStorage.setItem(pendingKey, JSON.stringify(start)); } catch { /* login still works without storage */ }
+      if (pending) {
+        // Resume the same one-time request after a blocked popup or returning from Telegram.
+      } else if (webApp?.openTelegramLink) {
         webApp.openTelegramLink(start.botLink);
       } else if (popup) {
         popup.location.href = start.botLink;
       } else {
-        return { success: false, message: `Браузер заблокировал открытие Telegram. Откройте бота вручную: ${start.botLink}` };
+        return { success: false, message: `Откройте бота: ${start.botLink} После подтверждения вернитесь сюда и нажмите «Войти через Telegram» ещё раз.` };
       }
 
-      for (let attempt = 0; attempt < 60; attempt += 1) {
+      for (let attempt = 0; attempt < 300; attempt += 1) {
         await new Promise((resolve) => window.setTimeout(resolve, 2000));
         const response = await fetch(`/api/auth/telegram-login-token/${encodeURIComponent(start.token)}`, { credentials: "include" });
         if (response.status === 202) continue;
         if (response.ok) {
+          try { sessionStorage.removeItem(pendingKey); } catch { /* optional storage */ }
           const data = await response.json().catch(() => ({}));
           await refreshMe();
           if (data.returnTo && data.returnTo !== window.location.pathname) {
@@ -142,7 +162,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           return { success: true, message: "Вход через Telegram выполнен" };
         }
-        return { success: false, message: "Токен входа устарел. Попробуйте ещё раз." };
+        try { sessionStorage.removeItem(pendingKey); } catch { /* optional storage */ }
+        return { success: false, message: "Ссылка для входа устарела. Нажмите «Войти через Telegram» ещё раз." };
       }
       return { success: false, message: "Telegram не подтвердил вход. Нажмите кнопку ещё раз." };
     } catch (error) {
