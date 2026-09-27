@@ -6,6 +6,7 @@ import { extname, join, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { PrismaClient } from "@prisma/client";
+import { pollTelegramUpdates } from "./telegram-polling.mjs";
 
 const root = new URL("../", import.meta.url);
 const distDir = fileURLToPath(new URL("../dist", import.meta.url));
@@ -34,6 +35,7 @@ const DATABASE_URL = process.env.DATABASE_URL || "";
 const PGSSLROOTCERT = process.env.PGSSLROOTCERT || "";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || "";
+const TELEGRAM_UPDATES_MODE = process.env.TELEGRAM_UPDATES_MODE || "webhook";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 const ADMIN_TELEGRAM_IDS = new Set(String(process.env.ADMIN_TELEGRAM_IDS || "").split(",").map((id) => id.trim()).filter(Boolean));
 const SESSION_SECRET = process.env.SESSION_SECRET || TELEGRAM_WEBHOOK_SECRET || ADMIN_TOKEN || TELEGRAM_BOT_TOKEN || "";
@@ -413,6 +415,7 @@ async function telegramApi(method, payload = {}) {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(method === "getUpdates" ? 40000 : 15000),
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data.ok === false) throw new Error(data.description || `telegram_${method}_failed`);
@@ -570,10 +573,16 @@ async function sendTelegramLoginConfirmed(chatId, token = "") {
 }
 
 async function handleTelegramWebhook(req, res) {
+  if (TELEGRAM_UPDATES_MODE === "polling") return send(res, 503, { error: "webhook_disabled" });
   if (TELEGRAM_WEBHOOK_SECRET && !safeCompare(req.headers["x-telegram-bot-api-secret-token"], TELEGRAM_WEBHOOK_SECRET)) {
     return send(res, 401, { error: "invalid_telegram_secret" });
   }
   const update = await body(req);
+  await handleTelegramUpdate(update);
+  return send(res, 200, { ok: true });
+}
+
+async function handleTelegramUpdate(update) {
   const message = update.message || update.edited_message;
   const chatId = message?.chat?.id;
   const text = String(message?.text || "");
@@ -588,7 +597,7 @@ async function handleTelegramWebhook(req, res) {
           chat_id: chatId,
           text: "Ссылка для входа устарела. Вернитесь на сайт и нажмите «Войти через Telegram» ещё раз.",
         }).catch(console.error);
-        return send(res, 200, { ok: true });
+        return;
       }
       const user = await upsertTelegramUser(message.from);
       Object.assign(loginToken, {
@@ -600,11 +609,10 @@ async function handleTelegramWebhook(req, res) {
       });
       await saveLoginToken(loginToken);
       await sendTelegramLoginConfirmed(chatId, token).catch(console.error);
-      return send(res, 200, { ok: true });
+      return;
     }
     await sendTelegramStart(chatId).catch(console.error);
   }
-  return send(res, 200, { ok: true });
 }
 
 async function api(req, res, url) {
@@ -742,7 +750,14 @@ async function api(req, res, url) {
 
 async function setupTelegramBot() {
   if (!TELEGRAM_BOT_TOKEN) return;
-  await telegramApi("setWebhook", {
+  if (TELEGRAM_UPDATES_MODE === "polling") {
+    await telegramApi("deleteWebhook", { drop_pending_updates: false });
+    if (!telegramPollingStarted) {
+      telegramPollingStarted = true;
+      console.log("Telegram update delivery: polling");
+      void pollTelegramUpdates({ api: telegramApi, handleUpdate: handleTelegramUpdate });
+    }
+  } else await telegramApi("setWebhook", {
     url: `${APP_URL}/api/telegram/webhook`,
     secret_token: TELEGRAM_WEBHOOK_SECRET || undefined,
     allowed_updates: ["message", "edited_message"],
@@ -756,6 +771,7 @@ async function setupTelegramBot() {
   }).catch(() => null);
 }
 
+let telegramPollingStarted = false;
 await ensureSchema();
 setupTelegramBot().catch((error) => console.error("Telegram setup failed:", error));
 
