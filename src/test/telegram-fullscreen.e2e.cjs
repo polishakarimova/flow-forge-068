@@ -10,10 +10,11 @@ const path=require('node:path');
  window.tgCalls=[];window.tgEvents={};window.Telegram={WebApp:{platform:'ios',isFullscreen:false,viewportStableHeight:844,safeAreaInset:{top:47,bottom:34,left:0,right:0},contentSafeAreaInset:{top:56,bottom:0,left:0,right:0},isVersionAtLeast:()=>true,ready:()=>tgCalls.push('ready'),expand:()=>tgCalls.push('expand'),requestFullscreen:()=>{tgCalls.push('full');Telegram.WebApp.isFullscreen=true;tgEvents.fullscreenChanged?.()},onEvent:(e,h)=>{tgEvents[e]=h},offEvent:e=>delete tgEvents[e]}};
  `}));
  let fail=false;
+ const sampleFormats=['Рилс','Карусель','Пост ТГ','Сторис','Threads'];
  await page.route('**/api/**',r=>{
   const url=new URL(r.request().url());const json=data=>r.fulfill({contentType:'application/json',body:JSON.stringify(data)});
   if(url.pathname==='/api/auth/me')return json({user:{id:'fullscreen-test',name:'Полина',authProvider:'telegram'}});
-  if(url.pathname==='/api/state/publications')return fail?r.fulfill({status:503,body:'{}'}):json({data:{schema:1,items:[]},revision:'a'.repeat(32)});
+  if(url.pathname==='/api/state/publications')return fail?r.fulfill({status:503,body:'{}'}):json({data:{schema:1,items:sampleFormats.map((format,i)=>({id:`sample-${i}`,date:'2026-11-01',format,title:format,parts:[{id:`part-${i}`,text:format,published:false}]}))},revision:'a'.repeat(32)});
   return json({data:null,revision:'new'});
  });
  const base=process.env.NAV_QA_BASE||'http://127.0.0.1:8080';
@@ -46,6 +47,10 @@ const path=require('node:path');
  const longGrid=await page.locator('.pub-grid').boundingBox();
  assert.ok(longGrid.y+longGrid.height<=(await nav.boundingBox()).y+1,'Six-week calendar should fit above the navigation');
  assert.ok(parseFloat(await page.locator('.pub-cell').first().evaluate(el=>getComputedStyle(el).height))>=72,'Week cells should stay readable');
+ const denseDay=page.locator('.pub-cell').filter({has:page.getByText('ещё 3',{exact:true})});
+ assert.equal(await denseDay.locator('.pub-chip').count(),2,'Two formats and a count should preview a busy day');
+ const denseBox=await denseDay.boundingBox();const moreBox=await denseDay.locator('.pub-more').boundingBox();
+ assert.ok(moreBox.y+moreBox.height<=denseBox.y+denseBox.height,'Busy-day count should not be clipped');
  for(const [route,title] of [['/content','Контент'],['/products','Продукты'],['/dashboard','Воронки'],['/context','Контекст'],['/profile','Профиль']]){
   await page.goto(`${base}${route}`);
   const heading=page.getByRole('heading',{name:title,exact:true}).first();await heading.waitFor();

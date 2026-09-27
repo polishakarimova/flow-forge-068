@@ -58,4 +58,9 @@ html[data-telegram-app] [role="dialog"][class*="bottom-0"] {
   html[data-telegram-app] .pub-grid .pub-cell {
     height: clamp(72px, calc((var(--app-viewport-height, 100dvh) - var(--app-safe-top) - var(--app-safe-bottom) - 260px) / var(--month-rows, 5)), 102px);
   }
+  html[data-telegram-app] .pub-grid[data-rows="6"] .pub-cell { padding: 3px 2px 2px; gap: 3px; }
+  html[data-telegram-app] .pub-grid[data-rows="6"] .pub-day-number { width: 20px; height: 20px; }
+  html[data-telegram-app] .pub-grid[data-rows="6"] .pub-cell-items { gap: 2px; }
+  html[data-telegram-app] .pub-grid[data-rows="6"] .pub-chip { line-height: 13px; padding: 0 2px; }
+  html[data-telegram-app] .pub-grid[data-rows="6"] .pub-more { line-height: 11px; }
 }
