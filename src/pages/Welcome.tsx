@@ -18,8 +18,8 @@ export default function Welcome() {
   const token = params.get('telegramLoginToken');
 
   useEffect(() => {
-    if (isAuthenticated && (attempted || token)) navigate(returnTo, { replace: true });
-  }, [isAuthenticated, attempted, token, navigate, returnTo]);
+    if (isAuthenticated) navigate(returnTo, { replace: true });
+  }, [isAuthenticated, navigate, returnTo]);
   useEffect(() => {
     if (!token || completedToken.current === token) return;
     completedToken.current = token;
@@ -51,6 +51,8 @@ export default function Welcome() {
     document.addEventListener('visibilitychange', resume);
     return () => { active = false; window.removeEventListener('focus', resume); document.removeEventListener('visibilitychange', resume); };
   }, [botLink, loginWithTelegram, navigate, returnTo]);
+
+  if (isAuthenticated || (isLoading && !attempted && !token)) return <div className="min-h-screen bg-background flex items-center justify-center"><p role="status" className="text-sm text-muted-foreground">Открываем пространство…</p></div>;
 
   return <div className="entry-page">
     <main className="entry-main">

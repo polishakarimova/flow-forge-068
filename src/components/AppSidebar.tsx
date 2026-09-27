@@ -7,6 +7,7 @@ import {
   User,
   ShieldCheck,
   Brain,
+  House,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -24,12 +25,13 @@ import { TourButton, resetTour } from "@/components/OnboardingTour";
 import { useTour } from "@/App";
 
 const navItems = [
-  { title: "Контекст", url: "/context", icon: Brain },
-  { title: "Продукты", url: "/products", icon: Package },
+  { title: "Главная", url: "/home", icon: House },
   { title: "Контент", url: "/content", icon: FileText },
+  { title: "Календарь", url: "/calendar", icon: CalendarDays },
+  { title: "Продукты", url: "/products", icon: Package },
   { title: "Воронки", url: "/dashboard", icon: GitBranch },
   { title: "Карта", url: "/map", icon: Map },
-  { title: "Календарь", url: "/calendar", icon: CalendarDays },
+  { title: "Контекст", url: "/context", icon: Brain },
   { title: "Профиль", url: "/profile", icon: User },
   { title: "Админ", url: "/admin", icon: ShieldCheck },
 ];
@@ -47,7 +49,7 @@ export function AppSidebar() {
         {!collapsed && (
           <div className="px-3 sm:px-4 pb-3 sm:pb-4">
             <button
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/home")}
               className="logo-gradient text-[20px] sm:text-[22px] leading-none cursor-pointer bg-transparent border-none p-0"
               title="На главную"
             >

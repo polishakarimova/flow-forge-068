@@ -31,7 +31,7 @@ const path = require('node:path');
    assert.equal(await s.page.getByRole('button').count(),1,'entry has exactly one action');
    assert.equal(s.stats().miniCalls,0);
    await s.page.getByRole('button',{name:button,exact:true}).click();
-   await s.page.waitForURL('**/products');await s.page.getByRole('heading',{name:'Продукты',exact:true}).waitFor();
+   await s.page.waitForURL('**/home');await s.page.getByRole('heading',{name:'Проверка, привет',exact:true}).waitFor();
    assert.equal(s.stats().miniCalls,1);assert.deepEqual(s.errors,[]);
    await s.context.close();console.log('PASS first tap:',button);
   }
@@ -43,7 +43,7 @@ const path = require('node:path');
   await failed.page.screenshot({path:path.resolve(process.env.LOCALAPPDATA,'CodexWork/publications-qa-20260927/entry-error.png')});
   await failed.context.close();console.log('PASS failed auth stays at entry and sanitizes errors');
   const anonymous=await setup();
-  for(const route of ['products','calendar','content','context','dashboard','map','profile','admin']){
+  for(const route of ['home','products','calendar','content','context','dashboard','map','profile','admin']){
    await anonymous.page.goto('http://127.0.0.1:8080/'+route);
    await anonymous.page.waitForURL('**/?returnTo=*');
    await anonymous.page.getByRole('button',{name:'Начать',exact:true}).waitFor();

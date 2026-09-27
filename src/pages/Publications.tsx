@@ -7,7 +7,7 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { MobileHeader, MobileNav } from '@/components/MobileNav';
 import { useAuth } from '@/lib/authContext';
 import { usePublications } from '@/hooks/usePublications';
-import { dayKey, mergePublications, movePublications, parsePublications, publicationFormats, uid, type Publication, type PublicationFormat, type PublicationPart, type PublicationState } from '@/lib/publications';
+import { dayKey, validDate, mergePublications, movePublications, parsePublications, publicationFormats, uid, type Publication, type PublicationFormat, type PublicationPart, type PublicationState } from '@/lib/publications';
 import Calendar from './Calendar';
 import './publications.css';
 
@@ -31,6 +31,7 @@ export default function Publications() {
 }
 
 function Workspace({ userId }: { userId: string }) {
+  const [entryParams, setEntryParams] = useSearchParams();
   const store = usePublications(userId);
   const key = `karta-publications-view:${userId}`;
   const [view, setView] = useState<View>(() => readView(key));
@@ -49,6 +50,22 @@ function Workspace({ userId }: { userId: string }) {
   const item = store.data.items.find(i => i.id === view.item);
   const dayItems = store.data.items.filter(i => i.date === view.date);
   const dayDone = dayItems.filter(done).length;
+
+  // Navigation targets from Home; the calendar's UI and edit/save logic are unchanged.
+  useEffect(() => {
+    const date = entryParams.get('date');
+    const itemId = entryParams.get('item');
+    const add = entryParams.get('action') === 'add';
+    if (!date && !itemId && !add) return;
+    if (!store.ready) return;
+    const target = itemId ? store.data.items.find(item => item.id === itemId) : undefined;
+    const targetDate = target?.date || (date && validDate(date) ? date : dayKey(new Date()));
+    setView(current => ({ ...current, date: targetDate, month: targetDate.slice(0, 7), item: target?.id || '', screen: target ? 'publication' : 'day', scroll: 0 }));
+    setTargetDate(targetDate);
+    if (add) { setError(''); setDialog('add'); }
+    const next = new URLSearchParams(entryParams); next.delete('date'); next.delete('item'); next.delete('action');
+    setEntryParams(next, { replace: true });
+  }, [entryParams, setEntryParams, store.ready, store.data.items]);
 
   useEffect(() => {
     const persist = () => { try { localStorage.setItem(key, JSON.stringify({ ...viewRef.current, scroll: window.scrollY })); } catch { /* View memory must not block editing. */ } };

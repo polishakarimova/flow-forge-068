@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from 'react-router-dom';
 import { Plus } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -23,6 +24,7 @@ import { ContentMultiDropdown } from "@/components/content/ContentMultiDropdown"
 type TabKey = "topics" | "content" | "ideas";
 
 const Content = () => {
+  const [entryParams, setEntryParams] = useSearchParams();
   const { topics, addTopic, updateTopic, updateContentItem, platforms, addPlatform, deletePlatform } = useDataStore();
   const [showCreate, setShowCreate] = useState(false);
   const [expandedTopics, setExpandedTopics] = useState<Record<number, boolean>>({ 1: true, 2: true, 3: true });
@@ -32,6 +34,14 @@ const Content = () => {
   const [tab, setTab] = useState<TabKey>("topics");
   const [platformFilters, setPlatformFilters] = useState<string[]>([]);
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
+
+  // Home opens the existing form, without changing its fields or layout.
+  useEffect(() => {
+    if (entryParams.get('action') !== 'idea') return;
+    setTab('ideas'); setShowCreate(true);
+    const next = new URLSearchParams(entryParams); next.delete('action');
+    setEntryParams(next, { replace: true });
+  }, [entryParams, setEntryParams]);
 
   // Derived data
   const allContent = useMemo(() => {
