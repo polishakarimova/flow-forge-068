@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { DataStoreProvider, useDataStore } from "@/lib/dataStore";
 import { ContextProvider, useContextStore } from "@/lib/contextStore";
 import { AuthProvider, useAuth } from "@/lib/authContext";
+import { BackNavigationProvider } from '@/lib/backNavigation';
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { createContext, useContext, useState, useEffect } from "react";
 import Index from "./pages/Index.tsx";
@@ -87,7 +88,7 @@ const App = () => (
         <DataStoreProvider>
           <ContextProvider>
             <BrowserRouter basename="/">
-              <AppRoutes />
+              <BackNavigationProvider><AppRoutes /></BackNavigationProvider>
             </BrowserRouter>
           </ContextProvider>
         </DataStoreProvider>

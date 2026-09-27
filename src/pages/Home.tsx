@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Bookmark, Brain, CalendarDays, ChevronRight, FileText, Lightbulb, Package, Plus, UserRound } from 'lucide-react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
-import { MobileHeader, MobileNav } from '@/components/MobileNav';
+import { MobileNav } from '@/components/MobileNav';
+import { AppBackButton } from '@/components/AppBackButton';
 import { useAuth } from '@/lib/authContext';
 import { usePublicationOverview } from '@/hooks/usePublicationOverview';
 import { dayKey, type Publication } from '@/lib/publications';
@@ -37,9 +38,10 @@ function HomeWorkspace({ userId, name }: { userId: string; name: string }) {
   const firstName = name.trim().split(/\s+/)[0];
   return <SidebarProvider><div className="min-h-screen flex w-full bg-background">
     <div className="hidden md:block"><AppSidebar /></div>
-    <main className="flex-1 min-w-0 pt-12 md:pt-6 px-4 pb-24 md:pb-8" data-home>
+    <main className="flex-1 min-w-0 pt-4 md:pt-6 px-4 pb-24 md:pb-8" data-home>
       <div className="max-w-lg mx-auto">
         <header className="flex items-center justify-between gap-3 mb-4">
+          <AppBackButton />
           <div className="min-w-0"><p className="text-xs text-muted-foreground mb-1">{new Date().toLocaleDateString('ru', { day: 'numeric', month: 'long', weekday: 'long' })}</p><h1 className="text-xl font-semibold tracking-tight break-words">{firstName ? `${firstName}, привет` : 'Главная'}</h1></div>
           <Link to="/profile" aria-label="Мой профиль" className="shrink-0 w-11 h-11 rounded-full bg-primary/10 text-primary flex items-center justify-center"><UserRound size={22} /></Link>
         </header>
@@ -69,6 +71,6 @@ function HomeWorkspace({ userId, name }: { userId: string; name: string }) {
         </section>
         <Link to={dayLink} className="mt-4 text-xs text-muted-foreground inline-flex min-h-11 items-center gap-2"><CalendarDays size={15} />Открыть план публикаций</Link>
       </div>
-    </main><MobileHeader/><MobileNav/>
+    </main><MobileNav/>
   </div></SidebarProvider>;
 }

@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { MobileNav, MobileHeader } from "@/components/MobileNav";
+import { MobileNav } from "@/components/MobileNav";
+import { AppBackButton } from "@/components/AppBackButton";
 import { PathRow } from "@/components/PathRow";
 import { ContentMultiDropdown } from "@/components/content/ContentMultiDropdown";
 import { CreateFunnelModal } from "@/components/funnels/CreateFunnelModal";
@@ -50,12 +51,13 @@ const Index = () => {
           <AppSidebar />
         </div>
 
-        <div className="flex-1 flex flex-col min-w-0 pt-8 md:pt-0">
+        <div className="flex-1 flex flex-col min-w-0">
           <header className="sticky top-0 z-50 surface-glass border-b border-border">
             <div className="w-full px-3 sm:px-4 md:px-6 max-w-[1400px] mx-auto">
               <div className="flex items-center justify-between h-12 sm:h-14 md:h-16">
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                   <SidebarTrigger className="hidden md:flex" />
+                  <AppBackButton />
                   <div className="flex items-baseline gap-1 sm:gap-2 min-w-0">
                     <h1 className="text-sm sm:text-[15px] md:text-base font-semibold text-foreground tracking-tight truncate">
                       Воронки
@@ -161,7 +163,6 @@ const Index = () => {
           </main>
         </div>
 
-        <MobileHeader />
         <MobileNav />
       </div>
       {showCreate && <CreateFunnelModal onClose={() => setShowCreate(false)} />}

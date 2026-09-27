@@ -4,7 +4,8 @@ import { ArrowLeft, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight,
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AppSidebar } from '@/components/AppSidebar';
-import { MobileHeader, MobileNav } from '@/components/MobileNav';
+import { MobileNav } from '@/components/MobileNav';
+import { AppBackButton } from '@/components/AppBackButton';
 import { useAuth } from '@/lib/authContext';
 import { usePublications } from '@/hooks/usePublications';
 import { dayKey, validDate, mergePublications, movePublications, parsePublications, publicationFormats, uid, type Publication, type PublicationFormat, type PublicationPart, type PublicationState } from '@/lib/publications';
@@ -117,7 +118,7 @@ function Workspace({ userId }: { userId: string }) {
     <div className="hidden md:block"><AppSidebar /></div>
     <div className="pub-workspace">
       <header className="pub-header surface-glass">
-        <div className="pub-heading"><div><h1>Календарь</h1><span className="pub-save" role="status">{savedLabel}</span></div>
+        <div className="pub-heading"><div className="flex items-center gap-2"><AppBackButton onBack={view.screen !== 'month' ? () => navigate({ screen: view.screen === 'publication' ? 'day' : 'month' }) : undefined}/><div><h1>Календарь</h1><span className="pub-save" role="status">{savedLabel}</span></div></div>
           <div className="pub-tools"><button aria-label="Скачать календарь" title="Скачать календарь" onClick={() => download(store.data)} disabled={!store.ready}><Download /></button><button aria-label="Загрузить контент" title="Загрузить контент" onClick={() => { setError(''); setDialog('import'); }} disabled={!store.ready}><Upload /></button><button className="pub-primary" aria-label="Новая публикация" onClick={() => { setError(''); setDialog('add'); }} disabled={!store.ready}><Plus /></button></div>
         </div>
         <div className="pub-tabs"><span aria-current="page">Публикации</span><Link to="/calendar?view=legacy">Общий календарь</Link></div>
@@ -157,7 +158,7 @@ function Workspace({ userId }: { userId: string }) {
           </>}
         </>}
       </main>
-    </div><MobileHeader /><MobileNav />
+    </div><MobileNav />
     {notice && <div className="pub-toast" role="status">{notice}</div>}
     <Dialog open={Boolean(dialog)} onOpenChange={open => { if (!open) { setDialog(null); setError(''); } }}><DialogContent className="pub-dialog"><DialogTitle>{dialog === 'add' ? 'Новая публикация' : dialog === 'import' ? 'Загрузить контент' : dialog === 'server' ? 'Открыть серверную версию?' : 'Перенести'}</DialogTitle><DialogDescription>{dialog === 'add' ? dateLabel(view.date) : dialog === 'import' ? 'Файл или JSON из нашего чата. Текущие материалы останутся на месте.' : dialog === 'server' ? 'Несохранённые правки на устройстве будут заменены. Сначала скачайте свою копию.' : moveIds.length > 1 ? `Публикаций: ${moveIds.length}. Материалы на новой дате сохранятся.` : 'Выберите новую дату публикации.'}</DialogDescription>
       {dialog === 'add' && <><label>Формат<select value={format} onChange={e => setFormat(e.target.value as PublicationFormat)}>{publicationFormats.map(f => <option key={f}>{f}</option>)}</select></label><label>Название<input value={title} onChange={e => setTitle(e.target.value)} placeholder="О чём публикация?" /></label><button className="pub-submit" onClick={addPublication}>Добавить</button></>}

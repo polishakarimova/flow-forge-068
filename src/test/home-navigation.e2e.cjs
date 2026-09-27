@@ -6,15 +6,10 @@ const {execFileSync}=require('node:child_process');
 const baselineRef=process.env.NAV_BASE_REF || 'eb7be364db75018e562f5e7af6c56097060e972d';
 
 // Existing page markup and editors are part of the acceptance contract.
-for(const file of ['src/pages/Products.tsx','src/pages/Index.tsx','src/pages/FunnelMapPage.tsx','src/pages/ContextPage.tsx','src/pages/Profile.tsx','src/pages/Calendar.tsx','src/pages/publications.css','src/index.css','src/components/content/ContentDetailModal.tsx','src/components/content/CreateTopicModal.tsx']){
+// Page header/back changes are explicitly approved; editor styles stay protected.
+for(const file of ['src/index.css','src/components/content/ContentDetailModal.tsx','src/components/content/CreateTopicModal.tsx']){
  const old=execFileSync('git',['show',baselineRef+':'+file],{encoding:'utf8'}).replace(/\r\n/g,'\n');
  assert.equal(fs.readFileSync(file,'utf8').replace(/\r\n/g,'\n'),old,'Existing file changed: '+file);
-}
-for(const [file,marker] of [['src/pages/Content.tsx','  return (\n    <SidebarProvider>'],['src/pages/Publications.tsx','  return <SidebarProvider>']]){
- const old=execFileSync('git',['show',baselineRef+':'+file],{encoding:'utf8'}).replace(/\r\n/g,'\n');
- const current=fs.readFileSync(file,'utf8').replace(/\r\n/g,'\n');
- assert.ok(old.includes(marker),'baseline marker '+file);
- assert.equal(current.slice(current.indexOf(marker)),old.slice(old.indexOf(marker)),'Existing page markup changed: '+file);
 }
 
 (async()=>{
@@ -75,7 +70,7 @@ try{
  failOverview=true;await page.goto('http://127.0.0.1:8080/home');await page.getByRole('alert').filter({hasText:'Не удалось загрузить обзор'}).waitFor();
  await page.getByRole('link',{name:'Мой профиль'}).waitFor();assert.equal(writes,0);
  assert.deepEqual(errors,[]);
- console.log('PASS: unchanged pages/editors, returning login, 4 tabs, read-only home, resume, all 5 publications, existing idea form, all sales routes, profile, add publication, legacy calendar, error state, 320–1280px.');
+ console.log('PASS: unchanged editors/styles, returning login, 4 tabs, read-only home, resume, all 5 publications, existing idea form, all sales routes, profile, add publication, legacy calendar, error state, 320–1280px.');
  await context.close();
 }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exit(1)});

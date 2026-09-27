@@ -2,7 +2,8 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, Plus, PartyPopper, X, Clock } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { MobileNav, MobileHeader } from "@/components/MobileNav";
+import { MobileNav } from "@/components/MobileNav";
+import { AppBackButton } from "@/components/AppBackButton";
 import { useDataStore } from "@/lib/dataStore";
 import { PLATFORMS, STATUSES, type ContentItemData } from "@/lib/contentData";
 import { PRODUCT_TYPES, PRODUCT_STATUSES, type Product } from "@/lib/productData";
@@ -337,13 +338,14 @@ const Calendar = () => {
           <AppSidebar />
         </div>
 
-        <div className="flex-1 flex flex-col min-w-0 pt-8 md:pt-0">
+        <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
           <header className="sticky top-0 z-50 surface-glass border-b border-border">
             <div className="w-full px-4 md:px-6 max-w-[1400px] mx-auto">
               <div className="flex items-center justify-between h-14 md:h-16">
                 <div className="flex items-center gap-3">
                   <SidebarTrigger className="hidden md:flex" />
+                  <AppBackButton />
                   <h1 className="text-[15px] md:text-base font-semibold text-foreground tracking-tight">
                     Календарь
                   </h1>
@@ -447,7 +449,6 @@ const Calendar = () => {
           </main>
         </div>
 
-        <MobileHeader />
         <MobileNav />
       </div>
 
