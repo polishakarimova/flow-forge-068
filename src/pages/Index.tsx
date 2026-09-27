@@ -68,11 +68,11 @@ const Index = () => {
 
                 <button
                   onClick={() => setShowCreate(true)}
+                  aria-label="Новая воронка"
                   className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-primary text-primary-foreground text-xs sm:text-[14px] font-medium hover:bg-primary/90 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
                   <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline">Новая воронка</span>
-                  <span className="sm:hidden">+</span>
                 </button>
               </div>
 

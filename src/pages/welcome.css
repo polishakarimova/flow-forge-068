@@ -1,0 +1,108 @@
+@import url('https://fonts.googleapis.com/css2?family=Mulish:wght@400;500;600;700&display=swap');
+
+.entry-page {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: max(36px, env(safe-area-inset-top)) 24px max(36px, env(safe-area-inset-bottom));
+  background: #f7f1e8;
+  color: #30283f;
+  font-family: Mulish, system-ui, sans-serif;
+}
+.entry-page::before {
+  content: "";
+  position: absolute;
+  inset: -15%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 64% 37%, #e7daf299, transparent 38%),
+    radial-gradient(ellipse at 23% 57%, #dcecee66, transparent 34%);
+  animation: entry-light 14s ease-in-out infinite;
+}
+.entry-page .entry-main {
+  width: 100%;
+  max-width: 390px;
+  padding: 0 0 3vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.entry-page .entry-wordmark {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2.25;
+  margin: 0 0 34px;
+  animation: entry-breathe 7s ease-in-out infinite;
+  transform-origin: center;
+}
+.entry-wordmark img {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: auto;
+  max-width: none;
+  transform: translateY(-54%);
+  user-select: none;
+  pointer-events: none;
+}
+.entry-page .entry-intro {
+  position: relative;
+  margin: 0 0 32px;
+  text-align: center;
+  color: #4f475a;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.65;
+  letter-spacing: .005em;
+}
+.entry-page .entry-primary {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-shrink: 0;
+  width: min(100%, 278px);
+  min-height: 54px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  border: 1px solid #665377;
+  border-radius: 19px;
+  background: linear-gradient(155deg, #54405e 0%, #382d45 52%, #30283f 100%);
+  color: #fff9f1;
+  font: 700 15px/1.4 Mulish, sans-serif;
+  box-shadow: inset 0 1px 0 #ffffff36, 0 5px 10px #30283f0e, 0 13px 30px #79608322;
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform .25s ease, box-shadow .25s ease;
+  animation: entry-button 7s 1s ease-in-out infinite;
+}
+.entry-primary::before {
+  content: "";
+  position: absolute;
+  inset: -50% -100%;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 43%, #eadcfc15 50%, transparent 57%);
+  transform: translateX(-35%);
+  animation: entry-sheen 10s ease-in-out infinite;
+}
+.entry-primary svg { width: 17px; height: 17px; stroke-width: 1.6; }
+.entry-page .entry-primary:hover { transform: translateY(-2px); }
+.entry-page .entry-primary:active { transform: scale(.975); }
+.entry-page .entry-primary:focus-visible { outline: 3px solid #a88aed; outline-offset: 5px; }
+.entry-page .entry-primary:disabled { cursor: wait; opacity: .75; animation: none; }
+.entry-page .entry-footnote { margin: 14px 0 0; color: #4f475a; text-align: center; font-size: 11px; line-height: 1.5; }
+.entry-feedback { width: 100%; margin-top: 24px; border: 1px solid #d8cbe8; background: #fff9; border-radius: 16px; padding: 12px 14px; font-size: 13px; line-height: 1.6; color: #4f475a; }
+.entry-feedback a { display: inline-flex; color: #694591; padding: 8px 0; text-decoration: underline; text-underline-offset: 3px; }
+@keyframes entry-breathe { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-4px) scale(1.012); } }
+@keyframes entry-button { 0%,100% { box-shadow: inset 0 1px 0 #ffffff36, 0 5px 10px #30283f0e, 0 13px 30px #79608322; } 50% { box-shadow: inset 0 1px 0 #ffffff55, 0 6px 14px #30283f12, 0 16px 36px #a88aed45; } }
+@keyframes entry-sheen { 0%,35% { transform: translateX(-35%); } 65%,100% { transform: translateX(35%); } }
+@keyframes entry-light { 0%,100% { transform: translate(0,0); } 50% { transform: translate(2%,-2%); } }
+@media (max-height: 540px) { .entry-page .entry-main { max-width: 320px; padding: 0; } .entry-page .entry-wordmark { margin-bottom: 20px; } .entry-page .entry-intro { margin-bottom: 20px; } }
+@media (prefers-reduced-motion: reduce) { .entry-page *, .entry-page *::before, .entry-page::before { animation: none!important; transition: none!important; } }

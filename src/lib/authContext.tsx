@@ -1,192 +1,94 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { authErrorMessage, safeAuthReturn } from './authNavigation';
 
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  provider: "email" | "google" | "telegram";
-  emailVerified: boolean;
-}
-
-interface AuthState {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-}
-
+export interface User { id: string; name: string; email: string; avatar?: string; provider: 'email' | 'google' | 'telegram'; emailVerified: boolean }
+type AuthResult = { success: boolean; message: string; botLink?: string };
+interface AuthState { user: User | null; isAuthenticated: boolean; isLoading: boolean }
 interface AuthContextValue extends AuthState {
-  registerWithEmail: () => Promise<{ success: boolean; message: string }>;
-  registerWithGoogle: () => Promise<{ success: boolean; message: string }>;
-  verifyEmail: (code: string, email: string) => Promise<{ success: boolean; message: string }>;
-  resendVerification: (email: string) => Promise<{ success: boolean; message: string }>;
-  login: () => Promise<{ success: boolean; message: string }>;
-  loginWithTelegram: () => Promise<{ success: boolean; message: string }>;
-  logout: () => void;
+  loginWithTelegram: (returnTo?: string) => Promise<AuthResult>;
+  completeTelegramLogin: (token: string) => Promise<AuthResult>;
+  logout: () => Promise<void>;
 }
-
 const AuthContext = createContext<AuthContextValue | null>(null);
-
-interface ApiUser {
-  id: string | number;
-  name?: string;
-  email?: string;
-  avatar?: string;
-  authProvider?: string;
-}
-
-interface TelegramWebApp {
-  initData?: string;
-  openTelegramLink?: (url: string) => void;
-}
-
-interface TelegramWindow extends Window {
-  Telegram?: {
-    WebApp?: TelegramWebApp;
-  };
-}
-
-function mapUser(user: ApiUser): User {
-  return {
-    id: String(user.id),
-    name: user.name || user.email || "Пользователь",
-    email: user.email || "",
-    avatar: user.avatar,
-    provider: user.authProvider === "telegram" ? "telegram" : "email",
-    emailVerified: true,
-  };
-}
-
+interface TelegramWindow extends Window { Telegram?: { WebApp?: { initData?: string; openTelegramLink?: (url: string) => void } } }
+interface ApiUser { id: string | number; name?: string; email?: string; avatar?: string; authProvider?: string }
+const mapUser = (user: ApiUser): User => ({ id: String(user.id), name: user.name || 'Пользователь', email: user.email || '', avatar: user.avatar, provider: 'telegram', emailVerified: true });
+const pendingKey = 'contentmap_pending_login';
+type PendingLogin = { token: string; expiresAt: string; botLink: string };
+function clearPending() { try { sessionStorage.removeItem(pendingKey); } catch { /* optional */ } }
 async function api(path: string, options?: RequestInit) {
-  const response = await fetch(path, {
-    credentials: "include",
-    headers: { "Content-Type": "application/json", ...(options?.headers || {}) },
-    ...options,
-  });
+  const response = await fetch(path, { ...options, credentials: 'include', headers: { 'Content-Type': 'application/json', ...options?.headers }, signal: AbortSignal.timeout(20000) });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "request_failed");
+  if (!response.ok) throw new Error(data.error || 'request_failed');
   return data;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ user: null, isAuthenticated: false, isLoading: true });
-
-  const refreshMe = useCallback(async () => {
-    const data = await api("/api/auth/me");
-    const user = data.user ? mapUser(data.user) : null;
+  const flight = useRef<Promise<AuthResult> | null>(null);
+  const generation = useRef(0);
+  const acceptUser = useCallback((value: ApiUser | null) => {
+    const user = value ? mapUser(value) : null;
     setState({ user, isAuthenticated: Boolean(user), isLoading: false });
-    return user;
   }, []);
-
   useEffect(() => {
-    const restoreSession = async () => {
-      const user = await refreshMe();
-      const initData = (window as TelegramWindow).Telegram?.WebApp?.initData;
-      if (!user && initData) {
-        await api("/api/auth/telegram-mini-app", {
-          method: "POST",
-          body: JSON.stringify({ initData }),
-        });
-        await refreshMe();
-      }
-    };
-    restoreSession().catch(() => setState({ user: null, isAuthenticated: false, isLoading: false }));
-  }, [refreshMe]);
+    let active = true;
+    const initialGeneration = generation.current;
+    // Restoring is read-only. New sign-in starts only on a user's tap.
+    api('/api/auth/me').then(data => { if (active && generation.current === initialGeneration) acceptUser(data.user); })
+      .catch(() => { if (active && generation.current === initialGeneration) acceptUser(null); });
+    return () => { active = false; };
+  }, [acceptUser]);
 
-  const registerWithEmail = useCallback(async () => {
-    return { success: false, message: "Вход по паролю отключён. Используйте Telegram." };
+  const runLogin = useCallback((work: () => Promise<AuthResult>) => {
+    if (flight.current) return flight.current;
+    generation.current++;
+    setState(s => ({ ...s, isLoading: true }));
+    const promise = work().catch((e: Error) => ({ success: false, message: authErrorMessage(e.message) }))
+      .finally(() => { flight.current = null; setState(s => ({ ...s, isLoading: false })); });
+    flight.current = promise;
+    return promise;
   }, []);
-
-  const registerWithGoogle = useCallback(async () => {
-    return { success: false, message: "Google-вход сейчас отключён. Используйте Telegram." };
-  }, []);
-
-  const verifyEmail = useCallback(async () => {
-    return { success: true, message: "Email подтверждён" };
-  }, []);
-
-  const resendVerification = useCallback(async () => {
-    return { success: true, message: "Подтверждение не требуется" };
-  }, []);
-
-  const login = useCallback(async () => {
-    return { success: false, message: "Вход по паролю отключён. Используйте Telegram." };
-  }, []);
-
-  const loginWithTelegram = useCallback(async () => {
-    setState((s) => ({ ...s, isLoading: true }));
-    try {
-      const webApp = (window as TelegramWindow).Telegram?.WebApp;
-      if (webApp?.initData) {
-        await api("/api/auth/telegram-mini-app", {
-          method: "POST",
-          body: JSON.stringify({ initData: webApp.initData }),
-        });
-        await refreshMe();
-        return { success: true, message: "Вход через Telegram выполнен" };
-      }
-
-      const pendingKey = "contentmap_pending_login";
-      let pending: { token: string; expiresAt: string; botLink: string } | null = null;
-      try { pending = JSON.parse(sessionStorage.getItem(pendingKey) || "null"); } catch { /* storage may be unavailable */ }
-      if (!pending?.token || !Number.isFinite(Date.parse(pending.expiresAt)) || Date.parse(pending.expiresAt) <= Date.now()) pending = null;
-      const popup = pending || webApp?.openTelegramLink ? null : window.open("about:blank", "_blank");
-      if (popup) popup.opener = null;
-      const requestedReturn = new URLSearchParams(window.location.search).get("returnTo") || "/calendar";
-      const returnTo = requestedReturn.startsWith("/") && !requestedReturn.startsWith("//") ? requestedReturn : "/calendar";
-      const start = pending || await api("/api/auth/telegram-login-token", {
-        method: "POST",
-        body: JSON.stringify({ returnTo }),
-      });
-      try { sessionStorage.setItem(pendingKey, JSON.stringify(start)); } catch { /* login still works without storage */ }
-      if (pending) {
-        // Resume the same one-time request after a blocked popup or returning from Telegram.
-      } else if (webApp?.openTelegramLink) {
-        webApp.openTelegramLink(start.botLink);
-      } else if (popup) {
-        popup.location.href = start.botLink;
-      } else {
-        return { success: false, message: `Откройте бота: ${start.botLink} После подтверждения вернитесь сюда и нажмите «Войти через Telegram» ещё раз.` };
-      }
-
-      for (let attempt = 0; attempt < 300; attempt += 1) {
-        await new Promise((resolve) => window.setTimeout(resolve, 2000));
-        const response = await fetch(`/api/auth/telegram-login-token/${encodeURIComponent(start.token)}`, { credentials: "include" });
-        if (response.status === 202) continue;
-        if (response.ok) {
-          try { sessionStorage.removeItem(pendingKey); } catch { /* optional storage */ }
-          const data = await response.json().catch(() => ({}));
-          await refreshMe();
-          if (data.returnTo && data.returnTo !== window.location.pathname) {
-            window.location.assign(data.returnTo);
-          }
-          return { success: true, message: "Вход через Telegram выполнен" };
-        }
-        try { sessionStorage.removeItem(pendingKey); } catch { /* optional storage */ }
-        return { success: false, message: "Ссылка для входа устарела. Нажмите «Войти через Telegram» ещё раз." };
-      }
-      return { success: false, message: "Telegram не подтвердил вход. Нажмите кнопку ещё раз." };
-    } catch (error) {
-      return { success: false, message: error instanceof Error ? error.message : "Не удалось войти через Telegram" };
-    } finally {
-      setState((s) => ({ ...s, isLoading: false }));
+  const finishToken = useCallback(async (token: string): Promise<AuthResult> => {
+    const response = await fetch('/api/auth/telegram-login-token/' + encodeURIComponent(token), { credentials: 'include', signal: AbortSignal.timeout(20000) });
+    if (response.status === 202) return { success: false, message: 'Подтвердите вход в боте и нажмите «Я подтвердил(а)».' };
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) { if ([404,410].includes(response.status)) clearPending(); throw new Error(data.error || 'request_failed'); }
+    if (!data.user) throw new Error('user_missing');
+    clearPending(); acceptUser(data.user);
+    return { success: true, message: '' };
+  }, [acceptUser]);
+  const completeTelegramLogin = useCallback((token: string) => runLogin(() => finishToken(token)), [runLogin, finishToken]);
+  const loginWithTelegram = useCallback((destination?: string) => runLogin(async () => {
+    const webApp = (window as TelegramWindow).Telegram?.WebApp;
+    if (webApp?.initData) {
+      const data = await api('/api/auth/telegram-mini-app', { method: 'POST', body: JSON.stringify({ initData: webApp.initData }) });
+      if (!data.user) throw new Error('user_missing');
+      acceptUser(data.user);
+      return { success: true, message: '' };
     }
-  }, [refreshMe]);
+    let pending: PendingLogin | null = null;
+    try { pending = JSON.parse(sessionStorage.getItem(pendingKey) || 'null'); } catch { /* optional */ }
+    if (!pending?.token || !Number.isFinite(Date.parse(pending.expiresAt)) || Date.parse(pending.expiresAt) <= Date.now()) { pending = null; clearPending(); }
+    if (pending) {
+      const result = await finishToken(pending.token);
+      return result.success ? result : { ...result, botLink: pending.botLink };
+    }
+    const popup = webApp?.openTelegramLink ? null : window.open('about:blank', '_blank');
+    if (popup) popup.opener = null;
+    try {
+      const start = await api('/api/auth/telegram-login-token', { method: 'POST', body: JSON.stringify({ returnTo: safeAuthReturn(destination) }) });
+      try { sessionStorage.setItem(pendingKey, JSON.stringify(start)); } catch { /* optional */ }
+      if (webApp?.openTelegramLink) webApp.openTelegramLink(start.botLink);
+      else if (popup) popup.location.href = start.botLink;
+      return { success: false, message: 'Подтвердите вход в Telegram, затем вернитесь сюда.', botLink: start.botLink };
+    } catch (error) { popup?.close(); throw error; }
+  }), [acceptUser, finishToken, runLogin]);
 
   const logout = useCallback(async () => {
-    await api("/api/auth/logout", { method: "POST" }).catch(() => null);
-    setState({ user: null, isAuthenticated: false, isLoading: false });
-  }, []);
-
-  return (
-    <AuthContext.Provider value={{ ...state, registerWithEmail, registerWithGoogle, verifyEmail, resendVerification, login, loginWithTelegram, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+    await api('/api/auth/logout', { method: 'POST' });
+    clearPending(); acceptUser(null);
+  }, [acceptUser]);
+  return <AuthContext.Provider value={{ ...state, loginWithTelegram, completeTelegramLogin, logout }}>{children}</AuthContext.Provider>;
 }
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
-}
+export function useAuth() { const ctx = useContext(AuthContext); if (!ctx) throw new Error('useAuth must be used within AuthProvider'); return ctx; }

@@ -4,16 +4,12 @@ import {
   MoreHorizontal,
   Pause,
   Play,
-  Copy,
-  Archive,
-  Trash2,
   Settings,
 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { FunnelMap } from "@/components/FunnelMap";
@@ -126,16 +122,6 @@ export function PathRow({ funnel, defaultExpanded = false, onToggleActive, onEdi
               className="gap-2"
             >
               <Settings className="w-4 h-4" /> Редактировать
-            </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2">
-              <Copy className="w-4 h-4" /> Дублировать
-            </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2">
-              <Archive className="w-4 h-4" /> Архивировать
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive">
-              <Trash2 className="w-4 h-4" /> Удалить
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

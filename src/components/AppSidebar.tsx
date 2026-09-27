@@ -51,7 +51,7 @@ export function AppSidebar() {
               className="logo-gradient text-[20px] sm:text-[22px] leading-none cursor-pointer bg-transparent border-none p-0"
               title="На главную"
             >
-              Content Map
+              Карта контента
             </button>
           </div>
         )}
