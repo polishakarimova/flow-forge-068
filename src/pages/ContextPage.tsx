@@ -26,6 +26,7 @@ import { useDataStore } from "@/lib/dataStore";
 import {
   calculateContextCompletion,
   type AiAnalysis,
+  type ExpertProfile,
   type ProductContext,
   type ReferenceItem,
   type SourceMaterial,
@@ -1031,7 +1032,7 @@ export default function ContextPage() {
   };
 
   const firstEmptyQuestionIndex = (block: (typeof PERSONALITY_BLOCKS)[number]) => {
-    const index = block.fields.findIndex(([key]) => !String(expertProfile.personalityAnswers[key] || "").trim());
+    const index = (block.fields as readonly (readonly [string, string])[]).findIndex(([key]) => !String(expertProfile.personalityAnswers[key] || "").trim());
     return index >= 0 ? index : 0;
   };
 
@@ -1051,7 +1052,7 @@ export default function ContextPage() {
   };
 
   const firstEmptyAudienceQuestionIndex = (block: (typeof AUDIENCE_INPUT_BLOCKS)[number]) => {
-    const index = block.fields.findIndex(([key]) => !String(expertProfile[block.section][key] || "").trim());
+    const index = (block.fields as readonly (readonly [string, string])[]).findIndex(([key]) => !String(expertProfile[block.section][key] || "").trim());
     return index >= 0 ? index : 0;
   };
 
@@ -1337,8 +1338,8 @@ export default function ContextPage() {
                           {PRODUCT_CONTEXT_FIELDS.map(([field, label]) => (
                             <FieldCard key={field} title={label} value={String(ctx[field] || "")} onSave={(value) => saveProductField(product.id, field, value)} />
                           ))}
-                          <FieldCard title="Почему не покупают" value={ctx.rawData?.why_not_buy || ""} onSave={(value) => saveProductField(product.id, "rawData", { ...ctx.rawData, why_not_buy: value })} />
-                          <FieldCard title="Какие кейсы связаны с продуктом" value={ctx.rawData?.cases || ""} onSave={(value) => saveProductField(product.id, "rawData", { ...ctx.rawData, cases: value })} />
+                          <FieldCard title="Почему не покупают" value={String(ctx.rawData?.why_not_buy || "")} onSave={(value) => saveProductField(product.id, "rawData", { ...ctx.rawData, why_not_buy: value })} />
+                          <FieldCard title="Какие кейсы связаны с продуктом" value={String(ctx.rawData?.cases || "")} onSave={(value) => saveProductField(product.id, "rawData", { ...ctx.rawData, cases: value })} />
                         </div>
                       </div>
                     );

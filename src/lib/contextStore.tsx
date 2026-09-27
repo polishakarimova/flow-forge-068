@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/authContext";
+import { toast } from "sonner";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -79,6 +80,8 @@ interface ContextStore {
   sourceMaterials: SourceMaterial[];
   aiAnalyses: AiAnalysis[];
   isContextLoading: boolean;
+  stateReady: boolean;
+  stateError: string;
   loadExpertProfile: () => Promise<void>;
   updateExpertProfile: (patch: Partial<ExpertProfile>) => Promise<void>;
   loadProductContexts: () => Promise<void>;
@@ -139,23 +142,25 @@ export function calculateContextCompletion(profile: ExpertProfile, productContex
 }
 
 async function loadState(): Promise<ContextState | null> {
-  const response = await fetch("/api/state/context", { credentials: "include" });
-  if (!response.ok) return null;
+  const response = await fetch("/api/state/context", { credentials: "include", signal: AbortSignal.timeout(20000) });
+  if (!response.ok) throw new Error('context_load_failed');
   const { data } = await response.json();
   return data;
 }
 
 async function saveState(data: ContextState) {
-  await fetch("/api/state/context", {
+  const response = await fetch("/api/state/context", {
     method: "PUT",
+    signal: AbortSignal.timeout(20000),
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ data }),
   });
+  if (!response.ok) throw new Error('context_save_failed');
 }
 
 export function ContextProvider({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [expertProfile, setExpertProfile] = useState<ExpertProfile>(emptyProfile);
   const [productContexts, setProductContexts] = useState<ProductContext[]>([]);
   const [references, setReferences] = useState<ReferenceItem[]>([]);
@@ -163,9 +168,12 @@ export function ContextProvider({ children }: { children: ReactNode }) {
   const [aiAnalyses, setAiAnalyses] = useState<AiAnalysis[]>(emptyContextState.aiAnalyses);
   const [isContextLoading, setIsContextLoading] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [stateError, setStateError] = useState('');
+  const [loadedUser, setLoadedUser] = useState('');
 
   useEffect(() => {
     let cancelled = false;
+    setHydrated(false); setLoadedUser(''); setStateError('');
     if (!isAuthenticated) {
       setExpertProfile(emptyProfile);
       setProductContexts([]);
@@ -186,24 +194,24 @@ export function ContextProvider({ children }: { children: ReactNode }) {
         setSourceMaterials(next.sourceMaterials || []);
         setAiAnalyses(next.aiAnalyses?.length ? next.aiAnalyses : emptyContextState.aiAnalyses);
         setHydrated(true);
-        if (!data) saveState(next).catch(console.error);
+        setLoadedUser(user?.id || '');
       })
-      .catch((err) => console.error("Failed to load context:", err))
+      .catch(() => { if (!cancelled) setStateError('Не удалось загрузить контекст. Сохранённые данные не изменены.'); })
       .finally(() => {
         if (!cancelled) setIsContextLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id]);
 
   useEffect(() => {
-    if (!isAuthenticated || !hydrated) return;
+    if (!isAuthenticated || !hydrated || loadedUser !== user?.id) return;
     const timer = window.setTimeout(() => {
-      saveState({ expertProfile, productContexts, references, sourceMaterials, aiAnalyses }).catch(console.error);
+      saveState({ expertProfile, productContexts, references, sourceMaterials, aiAnalyses }).then(() => toast.dismiss('context-save')).catch(() => toast.error('Контекст не сохранился. Не закрывайте страницу; проверьте интернет и повторите изменение.', { id: 'context-save', duration: Infinity }));
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [isAuthenticated, hydrated, expertProfile, productContexts, references, sourceMaterials, aiAnalyses]);
+  }, [isAuthenticated, hydrated, loadedUser, user?.id, expertProfile, productContexts, references, sourceMaterials, aiAnalyses]);
 
   const loadExpertProfile = useCallback(async () => {}, []);
   const loadProductContexts = useCallback(async () => {}, []);
@@ -257,6 +265,7 @@ export function ContextProvider({ children }: { children: ReactNode }) {
     sourceMaterials,
     aiAnalyses,
     isContextLoading,
+    stateReady: hydrated && loadedUser === user?.id, stateError,
     loadExpertProfile,
     updateExpertProfile,
     loadProductContexts,
@@ -270,7 +279,7 @@ export function ContextProvider({ children }: { children: ReactNode }) {
     updateSourceMaterial,
     deleteSourceMaterial,
     loadAiAnalyses,
-  }), [expertProfile, productContexts, references, sourceMaterials, aiAnalyses, isContextLoading, loadExpertProfile, updateExpertProfile, loadProductContexts, upsertProductContext, loadReferences, addReference, updateReference, deleteReference, loadSourceMaterials, addSourceMaterial, updateSourceMaterial, deleteSourceMaterial, loadAiAnalyses]);
+  }), [expertProfile, productContexts, references, sourceMaterials, aiAnalyses, isContextLoading, loadExpertProfile, updateExpertProfile, loadProductContexts, upsertProductContext, loadReferences, addReference, updateReference, deleteReference, loadSourceMaterials, addSourceMaterial, updateSourceMaterial, deleteSourceMaterial, loadAiAnalyses, hydrated, loadedUser, user?.id, stateError]);
 
   return <ContextStoreContext.Provider value={value}>{children}</ContextStoreContext.Provider>;
 }

@@ -16,7 +16,7 @@ const BADGE_COLORS: { value: BadgeColor; label: string; hex: string }[] = [
   { value: "honey", label: "Золотой", hex: "#E8B66D" },
 ];
 
-const TIER_STEPS: { typeId: string; label: string; field: keyof Pick<Funnel, "leadMagnet" | "tripwire" | "midTicket" | "flagship" | "consultation"> }[] = [
+const TIER_STEPS: { typeId: string; label: string; field: "leadMagnet" | "tripwire" | "midTicket" | "flagship" | "consultation" }[] = [
   { typeId: "lead_magnet", label: "Лид-магнит", field: "leadMagnet" },
   { typeId: "tripwire", label: "Трипвайер", field: "tripwire" },
   { typeId: "mid_ticket", label: "Среднечек", field: "midTicket" },

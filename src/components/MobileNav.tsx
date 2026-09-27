@@ -55,7 +55,7 @@ export function MobileHeader() {
         onClick={() => navigate("/")}
         className="logo-gradient text-[14px] leading-none cursor-pointer bg-transparent border-none p-0"
       >
-        Content Map
+        Карта контента
       </button>
       <button
         onClick={() => { resetTour(); startTour(); }}

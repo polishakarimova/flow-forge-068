@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { PrismaClient } from "@prisma/client";
 import { pollTelegramUpdates } from "./telegram-polling.mjs";
+import { saveTelegramAccount } from "./telegram-account.mjs";
 
 const root = new URL("../", import.meta.url);
 const distDir = fileURLToPath(new URL("../dist", import.meta.url));
@@ -105,7 +106,7 @@ async function ensureSchema() {
   await pgPool.query(`
     create extension if not exists pgcrypto;
     do $$ begin
-      create type "AuthProvider" as enum ('TELEGRAM');
+      create type "AuthProvider" as enum ('telegram');
     exception when duplicate_object then null; end $$;
     do $$ begin
       create type "TelegramLoginStatus" as enum ('PENDING', 'CONFIRMED', 'USED', 'EXPIRED');
@@ -188,7 +189,7 @@ async function readUsers() {
 
 function isAdminUser(user) {
   if (!user) return false;
-  if (ADMIN_TELEGRAM_IDS.size === 0) return !ADMIN_TOKEN;
+  if (ADMIN_TELEGRAM_IDS.size === 0) return false;
   return ADMIN_TELEGRAM_IDS.has(String(user.telegramId || ""));
 }
 
@@ -449,52 +450,11 @@ function validateTelegramInitData(initData) {
 }
 
 async function upsertTelegramUser(telegramUser) {
-  const telegramId = String(telegramUser.id);
-  const name = [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(" ").trim() || telegramUser.username || `Telegram ${telegramId}`;
-  const existingAccount = await prisma.telegramAccount.findUnique({ where: { telegramId }, include: { user: true } });
-  if (existingAccount) {
-    await prisma.telegramAccount.update({
-      where: { telegramId },
-      data: {
-        username: telegramUser.username || existingAccount.username,
-        firstName: telegramUser.first_name || existingAccount.firstName,
-        lastName: telegramUser.last_name || existingAccount.lastName,
-        photoUrl: telegramUser.photo_url || existingAccount.photoUrl,
-        languageCode: telegramUser.language_code || existingAccount.languageCode,
-      },
-    });
-    const user = await prisma.user.update({
-      where: { id: existingAccount.userId },
-      data: { displayName: name, avatarUrl: telegramUser.photo_url || existingAccount.user.avatarUrl || undefined },
-    });
-    return publicUser({ ...user, telegramId, telegramUsername: telegramUser.username ? `@${telegramUser.username}` : "" });
-  }
-
   const legacyUsers = await readUsers().catch(() => []);
+  const telegramId = String(telegramUser.id);
   const legacy = legacyUsers.find((item) => String(item.telegramId || "") === telegramId || item.email === `telegram:${telegramId}`);
-  const userId = legacy?.id || uid();
-  const user = await prisma.user.upsert({
-    where: { id: userId },
-    update: { displayName: name, avatarUrl: telegramUser.photo_url || undefined },
-    create: { id: userId, displayName: name, avatarUrl: telegramUser.photo_url || undefined },
-  });
-  await prisma.authIdentity.upsert({
-    where: { provider_providerUserId: { provider: "TELEGRAM", providerUserId: telegramId } },
-    update: { userId: user.id },
-    create: { userId: user.id, provider: "TELEGRAM", providerUserId: telegramId },
-  });
-  await prisma.telegramAccount.create({
-    data: {
-      userId: user.id,
-      telegramId,
-      username: telegramUser.username || null,
-      firstName: telegramUser.first_name || null,
-      lastName: telegramUser.last_name || null,
-      photoUrl: telegramUser.photo_url || null,
-      languageCode: telegramUser.language_code || null,
-    },
-  });
-  return publicUser({ ...user, telegramId, telegramUsername: telegramUser.username ? `@${telegramUser.username}` : "" });
+  const user = await prisma.$transaction(tx => saveTelegramAccount(tx, telegramUser, legacy?.id), { timeout: 15000 });
+  return publicUser(user);
 }
 
 function tokenHash(token) {
@@ -649,7 +609,9 @@ async function api(req, res, url) {
       setSessionCookie(res, token);
       return send(res, 200, { user: publicUser(user) });
     } catch (error) {
-      return send(res, 401, { error: error.message || "telegram_auth_failed" });
+      const invalid = /^telegram_(auth_|user_|hash_|init_)/.test(error.message || "");
+      console.error("Telegram sign-in failed", { name: error.name, code: error.code || (invalid ? error.message : "database_or_server") });
+      return send(res, invalid ? 401 : 503, { error: invalid ? "telegram_auth_expired" : "auth_temporarily_unavailable" });
     }
   }
 
@@ -660,7 +622,8 @@ async function api(req, res, url) {
       const login = await createTelegramLoginToken(input.returnTo || url.searchParams.get("returnTo") || "/");
       return send(res, 201, { ok: true, token: login.token, expiresAt: login.expiresAt, returnTo: login.returnTo, botLink: login.botLink, botUrl: login.botLink });
     } catch (error) {
-      return send(res, 500, { error: error.message || "telegram_login_token_failed" });
+      console.error("Telegram login start failed", { name: error.name, code: error.code });
+      return send(res, 503, { error: "auth_temporarily_unavailable" });
     }
   }
 
@@ -691,7 +654,7 @@ async function api(req, res, url) {
   if (path === "/api/telegram/setup-webhook") {
     if (req.method !== "POST") return methodNotAllowed(res);
     const input = await body(req).catch(() => ({}));
-    if (TELEGRAM_WEBHOOK_SECRET && input.secret && !safeCompare(input.secret, TELEGRAM_WEBHOOK_SECRET)) {
+    if (!TELEGRAM_WEBHOOK_SECRET || !input.secret || !safeCompare(input.secret, TELEGRAM_WEBHOOK_SECRET)) {
       return send(res, 401, { error: "invalid_secret" });
     }
     await setupTelegramBot();
@@ -782,7 +745,7 @@ createServer(async (req, res) => {
     return await serveStatic(req, res, url);
   } catch (error) {
     console.error(error);
-    return send(res, 500, { error: error.message || "server_error" });
+    return send(res, 500, { error: "server_error" });
   }
 }).listen(PORT, "127.0.0.1", () => {
   console.log(`Content Map server listening on http://127.0.0.1:${PORT}`);

@@ -8,7 +8,7 @@ datasource db {
 }
 
 enum AuthProvider {
-  TELEGRAM
+  TELEGRAM @map("telegram")
 }
 
 enum TelegramLoginStatus {
