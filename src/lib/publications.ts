@@ -1,11 +1,13 @@
 export const publicationFormats = ['Рилс', 'Карусель', 'Пост ТГ', 'Сторис', 'Threads'] as const;
 export type PublicationFormat = typeof publicationFormats[number];
-export type PublicationPart = { id: string; text: string; published: boolean; sourceText?: string; incomingText?: string; previousText?: string };
+export type PublicationPart = { id: string; text: string; published: boolean; scheduledAt?: string; approvalStatus?: 'draft' | 'approved'; sourceText?: string; incomingText?: string; previousText?: string };
 export type Publication = { id: string; date: string; format: PublicationFormat; title: string; parts: PublicationPart[]; contentItemId?: number };
 export type PublicationState = { schema: 1; items: Publication[] };
 export const emptyPublications: PublicationState = { schema: 1, items: [] };
 export const dayKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 export const uid = () => crypto.randomUUID();
+export const kaliningradTime = (iso?: string) => iso ? new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Kaliningrad', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(iso)) : '';
+export const scheduleInKaliningrad = (date: string, time: string) => `${date}T${time}:00+02:00`;
 export function validDate(value: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && dayKey(new Date(`${value}T12:00:00`)) === value;
 }
@@ -24,6 +26,8 @@ export function parsePublications(input: unknown): PublicationState {
     const parts = new Set<string>();
     for (const part of item.parts) {
       if (!part || typeof part.id !== 'string' || !part.id || parts.has(part.id) || typeof part.text !== 'string' || part.text.length > 50000 || (part.published !== undefined && typeof part.published !== 'boolean')) throw new Error('Проверьте текст и ID блоков публикации.');
+      if (part.scheduledAt !== undefined && (typeof part.scheduledAt !== 'string' || Number.isNaN(Date.parse(part.scheduledAt)) || part.scheduledAt.slice(0, 10) !== item.date)) throw new Error('Проверьте время публикации.');
+      if (part.approvalStatus !== undefined && !['draft', 'approved'].includes(part.approvalStatus)) throw new Error('Проверьте статус согласования.');
       for (const key of ['sourceText', 'incomingText', 'previousText'] as const) if (part[key] !== undefined && typeof part[key] !== 'string') throw new Error('Некорректная версия текста.');
       parts.add(part.id);
     }
@@ -52,5 +56,5 @@ export function mergePublications(current: PublicationState, incoming: Publicati
 }
 export function movePublications(state: PublicationState, ids: string[], date: string): PublicationState {
   if (!validDate(date)) throw new Error('Выберите дату.');
-  return parsePublications({ ...state, items: state.items.map(i => ids.includes(i.id) ? { ...i, date } : i) });
+  return parsePublications({ ...state, items: state.items.map(i => ids.includes(i.id) ? { ...i, date, parts: i.parts.map(p => ({ ...p, scheduledAt: p.scheduledAt ? scheduleInKaliningrad(date, kaliningradTime(p.scheduledAt)) : undefined, approvalStatus: p.approvalStatus ? 'draft' : undefined })) } : i) });
 }

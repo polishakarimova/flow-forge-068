@@ -8,6 +8,7 @@ import pg from "pg";
 import { PrismaClient } from "@prisma/client";
 import { pollTelegramUpdates } from "./telegram-polling.mjs";
 import { saveTelegramAccount } from "./telegram-account.mjs";
+import { ensureThreadsSchema, beginThreadsConnect, finishThreadsConnect, threadsStatus, runThreadsScheduler } from "./threads-autopost.mjs";
 
 const root = new URL("../", import.meta.url);
 const distDir = fileURLToPath(new URL("../dist", import.meta.url));
@@ -40,6 +41,9 @@ const TELEGRAM_UPDATES_MODE = process.env.TELEGRAM_UPDATES_MODE || "webhook";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 const ADMIN_TELEGRAM_IDS = new Set(String(process.env.ADMIN_TELEGRAM_IDS || "").split(",").map((id) => id.trim()).filter(Boolean));
 const SESSION_SECRET = process.env.SESSION_SECRET || TELEGRAM_WEBHOOK_SECRET || ADMIN_TOKEN || TELEGRAM_BOT_TOKEN || "";
+const THREADS_APP_ID = process.env.THREADS_APP_ID || "";
+const THREADS_APP_SECRET = process.env.THREADS_APP_SECRET || "";
+const THREADS_TOKEN_SECRET = process.env.THREADS_TOKEN_SECRET || SESSION_SECRET;
 const cookieName = "contentmap_session";
 let telegramBotInfo = null;
 
@@ -669,6 +673,39 @@ async function api(req, res, url) {
     return send(res, 200, await readAdminOverview());
   }
 
+  if (path === '/api/threads/status') {
+    if (req.method !== 'GET') return methodNotAllowed(res);
+    const user = await requireUser(req, res);
+    if (!user) return;
+    return send(res, 200, await threadsStatus(pgPool, user.id, Boolean(THREADS_APP_ID && THREADS_APP_SECRET)));
+  }
+
+  if (path === '/api/threads/connect') {
+    if (req.method !== 'GET') return methodNotAllowed(res);
+    const user = await requireUser(req, res);
+    if (!user) return;
+    if (!THREADS_APP_ID || !THREADS_APP_SECRET) return send(res, 503, { error: 'threads_app_not_configured' });
+    const destination = await beginThreadsConnect(pgPool, user.id, THREADS_APP_ID, APP_URL);
+    res.writeHead(302, { Location: destination });
+    return res.end();
+  }
+
+  if (path === '/api/threads/callback') {
+    if (req.method !== 'GET') return methodNotAllowed(res);
+    const code = url.searchParams.get('code');
+    const state = url.searchParams.get('state');
+    if (!code || !state) return send(res, 400, { error: 'threads_authorization_missing' });
+    try {
+      await finishThreadsConnect(pgPool, state, code, { appId: THREADS_APP_ID, appSecret: THREADS_APP_SECRET, appUrl: APP_URL, tokenSecret: THREADS_TOKEN_SECRET });
+      res.writeHead(302, { Location: `${APP_URL}/calendar?threads=connected` });
+      return res.end();
+    } catch (error) {
+      console.error('Threads connection failed', { message: error.message });
+      res.writeHead(302, { Location: `${APP_URL}/calendar?threads=error` });
+      return res.end();
+    }
+  }
+
   if (path === "/api/admin/users") {
     if (req.method !== "GET") return methodNotAllowed(res);
     const admin = await requireAdmin(req, res, url);
@@ -736,7 +773,20 @@ async function setupTelegramBot() {
 
 let telegramPollingStarted = false;
 await ensureSchema();
+await ensureThreadsSchema(pgPool);
 setupTelegramBot().catch((error) => console.error("Telegram setup failed:", error));
+if (process.env.THREADS_AUTOPUBLISH_ENABLED === '1') {
+  let threadsTickRunning = false;
+  const tick = async () => {
+    if (threadsTickRunning) return;
+    threadsTickRunning = true;
+    try { const result = await runThreadsScheduler(pgPool, THREADS_TOKEN_SECRET); if (result) console.log('Threads scheduler', result); }
+    catch (error) { console.error('Threads scheduler failed', { message: error.message }); }
+    finally { threadsTickRunning = false; }
+  };
+  setInterval(() => void tick(), 20_000).unref();
+  void tick();
+}
 
 createServer(async (req, res) => {
   try {

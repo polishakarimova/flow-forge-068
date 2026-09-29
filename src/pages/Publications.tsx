@@ -8,11 +8,12 @@ import { MobileNav } from '@/components/MobileNav';
 import { AppBackButton } from '@/components/AppBackButton';
 import { useAuth } from '@/lib/authContext';
 import { usePublications } from '@/hooks/usePublications';
-import { dayKey, validDate, mergePublications, movePublications, parsePublications, publicationFormats, uid, type Publication, type PublicationFormat, type PublicationPart, type PublicationState } from '@/lib/publications';
+import { dayKey, validDate, mergePublications, movePublications, parsePublications, publicationFormats, uid, kaliningradTime, scheduleInKaliningrad, type Publication, type PublicationFormat, type PublicationPart, type PublicationState } from '@/lib/publications';
 import Calendar from './Calendar';
 import './publications.css';
 
 type View = { date: string; month: string; screen: 'month' | 'day' | 'publication'; item: string; open: string[]; lastCopied: string; scroll: number };
+type ThreadsStatus = { available: boolean; connected: boolean; username: string | null; queue: { publication_id: string; part_id: string; status: string }[] };
 function defaultView(): View { const date = dayKey(new Date()); return { date, month: date.slice(0, 7), screen: 'month', item: '', open: [], lastCopied: '', scroll: 0 }; }
 function readView(key: string): View { try { return { ...defaultView(), ...JSON.parse(localStorage.getItem(key) || '{}') }; } catch { return defaultView(); } }
 const dateLabel = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString('ru', { day: 'numeric', month: 'long', weekday: 'short' });
@@ -46,11 +47,17 @@ function Workspace({ userId }: { userId: string }) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [editing, setEditing] = useState('');
+  const [threadsStatus, setThreadsStatus] = useState<ThreadsStatus | null>(null);
   const originals = useRef<Record<string, string>>({});
   const lastTap = useRef<{ id: string; time: number }>({ id: '', time: 0 });
   const item = store.data.items.find(i => i.id === view.item);
   const dayItems = store.data.items.filter(i => i.date === view.date);
   const dayDone = dayItems.filter(done).length;
+  useEffect(() => {
+    let active = true;
+    fetch('/api/threads/status', { credentials: 'include' }).then(r => r.ok ? r.json() : null).then(data => { if (active) setThreadsStatus(data); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   // Navigation targets from Home; the calendar's UI and edit/save logic are unchanged.
   useEffect(() => {
@@ -82,7 +89,7 @@ function Workspace({ userId }: { userId: string }) {
   function update(next: PublicationState) { try { store.change(next); return true; } catch (e) { setError(e instanceof Error ? e.message : 'Проверьте публикацию.'); return false; } }
   function patchPart(id: string, patch: Partial<PublicationPart>) {
     if (!item) return;
-    update({ ...store.data, items: store.data.items.map(i => i.id === item.id ? { ...i, parts: i.parts.map(p => p.id === id ? { ...p, ...patch } : p) } : i) });
+    update({ ...store.data, items: store.data.items.map(i => i.id === item.id ? { ...i, parts: i.parts.map(p => p.id === id ? { ...p, ...patch, approvalStatus: patch.text !== undefined || patch.scheduledAt !== undefined ? 'draft' : p.approvalStatus } : p) } : i) });
   }
   function togglePart(part: PublicationPart) { patchPart(part.id, { published: !part.published }); setNotice(part.published ? 'Отметка снята' : 'Отмечено как выложено'); }
   function tapPart(part: PublicationPart) {
@@ -145,11 +152,13 @@ function Workspace({ userId }: { userId: string }) {
             </> : item ? <>
               <div className="pub-detail-title"><div><span className={`pub-chip pub-type-${publicationFormats.indexOf(item.format)}`}>{item.format}</span><h2>{item.title}</h2></div><button onClick={() => openMove([item.id])} title="Перенести публикацию"><CalendarDays size={16} /></button></div>
               <div className="pub-progress"><span>{item.parts.filter(p => p.published).length} из {item.parts.length} выложено</span><span>Двойной тап — «Выложено»</span></div>
+              {item.format === 'Threads' && <div className="pub-schedule-note"><p>Время по Калининграду. Тексты и время можно исправить здесь. Автопубликация ждёт утверждения всей серии и подключения Threads.</p>{threadsStatus && <p>{threadsStatus.connected ? `Аккаунт подключён: @${threadsStatus.username}` : threadsStatus.available ? <a href="/api/threads/connect">Подключить аккаунт Threads</a> : 'Подключение Threads API ещё настраивается.'}</p>}</div>}
               <div className="pub-parts">{item.parts.map((part, index) => {
                 const id = `${item.id}:${part.id}`; const expanded = view.open.includes(id); const edit = editing === part.id;
-                const label = item.format === 'Сторис' ? `Сторис ${index + 1}` : item.format === 'Карусель' ? `Слайд ${index + 1}` : `Блок ${index + 1}`;
+                const label = item.format === 'Сторис' ? `Сторис ${index + 1}` : item.format === 'Карусель' ? `Слайд ${index + 1}` : item.format === 'Threads' ? `Пост ${index + 1}` : `Блок ${index + 1}`;
                 return <section key={part.id} className={`pub-part ${part.published ? 'pub-part-done' : ''} ${expanded ? 'pub-part-open' : ''}`}>
-                  <div className="pub-part-top"><button className="pub-part-toggle" aria-expanded={expanded} aria-label={`${label}: ${expanded ? 'свернуть' : 'раскрыть'}`} onClick={() => tapPart(part)}><span>{label}</span><ChevronDown className={expanded ? 'pub-rotated' : ''} size={14} /><span className="pub-part-labels">{view.lastCopied === id && <small>Скопировано</small>}{part.published && <small><Check size={11} /> Выложено</small>}</span></button><button className="pub-copy" aria-label={`Скопировать ${label.toLowerCase()}`} onClick={() => void copy(part)}><Copy size={15} /></button></div>
+                  <div className="pub-part-top"><button className="pub-part-toggle" aria-expanded={expanded} aria-label={`${label}: ${expanded ? 'свернуть' : 'раскрыть'}`} onClick={() => tapPart(part)}><span>{label}</span>{item.format === 'Threads' && part.scheduledAt && <span className="pub-part-time">{kaliningradTime(part.scheduledAt)}</span>}<ChevronDown className={expanded ? 'pub-rotated' : ''} size={14} /><span className="pub-part-labels">{view.lastCopied === id && <small>Скопировано</small>}{part.published && <small><Check size={11} /> Выложено</small>}</span></button><button className="pub-copy" aria-label={`Скопировать ${label.toLowerCase()}`} onClick={() => void copy(part)}><Copy size={15} /></button></div>
+                  {item.format === 'Threads' && <div className="pub-part-schedule"><label>Время публикации <input type="time" aria-label={`Время публикации: ${label}`} value={kaliningradTime(part.scheduledAt)} onChange={e => patchPart(part.id, { scheduledAt: e.target.value ? scheduleInKaliningrad(item.date, e.target.value) : undefined })} /></label><small>{(() => { const status = threadsStatus?.queue.find(q => q.publication_id === item.id && q.part_id === part.id)?.status; return status === 'published' ? 'Опубликовано' : status === 'missed' ? 'Время прошло' : status === 'uncertain' ? 'Проверьте отправку' : status === 'stale' ? 'Изменено после утверждения' : status === 'blocked' ? 'Нет подключения' : part.approvalStatus === 'approved' ? 'Утверждено' : 'Ожидает утверждения'; })()}</small></div>}
                   {edit ? <textarea className="pub-editor" aria-label={`Текст: ${label}`} autoFocus value={part.text} onChange={e => patchPart(part.id, { text: e.target.value, previousText: originals.current[id] })} /> : <div className={`pub-text ${expanded ? '' : 'pub-text-preview'}`} onDoubleClick={() => { if (!window.getSelection()?.toString()) togglePart(part); }}>{part.text || 'Нажми «Изменить», чтобы добавить текст.'}</div>}
                   <div className="pub-part-actions"><button onClick={() => { if (edit) setEditing(''); else { originals.current[id] = part.text; setEditing(part.id); setView(v => ({ ...v, open: [...new Set([...v.open, id])] })); } }}>{edit ? 'Готово' : 'Изменить'}</button><button onClick={() => togglePart(part)}>{part.published ? 'Снять отметку' : 'Отметить как выложено'}</button>{part.previousText !== undefined && <button onClick={() => { patchPart(part.id, { text: part.previousText!, previousText: undefined }); setEditing(''); }}>Отменить правку</button>}</div>
                   {part.incomingText !== undefined && <div className="pub-version"><strong>Есть новый вариант текста</strong><p>{part.incomingText}</p><div><button onClick={() => patchPart(part.id, { incomingText: undefined, sourceText: part.incomingText })}>Оставить мой</button><button onClick={() => patchPart(part.id, { text: part.incomingText!, sourceText: part.incomingText, previousText: part.text, incomingText: undefined })}>Принять новый</button></div></div>}

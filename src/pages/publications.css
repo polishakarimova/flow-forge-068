@@ -2,3 +2,9 @@
 @media(min-width:768px){.pub-workspace{padding-top:0}.pub-header{top:0;padding-top:16px}.pub-main{padding:20px}.pub-cell{height:126px;padding:7px}.pub-chip{font-size:12px;line-height:18px}.pub-detail-title,.pub-progress,.pub-parts,.pub-list,.pub-add-row,.pub-day-title,.pub-breadcrumb{max-width:660px;margin-left:auto;margin-right:auto}.pub-part-actions button{font-size:12px}.pub-text{font-size:14px}.pub-day-number{font-size:14px}.pub-save{font-size:12px}}
 @media(max-width:350px){.pub-app nav.fixed.bottom-0 span{display:none}.pub-app nav.fixed.bottom-0 a{padding-left:4px;padding-right:4px}}
 @media(prefers-reduced-motion:reduce){.pub-app *{transition:none!important;animation:none!important}}
+.pub-schedule-note{font-size:12px;line-height:1.45;color:hsl(var(--muted-foreground));margin:0 0 10px;max-width:660px}
+.pub-part-time{font-variant-numeric:tabular-nums;color:hsl(var(--primary));font-weight:650}
+.pub-part-schedule{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 10px 8px;font-size:11px;color:hsl(var(--muted-foreground))}
+.pub-part-schedule label{display:flex;align-items:center;gap:8px}
+.pub-part-schedule input{font-size:16px;color:hsl(var(--foreground));border:1px solid hsl(var(--border));border-radius:7px;padding:3px 5px;background:hsl(var(--card));width:110px}
+.pub-part-schedule small{font-size:10px;text-align:right}
