@@ -47,3 +47,12 @@ test('moving into another story series does not overwrite it', () => {
   assert.throws(() => movePublications(original, ['a'], '2026-10-01'));
   assert.equal(original.items[0].date, '2026-09-28');
 });
+test('Threads schedule keeps Kaliningrad hour when moved and requires a fresh approval', () => {
+  const post = { ...story('thread', '2026-09-29'), format: 'Threads' };
+  post.parts[0].scheduledAt = '2026-09-29T10:00:00+02:00';
+  post.parts[0].approvalStatus = 'approved';
+  const moved = movePublications(state(post), ['thread'], '2026-09-30').items[0].parts[0];
+  assert.equal(moved.scheduledAt, '2026-09-30T10:00:00+02:00');
+  assert.equal(moved.approvalStatus, 'draft');
+  assert.throws(() => parsePublications(state({ ...post, date: '2026-09-30' })));
+});
