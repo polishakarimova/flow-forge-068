@@ -61,6 +61,32 @@ export function usePublications(userId: string) {
 
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
+    let active = true;
+    let refreshing = false;
+    const refresh = async () => {
+      const s = state.current;
+      if (refreshing || document.visibilityState === 'hidden' || !s.ready || s.dirty || s.running || s.conflict) return;
+      const revision = s.revision;
+      refreshing = true;
+      try {
+        const response = await fetch(endpoint, { credentials: 'include', cache: 'no-store' });
+        if (!response.ok) return;
+        const result = await response.json();
+        // Recheck after awaiting: a user may have started editing during the request.
+        if (!active || state.current !== s || s.dirty || s.running || s.conflict || s.revision !== revision || typeof result.revision !== 'string' || result.revision === revision) return;
+        const fresh = result.data ? parsePublications(result.data) : emptyPublications;
+        s.data = fresh; s.revision = result.revision;
+        setData(fresh);
+      } catch { /* Preserve the loaded calendar through temporary connection errors. */ }
+      finally { refreshing = false; }
+    };
+    const timer = setInterval(() => void refresh(), 20000);
+    const visible = () => { if (document.visibilityState === 'visible') void refresh(); };
+    document.addEventListener('visibilitychange', visible);
+    window.addEventListener('focus', visible);
+    return () => { active = false; clearInterval(timer); document.removeEventListener('visibilitychange', visible); window.removeEventListener('focus', visible); };
+  }, []);
+  useEffect(() => {
     const hide = () => { if (document.visibilityState === 'hidden') void flush(); };
     const online = () => void flush();
     const leave = (event: BeforeUnloadEvent) => { if (state.current.dirty) { event.preventDefault(); event.returnValue = ''; } };

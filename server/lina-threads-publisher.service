@@ -1,0 +1,24 @@
+[Unit]
+Description=Lina Threads publisher for Karta Kontenta
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=polina-bot
+Group=polina-bot
+EnvironmentFile=/etc/polina-marketing-ai/env
+EnvironmentFile=/etc/lina-threads-publisher/env
+ExecStart=/usr/bin/node /opt/lina-threads-publisher/threads-publisher.mjs
+Restart=on-failure
+RestartSec=15
+StateDirectory=lina-threads-publisher
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -9,6 +9,7 @@ import { PrismaClient } from "@prisma/client";
 import { pollTelegramUpdates } from "./telegram-polling.mjs";
 import { saveTelegramAccount } from "./telegram-account.mjs";
 import { ensureThreadsSchema, beginThreadsConnect, finishThreadsConnect, threadsStatus, runThreadsScheduler } from "./threads-autopost.mjs";
+import { ensureRemoteSchema, handleRemoteRequest, remoteStatus } from './threads-remote.mjs';
 
 const root = new URL("../", import.meta.url);
 const distDir = fileURLToPath(new URL("../dist", import.meta.url));
@@ -580,6 +581,9 @@ async function handleTelegramUpdate(update) {
 }
 
 async function api(req, res, url) {
+  if (url.pathname.startsWith('/api/internal/threads/')) {
+    return handleRemoteRequest({ req, res, path: url.pathname, pool: pgPool, body, send, env: process.env });
+  }
   const path = url.pathname;
 
   if (path === "/api/auth/me") {
@@ -677,7 +681,9 @@ async function api(req, res, url) {
     if (req.method !== 'GET') return methodNotAllowed(res);
     const user = await requireUser(req, res);
     if (!user) return;
-    return send(res, 200, await threadsStatus(pgPool, user.id, Boolean(THREADS_APP_ID && THREADS_APP_SECRET)));
+    const status = await threadsStatus(pgPool, user.id, Boolean(THREADS_APP_ID && THREADS_APP_SECRET));
+    if (process.env.THREADS_WORKER_USER_ID === user.id && process.env.THREADS_WORKER_SECRET) Object.assign(status, await remoteStatus(pgPool, user.id));
+    return send(res, 200, status);
   }
 
   if (path === '/api/threads/connect') {
@@ -774,8 +780,9 @@ async function setupTelegramBot() {
 let telegramPollingStarted = false;
 await ensureSchema();
 await ensureThreadsSchema(pgPool);
+await ensureRemoteSchema(pgPool);
 setupTelegramBot().catch((error) => console.error("Telegram setup failed:", error));
-if (process.env.THREADS_AUTOPUBLISH_ENABLED === '1') {
+if (process.env.THREADS_AUTOPUBLISH_ENABLED === '1' && process.env.THREADS_REMOTE_ENABLED !== '1') {
   let threadsTickRunning = false;
   const tick = async () => {
     if (threadsTickRunning) return;
