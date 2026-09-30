@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { emptyPublications, parsePublications, type PublicationState } from '@/lib/publications';
+import { emptyPublications, parsePublications, type PublicationFormat, type PublicationState } from '@/lib/publications';
 
 type Status = 'loading' | 'saved' | 'pending' | 'saving' | 'error' | 'conflict';
 type Draft = { data: PublicationState; revision: string };
@@ -9,6 +9,8 @@ export function usePublications(userId: string) {
   const [status, setStatus] = useState<Status>('loading');
   const [message, setMessage] = useState('');
   const [ready, setReady] = useState(false);
+  const [approving, setApproving] = useState(false);
+  const approvalLock = useRef(false);
   const state = useRef({ data: emptyPublications, revision: 'new', dirty: false, running: false, conflict: false, ready: false });
   const timer = useRef<ReturnType<typeof setTimeout>>();
   const key = `karta-publications-draft:${userId}`;
@@ -96,6 +98,7 @@ export function usePublications(userId: string) {
   }, [flush]);
 
   const change = useCallback((next: PublicationState) => {
+    if (approvalLock.current) return;
     if (!state.current.ready) return;
     const validated = parsePublications(next);
     state.current.data = validated; state.current.dirty = true;
@@ -109,5 +112,25 @@ export function usePublications(userId: string) {
     // User explicitly chooses this after being offered a download of their local copy.
     localStorage.removeItem(key); state.current.dirty = false; await load();
   };
-  return { data, change, ready, status, message, retry: () => state.current.ready ? flush() : load(), loadServer };
+  const approveDay = async (date: string, format: PublicationFormat, action: 'approve' | 'unapprove') => {
+    if (approvalLock.current) return;
+    approvalLock.current = true; setApproving(true);
+    const s = state.current;
+    let ownsRequest = false;
+    try {
+      await flush();
+      if (s.dirty || s.running || s.conflict || !s.ready) throw new Error('Сначала дождитесь сохранения правок или загрузите актуальную версию календаря.');
+      s.running = true; ownsRequest = true;
+      const response = await fetch('/api/publications/approval', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'If-Match': s.revision }, body: JSON.stringify({ date, format, action }) });
+      const result = await response.json();
+      if (!response.ok) {
+        if (response.status === 409) { s.conflict = true; setStatus('conflict'); setMessage(result.message || 'Календарь обновился. Загрузите актуальную версию.'); }
+        throw new Error(result.message || (response.status === 401 ? 'Войдите снова: сессия закончилась.' : 'Не удалось утвердить серию.'));
+      }
+      if (typeof result.revision !== 'string') throw new Error('Сервер не подтвердил сохранение. Обновите страницу и проверьте статус серии.');
+      s.data = parsePublications(result.data); s.revision = result.revision;
+      setData(s.data); setStatus('saved'); setMessage(''); localStorage.removeItem(key);
+    } finally { if (ownsRequest) s.running = false; approvalLock.current = false; setApproving(false); }
+  };
+  return { data, change, ready, status, message, retry: () => state.current.ready ? flush() : load(), loadServer, approveDay, approving };
 }
