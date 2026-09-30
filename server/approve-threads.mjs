@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { isAbsolute } from 'node:path';
 import pg from 'pg';
 import { approveThreads, ensureThreadsSchema, threadsStatus } from './threads-autopost.mjs';
+import { remoteStatus } from './threads-remote.mjs';
 
 const args = process.argv.slice(2);
 const option = key => { const index = args.indexOf(key); return index < 0 ? undefined : args[index + 1]; };
@@ -39,8 +40,9 @@ try {
     posts: selected.reduce((sum, item) => sum + item.parts.length, 0),
     future: selected.flatMap(item => item.parts).filter(part => new Date(part.scheduledAt) > new Date()).length };
   if (apply) {
-    const status = await threadsStatus(pool, userId, Boolean(process.env.THREADS_APP_ID && process.env.THREADS_APP_SECRET));
-    if (!status.connected || process.env.THREADS_AUTOPUBLISH_ENABLED !== '1') throw new Error('Threads connection and enabled scheduler are required before approval');
+    const remote = process.env.THREADS_REMOTE_ENABLED === '1' && process.env.THREADS_WORKER_USER_ID === userId;
+    const status = remote ? await remoteStatus(pool, userId) : await threadsStatus(pool, userId, Boolean(process.env.THREADS_APP_ID && process.env.THREADS_APP_SECRET));
+    if (!status.connected || (!remote && process.env.THREADS_AUTOPUBLISH_ENABLED !== '1')) throw new Error('Threads connection and enabled scheduler are required before approval');
     writeFileSync(backup, JSON.stringify({ savedAt: new Date().toISOString(), data: current.rows[0].data }, null, 2), { flag: 'wx', mode: 0o600 });
     Object.assign(summary, await approveThreads(pool, userId, username, ids));
   }

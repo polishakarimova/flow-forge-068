@@ -55,8 +55,14 @@ function Workspace({ userId }: { userId: string }) {
   const dayDone = dayItems.filter(done).length;
   useEffect(() => {
     let active = true;
-    fetch('/api/threads/status', { credentials: 'include' }).then(r => r.ok ? r.json() : null).then(data => { if (active) setThreadsStatus(data); }).catch(() => {});
-    return () => { active = false; };
+    const refresh = () => {
+      if (document.visibilityState === 'hidden') return;
+      fetch('/api/threads/status', { credentials: 'include', cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(data => { if (active && data) setThreadsStatus(data); }).catch(() => {});
+    };
+    refresh();
+    const timer = setInterval(refresh, 20000);
+    document.addEventListener('visibilitychange', refresh);
+    return () => { active = false; clearInterval(timer); document.removeEventListener('visibilitychange', refresh); };
   }, []);
 
   // Navigation targets from Home; the calendar's UI and edit/save logic are unchanged.

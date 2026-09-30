@@ -89,7 +89,7 @@ export async function finishThreadsConnect(pool, state, code, { appId, appSecret
 
 export async function threadsStatus(pool, userId, configured) {
   const connection = await pool.query('select username,expires_at from cm_threads_connections where user_id=$1', [userId]);
-  const queue = await pool.query('select publication_id,part_id,status,scheduled_at,remote_post_id,error from cm_threads_queue where user_id=$1', [userId]);
+  const queue = await pool.query('select publication_id,part_id,status,scheduled_at,remote_post_id,remote_url,error from cm_threads_queue where user_id=$1', [userId]);
   return { available: configured, connected: connection.rowCount === 1, username: connection.rows[0]?.username || null,
     expiresAt: connection.rows[0]?.expires_at || null, queue: queue.rows };
 }
