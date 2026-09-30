@@ -10,6 +10,7 @@ import { pollTelegramUpdates } from "./telegram-polling.mjs";
 import { saveTelegramAccount } from "./telegram-account.mjs";
 import { ensureThreadsSchema, beginThreadsConnect, finishThreadsConnect, threadsStatus, runThreadsScheduler } from "./threads-autopost.mjs";
 import { ensureRemoteSchema, handleRemoteRequest, remoteStatus } from './threads-remote.mjs';
+import { approvePublicationDay } from './publications-approval.mjs';
 
 const root = new URL("../", import.meta.url);
 const distDir = fileURLToPath(new URL("../dist", import.meta.url));
@@ -684,6 +685,19 @@ async function api(req, res, url) {
     const status = await threadsStatus(pgPool, user.id, Boolean(THREADS_APP_ID && THREADS_APP_SECRET));
     if (process.env.THREADS_WORKER_USER_ID === user.id && process.env.THREADS_WORKER_SECRET) Object.assign(status, await remoteStatus(pgPool, user.id));
     return send(res, 200, status);
+  }
+
+  if (path === '/api/publications/approval') {
+    if (req.method !== 'POST') return methodNotAllowed(res);
+    const user = await requireUser(req, res);
+    if (!user) return;
+    try {
+      return send(res, 200, await approvePublicationDay(pgPool, user.id, await body(req), req.headers['if-match']));
+    } catch (error) {
+      if (error.status) return send(res, error.status, { message: error.message });
+      console.error('Publication approval failed', { name: error.name, code: error.code });
+      return send(res, 503, { message: 'Не удалось сохранить утверждение. Проверьте связь и попробуйте снова.' });
+    }
   }
 
   if (path === '/api/threads/connect') {

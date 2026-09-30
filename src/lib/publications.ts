@@ -49,6 +49,7 @@ export function mergePublications(current: PublicationState, incoming: Publicati
         previous.previousText = previous.text;
         previous.text = part.text;
         previous.sourceText = part.text;
+        previous.approvalStatus = 'draft';
       } else previous.incomingText = part.text;
     }
   }

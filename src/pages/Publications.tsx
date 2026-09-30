@@ -53,6 +53,25 @@ function Workspace({ userId }: { userId: string }) {
   const item = store.data.items.find(i => i.id === view.item);
   const dayItems = store.data.items.filter(i => i.date === view.date);
   const dayDone = dayItems.filter(done).length;
+  async function approveDay(format: PublicationFormat, action: 'approve' | 'unapprove') {
+    setError('');
+    try { await store.approveDay(view.date, format, action); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Не удалось утвердить серию.'); }
+  }
+  function approvalControls(format: PublicationFormat) {
+    const parts = dayItems.filter(i => i.format === format).flatMap(i => i.parts).filter(p => !p.published);
+    const approved = parts.length > 0 && parts.every(p => p.approvalStatus === 'approved');
+    const count = dayItems.filter(i => i.format === format).reduce((n, i) => n + i.parts.length, 0);
+    return <div className="pub-series-approval" aria-label={`Утверждение серии: ${format}`}>
+      <div className="pub-series-heading"><strong>{format}</strong><span>{count} блоков · {parts.length ? approved ? 'Утверждено' : 'Ждёт утверждения' : 'Выложено'}</span></div>
+      {parts.length > 0 && <>
+        <button className={approved ? 'pub-series-cancel' : 'pub-series-submit'} disabled={store.approving || store.status !== 'saved'} onClick={() => void approveDay(format, approved ? 'unapprove' : 'approve')}>
+          {store.approving ? 'Сохраняем…' : approved ? 'Снять утверждение' : 'Утвердить серию на день'}
+        </button>
+        <p>{format === 'Threads' ? approved ? 'Оставшиеся посты стоят в очереди по расписанию. Время — по Калининграду.' : 'После утверждения все посты Threads на этот день выйдут по расписанию.' : 'Утверждение сохраняется для всей серии. Автопостинг этого формата ещё не подключён.'}</p>
+      </>}
+    </div>;
+  }
   useEffect(() => {
     let active = true;
     const refresh = () => {
@@ -133,11 +152,11 @@ function Workspace({ userId }: { userId: string }) {
     <div className="pub-workspace">
       <header className="pub-header surface-glass">
         <div className="pub-heading"><div className="flex items-center gap-2"><AppBackButton onBack={view.screen !== 'month' ? () => navigate({ screen: view.screen === 'publication' ? 'day' : 'month' }) : undefined}/><div><h1>Календарь</h1>{store.status !== 'saved' && <span className="pub-save" role="status">{savedLabel}</span>}</div></div>
-          <div className="pub-tools"><button className="pub-primary" aria-label="Новая публикация" onClick={() => { setError(''); setDialog('add'); }} disabled={!store.ready}><Plus /></button></div>
+          <div className="pub-tools"><button className="pub-primary" aria-label="Новая публикация" onClick={() => { setError(''); setDialog('add'); }} disabled={!store.ready || store.approving}><Plus /></button></div>
         </div>
         <div className="pub-tabs"><span aria-current="page">Публикации</span><Link to="/calendar?view=legacy">Общий календарь</Link></div>
       </header>
-      <main className="pub-main">
+      <main className="pub-main" aria-busy={store.approving}><fieldset className="pub-edit-lock" disabled={store.approving}>
         {store.message && <div className="pub-warning" role="alert">{store.message}<div>{store.status === 'conflict' ? <><button onClick={() => download(store.data)}>Скачать мои правки</button><button onClick={() => setDialog('server')}>Загрузить с сервера</button></> : <button onClick={() => void store.retry()}>Повторить</button>}</div></div>}
         {error && !dialog && <p role="alert" className="pub-warning">{error}</p>}
         {store.ready && <>
@@ -152,13 +171,17 @@ function Workspace({ userId }: { userId: string }) {
             <div className="pub-breadcrumb"><button onClick={() => navigate({ screen: view.screen === 'publication' ? 'day' : 'month' })}><ArrowLeft />{view.screen === 'publication' ? dateLabel(view.date) : 'Месяц'}</button>{view.screen === 'day' && dayItems.length > 0 && <button onClick={() => openMove(dayItems.map(i => i.id))}>Перенести день</button>}</div>
             {view.screen === 'day' ? <>
               <div className="pub-day-title"><h2>{dateLabel(view.date)}</h2><span>{dayDone} из {dayItems.length} выложено</span></div>
-              <div className="pub-list">{dayItems.map(i => <button key={i.id} className={`pub-publication ${done(i) ? 'pub-completed' : ''}`} onClick={() => navigate({ screen: 'publication', item: i.id })}><span className={`pub-format-mark pub-type-${publicationFormats.indexOf(i.format)}`}>{publicationFormats.indexOf(i.format) === 0 ? '▶' : i.format.slice(0, 1)}</span><span className="pub-publication-copy"><strong>{i.format}</strong><span>{i.title}</span><small>{i.parts.length} блоков · {i.parts.filter(p => p.published).length} выложено</small></span><ChevronRight size={16} /></button>)}</div>
+              <div className="pub-day-series">{publicationFormats.filter(f => dayItems.some(i => i.format === f)).map(f => <section className="pub-series" key={f}>
+                {approvalControls(f)}
+                <div className="pub-list">{dayItems.filter(i => i.format === f).map(i => <button key={i.id} className={`pub-publication ${done(i) ? 'pub-completed' : ''}`} onClick={() => navigate({ screen: 'publication', item: i.id })}><span className={`pub-format-mark pub-type-${publicationFormats.indexOf(i.format)}`}>{publicationFormats.indexOf(i.format) === 0 ? '▶' : i.format.slice(0, 1)}</span><span className="pub-publication-copy"><strong>{i.title}</strong><small>{i.parts.length} блоков · {i.parts.filter(p => p.published).length} выложено</small></span><ChevronRight size={16} /></button>)}</div>
+              </section>)}</div>
               {!dayItems.length && <div className="pub-empty"><h3>День свободен</h3><p>Добавь первый материал на эту дату.</p></div>}
               <button className="pub-add-row" onClick={() => { setError(''); setDialog('add'); }}><Plus />Добавить публикацию</button>
             </> : item ? <>
               <div className="pub-detail-title"><div><span className={`pub-chip pub-type-${publicationFormats.indexOf(item.format)}`}>{item.format}</span><h2>{item.title}</h2></div><button onClick={() => openMove([item.id])} title="Перенести публикацию"><CalendarDays size={16} /></button></div>
               <div className="pub-progress"><span>{item.parts.filter(p => p.published).length} из {item.parts.length} выложено</span><span>Двойной тап — «Выложено»</span></div>
-              {item.format === 'Threads' && <div className="pub-schedule-note"><p>Время по Калининграду. Тексты и время можно исправить здесь. Автопубликация ждёт утверждения всей серии и подключения Threads.</p>{threadsStatus && <p>{threadsStatus.connected ? `Аккаунт подключён: @${threadsStatus.username}` : threadsStatus.available ? <a href="/api/threads/connect">Подключить аккаунт Threads</a> : 'Подключение Threads API ещё настраивается.'}</p>}</div>}
+              {approvalControls(item.format)}
+              {item.format === 'Threads' && <div className="pub-schedule-note"><p>Время по Калининграду. Изменение текста или времени снимает утверждение этого поста: после правок утвердите серию заново.</p>{threadsStatus && <p>{threadsStatus.connected ? `Аккаунт подключён: @${threadsStatus.username}` : threadsStatus.available ? <a href="/api/threads/connect">Подключить аккаунт Threads</a> : 'Подключение Threads API ещё настраивается.'}</p>}</div>}
               <div className="pub-parts">{item.parts.map((part, index) => {
                 const id = `${item.id}:${part.id}`; const expanded = view.open.includes(id); const edit = editing === part.id;
                 const label = item.format === 'Сторис' ? `Сторис ${index + 1}` : item.format === 'Карусель' ? `Слайд ${index + 1}` : item.format === 'Threads' ? `Пост ${index + 1}` : `Блок ${index + 1}`;
@@ -174,7 +197,7 @@ function Workspace({ userId }: { userId: string }) {
             </> : <button className="pub-add-row" onClick={() => navigate({ screen: 'day' })}>Вернуться к дню</button>}
           </>}
         </>}
-      </main>
+      </fieldset></main>
     </div><MobileNav />
     {notice && <div className="pub-toast" role="status">{notice}</div>}
     <Dialog open={Boolean(dialog)} onOpenChange={open => { if (!open) { setDialog(null); setError(''); } }}><DialogContent className="pub-dialog"><DialogTitle>{dialog === 'add' ? 'Новая публикация' : dialog === 'import' ? 'Загрузить контент' : dialog === 'server' ? 'Открыть серверную версию?' : 'Перенести'}</DialogTitle><DialogDescription>{dialog === 'add' ? dateLabel(view.date) : dialog === 'import' ? 'Файл или JSON из нашего чата. Текущие материалы останутся на месте.' : dialog === 'server' ? 'Несохранённые правки на устройстве будут заменены. Сначала скачайте свою копию.' : moveIds.length > 1 ? `Публикаций: ${moveIds.length}. Материалы на новой дате сохранятся.` : 'Выберите новую дату публикации.'}</DialogDescription>
