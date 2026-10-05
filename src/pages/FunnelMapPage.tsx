@@ -9,7 +9,7 @@ import { useDataStore } from "@/lib/dataStore";
 import { PlatformIcon } from "@/components/content/PlatformIcon";
 import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
 import { EditProductModal } from "@/components/products/EditProductModal";
-import { ContentDetailModal } from "@/components/content/ContentDetailModal";
+import { useSearchParams } from "react-router-dom";
 import type { ContentItemData, Topic } from "@/lib/contentData";
 import { STATUSES } from "@/lib/contentData";
 import type { Product } from "@/lib/productData";
@@ -640,7 +640,8 @@ const FunnelMapPage = () => {
   );
   const [nodes, setNodes] = useState<MapNode[]>(initialNodes);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [editingContent, setEditingContent] = useState<ContentItemData | null>(null);
+  const [materialParams,setMaterialParams]=useSearchParams();
+  const setEditingContent=useCallback((item:ContentItemData)=>{const n=new URLSearchParams(materialParams);n.set('material',String(item.id));setMaterialParams(n);},[materialParams,setMaterialParams]);
   const [expandedTopic, setExpandedTopic] = useState<{ title: string; items: ContentItemData[]; funnelId?: string } | null>(null);
   const [showContentPicker, setShowContentPicker] = useState<string | null>(null); // funnelId
   const dragMovedRef = useRef(false);
@@ -689,7 +690,7 @@ const FunnelMapPage = () => {
     } else if (node.type === "product" && node.productData) {
       setEditingProduct(node.productData);
     }
-  }, []);
+  }, [setEditingContent]);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent, nodeId?: string) => {
@@ -1060,18 +1061,7 @@ const FunnelMapPage = () => {
         />
       )}
 
-      {editingContent && (
-        <ContentDetailModal
-          item={editingContent}
-          topicTitle={getTopicTitle(editingContent)}
-          onClose={() => setEditingContent(null)}
-          onSave={(updated) => { updateContentItem(updated); setEditingContent(null); }}
-          onTopicRename={(newTitle) => {
-            const topic = topics.find((t) => t.contentItems.some((ci) => ci.id === editingContent.id));
-            if (topic) updateTopic({ ...topic, title: newTitle });
-          }}
-        />
-      )}
+
     </SidebarProvider>
   );
 };

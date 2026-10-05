@@ -2,7 +2,11 @@ import { readWorkspace, updateWorkspace } from './content-workspace.mjs';
 export async function contentWorkspaceApi(req,res,{user,pool,body,send}) {
  if(!user)return send(res,401,{message:'Войдите через Telegram.'});
  try{
-  if(req.method==='GET')return send(res,200,await readWorkspace(pool,user.id));
+  if(req.method==='GET'){
+   const snapshot=await readWorkspace(pool,user.id),tag=snapshot.revisions.main+':'+snapshot.revisions.publications;
+   if(req.headers?.['if-none-match']===tag){res.writeHead(304,{'Cache-Control':'private, no-cache','ETag':tag});res.end();return;}
+   res.setHeader('ETag',tag);res.setHeader('Cache-Control','private, no-cache');return send(res,200,snapshot);
+  }
   if(req.method==='POST') {
    const command=await body(req);
    const saved=await updateWorkspace(pool,user.id,command);

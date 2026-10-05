@@ -54,6 +54,7 @@ export interface Funnel {
   midTicketId?: number;
   flagshipId?: number;
   consultationId?: number;
+  route?:{id:string;label:string;url:string;note?:string}[];
   conversions?: ConversionData[];
 }
 

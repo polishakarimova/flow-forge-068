@@ -6,7 +6,7 @@ import { useDataStore } from "@/lib/dataStore";
 import { PlatformIcon } from "@/components/content/PlatformIcon";
 import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
 import { STATUSES, type ContentItemData, type Topic } from "@/lib/contentData";
-import { ContentDetailModal } from "@/components/content/ContentDetailModal";
+import { useSearchParams } from "react-router-dom";
 import { EditProductModal } from "@/components/products/EditProductModal";
 import { CreateProductModal } from "@/components/products/CreateProductModal";
 import type { Product, ProductType } from "@/lib/productData";
@@ -440,7 +440,8 @@ function ContentPickerModal({
 export function FunnelMap({ funnel }: { funnel: Funnel }) {
   const { allContentItems, products, topics, updateContentItem, updateProduct, updateTopic, addProduct, productTypes, addProductType, deleteProductType, formats, addFormat, deleteFormat, setFunnels } = useDataStore();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [editingContent, setEditingContent] = useState<ContentItemData | null>(null);
+  const [materialParams,setMaterialParams]=useSearchParams();
+  const setEditingContent=(item:ContentItemData)=>{const n=new URLSearchParams(materialParams);n.set('material',String(item.id));setMaterialParams(n);};
   const [expandedContent, setExpandedContent] = useState(false);
   const [showAddProductPicker, setShowAddProductPicker] = useState(false);
   const [showCreateProduct, setShowCreateProduct] = useState(false);
@@ -688,18 +689,7 @@ export function FunnelMap({ funnel }: { funnel: Funnel }) {
       )}
 
       {/* Content Detail Modal */}
-      {editingContent && (
-        <ContentDetailModal
-          item={editingContent}
-          topicTitle={getTopicTitle(editingContent)}
-          onClose={() => setEditingContent(null)}
-          onSave={(updated) => { updateContentItem(updated); setEditingContent(null); }}
-          onTopicRename={(newTitle) => {
-            const topic = topics.find((t) => t.contentItems.some((ci) => ci.id === editingContent.id));
-            if (topic) updateTopic({ ...topic, title: newTitle });
-          }}
-        />
-      )}
+
     </div>
   );
 }

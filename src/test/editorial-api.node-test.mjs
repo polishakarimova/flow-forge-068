@@ -27,7 +27,8 @@ test('isolated HTTP endpoint authenticates, saves, rejects stale writes and retu
  const headers={'x-test-user':'fixture','Content-Type':'application/json'};
  try{
   assert.equal((await fetch(url)).status,401);
-  const initial=await (await fetch(url,{headers})).json();
+  const first=await fetch(url,{headers});const initial=await first.json();
+  assert.equal((await fetch(url,{headers:{...headers,'If-None-Match':first.headers.get('etag')}})).status,304);
   const response=await fetch(url,{method:'POST',headers,body:JSON.stringify({type:'idea.save',input:{title:'Проверка HTTP',source:'Тест'},revisions:initial.revisions})});
   assert.equal(response.status,200);const saved=await response.json();
   assert.equal(saved.main.topics.length,1);assert.match(saved.result.links[0],/^\/content\?mode=ideas&idea=/);
