@@ -83,3 +83,9 @@ test('undating a slot clears its placement and approving from another view selec
  assert.equal(s.publications.items.length,0);
  assert.equal(s.main.topics[0].contentItems.find(m=>m.id===b).publishDate,'');
 });
+
+test('calendar cannot append a block outside the linked script',()=>{
+ let s=material(fresh(),'stories');s=run(s,'material.schedule',{id:s.id,date:'2026-10-06'});
+ const incoming=structuredClone(s.publications);incoming.items[0].parts.push({id:'orphan',text:'Outside script',published:false});
+ assert.throws(()=>run(s,'publications.replace',{data:incoming}),/карточку связанного сценария/);
+});

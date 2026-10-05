@@ -93,6 +93,7 @@ export function applyEditorial(originalMain, originalPubs, command) {
     const incoming = structuredClone(input.data);
     for (const previous of pubs.items) {
       const next = incoming.items.find(p => p.id === previous.id);
+      if (previous.parts.some(b=>b.contentItemId) && next?.parts.some(b=>!previous.parts.some(old=>old.id===b.id))) fail('Добавьте экран через карточку связанного сценария.');
       for (const oldPart of previous.parts.filter(b => b.contentItemId)) {
         const part = next?.parts.find(b => b.id === oldPart.id);
         if (!part || part.contentItemId !== oldPart.contentItemId || (oldPart.published && (part.text !== oldPart.text || next.date !== previous.date))) fail('Связанный сценарий нельзя удалить или перезаписать через календарь. Откройте его карточку.');
