@@ -1,7 +1,7 @@
-export const publicationFormats = ['Рилс', 'Карусель', 'Пост ТГ', 'Сторис', 'Threads'] as const;
+export const publicationFormats = ['Рилс', 'Карусель', 'Пост ТГ', 'Сторис', 'Threads', 'YouTube', 'Пост Инста', 'Статья', 'ВК'] as const;
 export type PublicationFormat = typeof publicationFormats[number];
-export type PublicationPart = { id: string; text: string; published: boolean; scheduledAt?: string; approvalStatus?: 'draft' | 'approved'; sourceText?: string; incomingText?: string; previousText?: string };
-export type Publication = { id: string; date: string; format: PublicationFormat; title: string; parts: PublicationPart[]; contentItemId?: number };
+export type PublicationPart = { id: string; text: string; published: boolean; contentItemId?: number; blockId?: string; scheduledAt?: string; approvalStatus?: 'draft' | 'approved'; sourceText?: string; incomingText?: string; previousText?: string };
+export type Publication = { id: string; date: string; format: PublicationFormat; title: string; parts: PublicationPart[]; contentItemId?: number; slotId?: string };
 export type PublicationState = { schema: 1; items: Publication[] };
 export const emptyPublications: PublicationState = { schema: 1, items: [] };
 export const dayKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;

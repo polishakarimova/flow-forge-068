@@ -1,9 +1,9 @@
-import { createContext, useContext, useState, useCallback, useMemo, useEffect, type ReactNode } from "react";
-import { DEFAULT_FORMATS, DEFAULT_PRODUCT_TYPES, type Product, type ProductStatusKey, type ProductType } from "@/lib/productData";
-import { DEFAULT_PLATFORMS, type Platform, type Topic, type ContentItemData } from "@/lib/contentData";
+import { createContext, useContext, useCallback, useMemo, type ReactNode } from "react";
+import { type Product, type ProductStatusKey, type ProductType } from "@/lib/productData";
+import { type Platform, type Topic, type ContentItemData } from "@/lib/contentData";
 import { type Funnel } from "@/lib/funnelData";
 import { useAuth } from "@/lib/authContext";
-import { toast } from "sonner";
+import { useMainState } from "@/hooks/useMainState";
 
 interface DataStore {
   products: Product[];
@@ -37,7 +37,7 @@ interface DataStore {
   stateError: string;
 }
 
-type AppDataState = {
+export type AppDataState = {
   products: Product[];
   productTypes: ProductType[];
   formats: string[];
@@ -47,109 +47,26 @@ type AppDataState = {
   keywords: string[];
 };
 
-const emptyState: AppDataState = {
-  products: [],
-  productTypes: DEFAULT_PRODUCT_TYPES,
-  formats: DEFAULT_FORMATS,
-  platforms: DEFAULT_PLATFORMS,
-  topics: [],
-  funnels: [],
-  keywords: [],
-};
-
 const DataStoreContext = createContext<DataStore | null>(null);
-
-async function loadState(): Promise<AppDataState | null> {
-  const response = await fetch("/api/state/main", { credentials: "include", signal: AbortSignal.timeout(20000) });
-  if (!response.ok) throw new Error('state_load_failed');
-  const { data } = await response.json();
-  return data;
-}
-
-async function saveState(data: AppDataState) {
-  const response = await fetch("/api/state/main", {
-    method: "PUT",
-    signal: AbortSignal.timeout(20000),
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ data }),
-  });
-  if (!response.ok) throw new Error('state_save_failed');
-}
 
 export function DataStoreProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated, user } = useAuth();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [productTypes, setProductTypes] = useState<ProductType[]>(DEFAULT_PRODUCT_TYPES);
-  const [formats, setFormats] = useState<string[]>(DEFAULT_FORMATS);
-  const [platforms, setPlatforms] = useState<Platform[]>(DEFAULT_PLATFORMS);
-  const [topics, setTopics] = useState<Topic[]>([]);
-  const [funnels, setFunnelsRaw] = useState<Funnel[]>([]);
-  const [keywords, setKeywords] = useState<string[]>([]);
-  const [isDataLoading, setIsDataLoading] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
-  const [stateError, setStateError] = useState('');
-  const [loadedUser, setLoadedUser] = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-    setHydrated(false); setLoadedUser(''); setStateError('');
-    if (!isAuthenticated) {
-      setProducts([]);
-      setProductTypes(DEFAULT_PRODUCT_TYPES);
-      setPlatforms(DEFAULT_PLATFORMS);
-      setTopics([]);
-      setFunnelsRaw([]);
-      setKeywords([]);
-      setFormats(DEFAULT_FORMATS);
-      setHydrated(false);
-      return;
-    }
-    setIsDataLoading(true);
-    loadState()
-      .then((data) => {
-        if (cancelled) return;
-        const next = data || emptyState;
-        setProducts(next.products || []);
-        setProductTypes(next.productTypes?.length ? next.productTypes : DEFAULT_PRODUCT_TYPES);
-        setFormats(next.formats?.length ? next.formats : DEFAULT_FORMATS);
-        setPlatforms(next.platforms?.length ? next.platforms : DEFAULT_PLATFORMS);
-        setTopics(next.topics || []);
-        setFunnelsRaw(next.funnels || []);
-        setKeywords(next.keywords || []);
-        setHydrated(true);
-        setLoadedUser(user?.id || '');
-      })
-      .catch(() => { if (!cancelled) setStateError('Не удалось загрузить материалы. Сохранённые данные не изменены.'); })
-      .finally(() => {
-        if (!cancelled) setIsDataLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [isAuthenticated, user?.id]);
-
-  useEffect(() => {
-    if (!isAuthenticated || !hydrated || loadedUser !== user?.id) return;
-    const timer = window.setTimeout(() => {
-      saveState({ products, productTypes, formats, platforms, topics, funnels, keywords }).then(() => toast.dismiss('main-save')).catch(() => toast.error('Изменения не сохранились. Не закрывайте страницу; проверьте интернет и повторите изменение.', { id: 'main-save', duration: Infinity }));
-    }, 250);
-    return () => window.clearTimeout(timer);
-  }, [isAuthenticated, hydrated, loadedUser, user?.id, products, productTypes, formats, platforms, topics, funnels, keywords]);
-
-  const setFunnels: React.Dispatch<React.SetStateAction<Funnel[]>> = useCallback((value) => {
-    setFunnelsRaw(value);
-  }, []);
-
+  const { data, setData, isDataLoading, stateError, stateReady } = useMainState(isAuthenticated ? user?.id || '' : '');
+  const {products,productTypes,formats,platforms,topics,funnels,keywords}=data;
+  const setters=useMemo(()=>{
+    const setter=<K extends keyof AppDataState,>(key:K)=>(value:React.SetStateAction<AppDataState[K]>)=>setData(prev=>({...prev,[key]:typeof value==='function'?(value as (old:AppDataState[K])=>AppDataState[K])(prev[key]):value}));
+    return {setProducts:setter('products'),setProductTypes:setter('productTypes'),setFormats:setter('formats'),setPlatforms:setter('platforms'),setTopics:setter('topics'),setFunnels:setter('funnels'),setKeywords:setter('keywords')};
+  },[setData]);
+  const {setProducts,setProductTypes,setFormats,setPlatforms,setTopics,setFunnels,setKeywords}=setters;
   const addProduct = useCallback((data: Omit<Product, "id" | "status" | "createdDate" | "publishDate">) => {
     const createdDate = new Date().toISOString().slice(0, 10);
     const newProduct: Product = { ...data, id: Date.now(), status: "draft" as ProductStatusKey, createdDate, publishDate: "" };
     setProducts((prev) => [newProduct, ...prev]);
-  }, []);
+  }, [setProducts]);
 
   const updateProduct = useCallback((updated: Product) => {
     setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-  }, []);
+  }, [setProducts]);
 
   const addProductType = useCallback((label: string) => {
     const normalized = label.trim();
@@ -176,20 +93,20 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
       ];
     });
     return id;
-  }, [productTypes]);
+  }, [productTypes,setProductTypes]);
 
   const deleteProductType = useCallback((id: string) => {
     setProductTypes((prev) => prev.filter((type) => type.id !== id));
     setProducts((prev) => prev.map((product) => (product.typeId === id ? { ...product, typeId: "" } : product)));
-  }, []);
+  }, [setProductTypes,setProducts]);
 
   const addFormat = useCallback((f: string) => {
     setFormats((prev) => prev.includes(f) ? prev : [...prev, f]);
-  }, []);
+  }, [setFormats]);
 
   const deleteFormat = useCallback((f: string) => {
     setFormats((prev) => prev.filter((x) => x !== f));
-  }, []);
+  }, [setFormats]);
 
   const addPlatform = useCallback((label: string) => {
     const normalized = label.trim();
@@ -207,51 +124,51 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
       },
     ]);
     return id;
-  }, [platforms]);
+  }, [platforms,setPlatforms]);
 
   const deletePlatform = useCallback((id: string) => {
     setPlatforms((prev) => prev.filter((platform) => platform.id !== id));
-  }, []);
+  }, [setPlatforms]);
 
   const addTopic = useCallback((data: Omit<Topic, "id">) => {
     setTopics((prev) => [{ ...data, id: Date.now() }, ...prev]);
-  }, []);
+  }, [setTopics]);
 
   const updateTopic = useCallback((updated: Topic) => {
     setTopics((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-  }, []);
+  }, [setTopics]);
 
   const updateContentItem = useCallback((item: ContentItemData) => {
     setTopics((prev) => prev.map((t) => ({
       ...t,
       contentItems: t.contentItems.map((ci) => (ci.id === item.id ? item : ci)),
     })));
-  }, []);
+  }, [setTopics]);
 
   const allContentItems = useMemo(() => topics.flatMap((t) => t.contentItems), [topics]);
 
   const addKeyword = useCallback((kw: string) => {
     setKeywords((prev) => (prev.includes(kw) ? prev : [...prev, kw]));
-  }, []);
+  }, [setKeywords]);
 
   const funnelsForKeyword = useCallback((kw: string) => funnels.filter((f) => f.keyword === kw), [funnels]);
 
   const deleteKeyword = useCallback((kw: string) => {
     setKeywords((prev) => prev.filter((k) => k !== kw));
     return true;
-  }, []);
+  }, [setKeywords]);
 
   const addFunnel = useCallback((f: Funnel) => {
-    setFunnelsRaw((prev) => [f, ...prev]);
-  }, []);
+    setFunnels((prev) => [f, ...prev]);
+  }, [setFunnels]);
 
   const updateFunnel = useCallback((f: Funnel) => {
-    setFunnelsRaw((prev) => prev.map((x) => (x.id === f.id ? f : x)));
-  }, []);
+    setFunnels((prev) => prev.map((x) => (x.id === f.id ? f : x)));
+  }, [setFunnels]);
 
   const toggleFunnelActive = useCallback((id: string) => {
-    setFunnelsRaw((prev) => prev.map((f) => (f.id === id ? { ...f, active: !f.active } : f)));
-  }, []);
+    setFunnels((prev) => prev.map((f) => (f.id === id ? { ...f, active: !f.active } : f)));
+  }, [setFunnels]);
 
   const value = useMemo(() => ({
     products, addProduct, updateProduct, productTypes, addProductType, deleteProductType,
@@ -261,8 +178,8 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
     keywords, addKeyword, deleteKeyword,
     funnels, setFunnels, addFunnel, updateFunnel, toggleFunnelActive, funnelsForKeyword,
     isDataLoading,
-    stateReady: hydrated && loadedUser === user?.id, stateError,
-  }), [products, addProduct, updateProduct, productTypes, addProductType, deleteProductType, formats, addFormat, deleteFormat, platforms, addPlatform, deletePlatform, topics, allContentItems, addTopic, updateTopic, updateContentItem, keywords, addKeyword, deleteKeyword, funnels, setFunnels, addFunnel, updateFunnel, toggleFunnelActive, funnelsForKeyword, isDataLoading, hydrated, loadedUser, user?.id, stateError]);
+    stateReady, stateError,
+  }), [products, addProduct, updateProduct, productTypes, addProductType, deleteProductType, formats, addFormat, deleteFormat, platforms, addPlatform, deletePlatform, topics, allContentItems, addTopic, updateTopic, updateContentItem, keywords, addKeyword, deleteKeyword, funnels, setFunnels, addFunnel, updateFunnel, toggleFunnelActive, funnelsForKeyword, isDataLoading, stateReady, stateError]);
 
   return <DataStoreContext.Provider value={value}>{children}</DataStoreContext.Provider>;
 }
