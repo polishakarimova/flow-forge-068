@@ -8,7 +8,7 @@ import {FORMATS,formatLabel,nextAction,materialAction,dateLabel,type Material,ty
 import '@/pages/editorial.css';
 import {useAuth} from '@/lib/authContext';
 import {draftKey,readDraft,writeDraft,clearDraft} from '@/lib/editorialDrafts';
-import {ReadyAssets,ResourceText} from './ReadyAssets';
+import {ReadyAssets,ReadyAssetActions,ResourceText} from './ReadyAssets';
 
 export function MaterialCard(){
  const {user}=useAuth();
@@ -55,7 +55,6 @@ export function MaterialCard(){
     {slot&&<div className="mb-4"><p className="ed-note">{slot.selectedId===current.id?'Выбран для этого дня':slot.recommendedId===current.id?'Рекомендуемый вариант':'Альтернативный вариант'} · {dateLabel(slot.date)}</p>{slot.recommendedId===current.id&&slot.reason&&<p className="ed-note mt-1">{slot.reason}</p>}
      {variants.length>1&&<details className="ed-details"><summary>Другие варианты — {variants.length-1}</summary>{variants.filter(m=>m.id!==current.id).map(m=><button className="ed-row" key={m.id} onClick={()=>choose(m.id)}><span>{m.title}<small>{m.id===slot.selectedId?'Выбран':m.id===slot.recommendedId?'Рекомендуем':'Альтернатива'}</small></span></button>)}</details>}
     </div>}
-    {['reels','carousel'].includes(current.platformId)&&<ReadyAssets assets={editing?draft.assets:current.assets} editing={editing} onChange={assets=>patch({assets})}/>}
     {published&&editing&&<p className="ed-note mb-3">Опубликованные экраны зафиксированы. Можно менять остальные экраны, ссылки и подготовку.</p>}
     {editing?<div>
      <label className="ed-label">Название<input className="ed-input" disabled={published&&!draft.blocks?.length} value={draft.title} onChange={e=>patch({title:e.target.value})}/></label>
@@ -99,6 +98,7 @@ export function MaterialCard(){
     </details>
     <details className="ed-details"><summary>Результаты публикации</summary><p className="ed-note mb-3">Заполняются вручную после выхода.</p>{([['reach','Охват'],['responses','Отклики на кодовое слово'],['leads','Заявки'],['sales','Продажи']] as const).map(([key,label])=><label className="ed-label" key={key}>{label}<input type="number" min="0" step="1" className="ed-input" value={draft.metrics?.[key]??''} onChange={e=>patch({metrics:{...draft.metrics,[key]:e.target.value===''?undefined:Number(e.target.value)}})}/></label>)}<label className="ed-label">Дата выхода<input type="date" className="ed-input" value={draft.metrics?.publishedDate||''} onChange={e=>patch({metrics:{...draft.metrics,publishedDate:e.target.value}})}/></label><label className="ed-label">Ссылка на опубликованный пост<input type="url" className="ed-input" value={draft.metrics?.url||''} onChange={e=>patch({metrics:{...draft.metrics,url:e.target.value}})}/></label><p className="ed-note">Нажми «Сохранить изменения» внизу карточки.</p></details>
     {!!current.history?.length&&<details className="ed-details"><summary>История текста — {current.history.length}</summary>{[...current.history].reverse().map((v,i)=><details className="ed-details" key={i}><summary>Версия {v.revision} · {new Date(v.savedAt).toLocaleDateString('ru')}</summary><p className="ed-copy">{v.body}</p>{v.blocks?.map(b=><p className="ed-copy mt-2" key={b.id}>{b.label}: {b.visual} · {b.motion}</p>)}<ResourceText text={[v.visual,v.motion,v.resources].filter(Boolean).join('\n')}/><Button variant="outline" disabled={busy} onClick={()=>{patch({title:v.title,body:v.body,blocks:v.blocks,visual:v.visual,motion:v.motion,resources:v.resources,assets:v.assets,cta:v.cta});setEditing(true);setNotice('Версия открыта для проверки. Сохрани её, чтобы применить.');}}>Восстановить в редактор</Button></details>)}</details>}
+    {editing&&['reels','carousel'].includes(current.platformId)&&<ReadyAssets assets={draft.assets} onChange={assets=>patch({assets})}/>}
    </>}
    {notice&&<p role="status" className="ed-note mt-3">{notice}</p>}
    {error&&<div role="alert" className="ed-error">{error}{dirty&&current&&<details className="mt-2"><summary>Текущая версия с сервера</summary><p className="ed-copy">{current.body}</p><Button variant="outline" disabled={busy} onClick={async()=>{const r=await act('material.fork',draft,'Твоя версия сохранена отдельным черновиком');if(r?.id){clearDraft(recoveryKey);base.current=JSON.stringify(draft);const n=new URLSearchParams(params);n.delete('slot');n.set('material',String(r.id));setParams(n,{replace:true});}}}>Сохранить мою версию отдельно</Button></details>}<button className="block underline mt-2" onClick={()=>void refresh()}>Обновить список, сохранив мой текст</button></div>}
@@ -108,6 +108,7 @@ export function MaterialCard(){
    {dirty||editing?<Button disabled={busy} onClick={()=>void save()}>Сохранить изменения</Button>:<Button disabled={busy||!current.body?.trim()||(current.scriptApproval==='approved'&&(!slot||slot.selectedId===current.id))} onClick={()=>void act('material.approve',{id:current.id,slotId:slot?.id,revision:current.revision||1},'Сценарий утверждён')}>{current.scriptApproval==='approved'&&(!slot||slot.selectedId===current.id)?'Сценарий утверждён':'Утвердить сценарий'}</Button>}
    {!editing&&<Button variant="outline" onClick={()=>setEditing(true)}>Изменить</Button>}
    <Button variant="ghost" className="px-2" aria-label="Копировать сценарий" onClick={()=>void copy()}><Copy size={16}/></Button>
+   {!editing&&['reels','carousel'].includes(current.platformId)&&<ReadyAssetActions assets={current.assets}/>}
   </div>}
  </DialogContent></Dialog>;
 }
