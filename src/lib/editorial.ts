@@ -3,13 +3,15 @@ import type { Product } from './productData';
 import type { Funnel } from './funnelData';
 import type { PublicationState } from './publications';
 export type StoryBlock = { id: string; label: string; text: string; visual: string; motion: string };
+export type Asset = {id:string;label:string;url:string;kind:'video'|'carousel'|'folder'|'other';downloadUrl?:string};
 export type Material = ContentItemData & {
   blocks?: StoryBlock[]; visual?: string; motion?: string; resources?: string; cta?: string;
   productId?: number; funnelId?: string; funnelRole?: 'entry' | 'support' | 'delivery';
   revision?: number; scriptApproval?: 'draft' | 'approved'; approvedRevision?: number; adaptedFromId?: number;
-  history?: { title: string; body: string; savedAt: string; revision: number }[];
+  assets?:Asset[]; replaceFunnelLinks?:boolean; metrics?:{reach?:number;responses?:number;leads?:number;sales?:number;publishedDate?:string;url?:string};
+  history?: (Partial<Omit<Material,'history'>> & { title: string; body: string; savedAt: string; revision: number })[];
 };
-export type Idea = Omit<Topic,'contentItems'> & { contentItems: Material[]; formatIds?: string[]; source?: string; sourceKey?: string; createdDate?: string; productId?: number };
+export type Idea = Omit<Topic,'contentItems'> & { contentItems: Material[]; revision?:number; archived?:boolean; tags?:string[]; formatIds?: string[]; source?: string; sourceKey?: string; createdDate?: string; productId?: number };
 export type PlanSlot = { id:string; title:string; date:string; variantIds:number[]; recommendedId?:number; selectedId?:number; reason?:string };
 export type Focus = { goal:string; productId?:number; funnelId?:string; scope?:'week'|'day' };
 export type Editorial = { weeks: Record<string,Focus>; slots: PlanSlot[] };
@@ -43,6 +45,6 @@ export function publicationProgress(data:Workspace|null,material:Material) {
 export function materialAction(data:Workspace|null,material:Material) {
  const progress=publicationProgress(data,material);
  if(progress.total&&progress.published===progress.total)return 'Опубликовано';
- if(progress.published)return 'Продолжить публикацию';
+ if(progress.published)return `Опубликовано ${progress.published}/${progress.total} · ${material.scriptApproval==='approved'?'Продолжить публикацию':'Проверить оставшиеся экраны'}`;
  return nextAction(material);
 }

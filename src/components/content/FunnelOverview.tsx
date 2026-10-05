@@ -4,6 +4,7 @@ import type {Funnel} from '@/lib/funnelData';
 import {useEditorial} from '@/lib/editorialContext';
 import {formatLabel,linkedProductIds,dateLabel,weekStart,addDays,publicationProgress,type Material} from '@/lib/editorial';
 import '@/pages/editorial.css';
+import {FunnelRoute} from './FunnelRoute';
 
 export function FunnelOverview({funnel}:{funnel:Funnel}){
  const {data}=useEditorial(),[period,setPeriod]=useState('all'),[status,setStatus]=useState('all');
@@ -23,6 +24,7 @@ export function FunnelOverview({funnel}:{funnel:Funnel}){
  if(!data)return null;
  return <div className="px-3 md:px-5 pb-4">
   <div className="ed-path" aria-label="Путь воронки"><Link to={'/dashboard?keyword='+encodeURIComponent(funnel.keyword)}>{funnel.keyword}</Link>{ids.map(id=>{const p=products.find(p=>p.id===id);return p?<span key={id} className="contents"><span aria-hidden="true">→</span><Link to={'/products?product='+id}>{p.name}</Link></span>:null;})}</div>
+  <FunnelRoute funnel={funnel}/>
   <div className="ed-filters"><select aria-label="Период воронки" className="ed-input w-auto" value={period} onChange={e=>setPeriod(e.target.value)}><option value="all">Все недели</option><option value="week">Эта неделя</option></select><select aria-label="Контент воронки" className="ed-input w-auto" value={status} onChange={e=>setStatus(e.target.value)}><option value="all">Все материалы</option><option value="planned">В плане</option><option value="published">Опубликовано</option><option value="undated">Без даты</option></select></div>
   <p className="text-xs font-medium mb-2">Что ведёт в эту воронку · {entries.length}</p>
   {grouped.map(format=><details key={format} className="ed-details"><summary>{formatLabel(format)} · {entries.filter(m=>m.platformId===format).length}</summary>{entries.filter(m=>m.platformId===format).map(row)}</details>)}
