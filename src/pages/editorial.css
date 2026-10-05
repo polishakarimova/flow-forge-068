@@ -17,6 +17,6 @@
 
 /* Ready files stay in the footer; the script owns the main reading space. */
 .ed-detail-footer .ed-download-action{margin-left:auto;min-height:44px;gap:6px;flex-shrink:0;font-size:12px}
-.ed-download-menu{z-index:80;max-width:min(300px,calc(100vw - 32px));max-height:50dvh;overflow-y:auto}
+.ed-download-menu{z-index:80!important;max-width:min(300px,calc(100vw - 32px));max-height:50dvh;overflow-y:auto}
 .ed-download-menu [role="menuitem"]{min-height:44px;gap:8px}
 @media(max-width:479px){.ed-detail-footer .ed-download-action{width:44px;padding:0}.ed-download-action>span{display:none}}
