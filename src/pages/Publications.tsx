@@ -203,7 +203,7 @@ function Workspace({ userId }: { userId: string }) {
                   {part.incomingText !== undefined && <div className="pub-version"><strong>Есть новый вариант текста</strong><p>{part.incomingText}</p><div><button onClick={() => patchPart(part.id, { incomingText: undefined, sourceText: part.incomingText })}>Оставить мой</button><button onClick={() => patchPart(part.id, { text: part.incomingText!, sourceText: part.incomingText, previousText: part.text, incomingText: undefined })}>Принять новый</button></div></div>}
                 </section>;
               })}</div>
-              <button className="pub-add-row" onClick={() => update({ ...store.data, items: store.data.items.map(i => i.id === item.id ? { ...i, parts: [...i.parts, { id: uid(), text: '', published: false }] } : i) })}><Plus />Добавить блок</button>
+              {!item.parts.some(p=>p.contentItemId)&&<button className="pub-add-row" onClick={() => update({ ...store.data, items: store.data.items.map(i => i.id === item.id ? { ...i, parts: [...i.parts, { id: uid(), text: '', published: false }] } : i) })}><Plus />Добавить блок</button>}
             </> : <button className="pub-add-row" onClick={() => navigate({ screen: 'day' })}>Вернуться к дню</button>}
           </>}
         </>}
