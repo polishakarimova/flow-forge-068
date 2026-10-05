@@ -1,3 +1,4 @@
+import { ProductRelations } from "@/components/content/FunnelOverview";
 import { useState, useCallback } from "react";
 import { formatProductDateLabel, type Product, type ProductStatusKey, type ProductType } from "@/lib/productData";
 import { ProductStatusSelect } from "./ProductStatusSelect";
@@ -189,6 +190,7 @@ export function EditProductModal({ product, onClose, onSave, formats, onAddForma
           </div>
 
           {/* Save */}
+          <ProductRelations productId={product.id} />
           <button
             onClick={() => {
               onSave({ ...product, name: name.trim(), typeId, format, price: price.trim(), description: description.trim(), link: link.trim(), status, publishDate });

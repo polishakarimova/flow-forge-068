@@ -11,6 +11,8 @@ import { saveTelegramAccount } from "./telegram-account.mjs";
 import { ensureThreadsSchema, beginThreadsConnect, finishThreadsConnect, threadsStatus, runThreadsScheduler } from "./threads-autopost.mjs";
 import { ensureRemoteSchema, handleRemoteRequest, remoteStatus } from './threads-remote.mjs';
 import { approvePublicationDay } from './publications-approval.mjs';
+import { contentWorkspaceApi } from './content-workspace-api.mjs';
+import { updateWorkspace } from './content-workspace.mjs';
 
 const root = new URL("../", import.meta.url);
 const distDir = fileURLToPath(new URL("../dist", import.meta.url));
@@ -734,6 +736,12 @@ async function api(req, res, url) {
     return send(res, 200, { users: overview.users, totals: overview.totals });
   }
 
+  if (path === '/api/content-workspace') {
+    const user = await requireUser(req, res);
+    if (!user) return;
+    return contentWorkspaceApi(req, res, {user, pool:pgPool, body, send});
+  }
+
   const stateMatch = path.match(/^\/api\/state\/([a-z0-9_-]+)$/i);
   if (stateMatch) {
     const user = await requireUser(req, res);
@@ -745,16 +753,13 @@ async function api(req, res, url) {
     }
     if (req.method === "PUT") {
       const input = await body(req);
-      if (key === 'publications') {
+      if (key === 'main' || key === 'publications') {
         const revision = req.headers['if-match'];
-        if (typeof revision !== 'string' || !/^(new|[a-f0-9]{32})$/.test(revision)) return send(res, 428, { error: 'revision_required' });
-        if (input.data?.schema !== 1 || !Array.isArray(input.data.items) || input.data.items.length > 1000) return send(res, 400, { error: 'invalid_publications' });
-        const values = [user.id, key, JSON.stringify(input.data)];
-        const result = revision === 'new'
-          ? await pgPool.query('insert into cm_user_state (user_id, key, data) values ($1, $2, $3::jsonb) on conflict (user_id, key) do nothing returning md5(data::text) as revision', values)
-          : await pgPool.query('update cm_user_state set data = $3::jsonb, updated_at = now() where user_id = $1 and key = $2 and md5(data::text) = $4 returning md5(data::text) as revision', [...values, revision]);
-        if (!result.rowCount) return send(res, 409, { error: 'revision_conflict' });
-        return send(res, 200, { ok: true, revision: result.rows[0].revision });
+        if (typeof revision !== 'string' || !/^(new|[a-f0-9]{32})$/.test(revision)) return send(res, 428, {error:'revision_required',message:'Обновите приложение перед сохранением.'});
+        try {
+          const saved = await updateWorkspace(pgPool,user.id,{type:key+'.replace',input:{data:input.data},revisions:{[key]:revision}});
+          return send(res,200,{ok:true,revision:saved.revisions[key]});
+        } catch(error) { return send(res,error.status||500,{error:error.status===409?'revision_conflict':'state_save_failed',message:error.status?error.message:'Не удалось сохранить материалы.'}); }
       }
       await pgPool.query(
         "insert into cm_user_state (user_id, key, data, updated_at) values ($1, $2, $3::jsonb, now()) on conflict (user_id, key) do update set data = excluded.data, updated_at = now()",

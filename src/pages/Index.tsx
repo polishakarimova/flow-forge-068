@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router-dom";
 import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -11,6 +12,7 @@ import { useDataStore } from "@/lib/dataStore";
 import type { Funnel } from "@/lib/funnelData";
 
 const Index = () => {
+  const [params] = useSearchParams();
   const { funnels, toggleFunnelActive } = useDataStore();
   const [keywordFilters, setKeywordFilters] = useState<string[]>([]);
   const [productFilters, setProductFilters] = useState<string[]>([]);
@@ -34,6 +36,7 @@ const Index = () => {
   }, [funnels]);
 
   const filtered = funnels.filter((f) => {
+    if(params.get("keyword") && params.get("keyword")!==f.keyword)return false;
     if (keywordFilters.length > 0 && !keywordFilters.includes(f.keyword)) return false;
     if (productFilters.length > 0 && !productFilters.includes(f.product)) return false;
     return true;
@@ -117,7 +120,7 @@ const Index = () => {
                 <PathRow
                   key={funnel.id}
                   funnel={funnel}
-                  defaultExpanded={funnel.keyword === "КЕЙС"}
+                  defaultExpanded={params.get("funnel") === funnel.id}
                   onToggleActive={toggleFunnelActive}
                   onEdit={setEditingFunnel}
                 />

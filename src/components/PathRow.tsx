@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ChevronDown,
   MoreHorizontal,
@@ -12,11 +12,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { FunnelOverview } from "@/components/content/FunnelOverview";
 import { FunnelMap } from "@/components/FunnelMap";
 import type { Funnel } from "@/lib/funnelData";
 import { productTypeShort } from "@/lib/funnelData";
 import { getBadgeStyle } from "@/lib/badgeStyles";
 import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
+import { useEditorial } from "@/lib/editorialContext";
 import { useDataStore } from "@/lib/dataStore";
 
 const shortToTypeId: Record<string, string> = {
@@ -54,7 +56,9 @@ function truncate(str: string, len: number) {
 
 export function PathRow({ funnel, defaultExpanded = false, onToggleActive, onEdit }: PathRowProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  useEffect(()=>{if(defaultExpanded)setExpanded(true);},[defaultExpanded]);
   const { products } = useDataStore();
+  const editorial=useEditorial();
   const inactive = !funnel.active;
 
   /* Build path steps from real product IDs */
@@ -174,7 +178,8 @@ export function PathRow({ funnel, defaultExpanded = false, onToggleActive, onEdi
       {/* Expanded mini-map */}
       {expanded && (
         <div className="animate-fade-in">
-          <FunnelMap funnel={funnel} />
+          <FunnelOverview funnel={funnel} />
+          <details className="px-3 pb-3" open={!editorial.data}><summary className="text-xs text-muted-foreground cursor-pointer py-2">Карта связей</summary><FunnelMap funnel={funnel} /></details>
         </div>
       )}
     </div>

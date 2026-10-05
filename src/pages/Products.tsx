@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useEffect, useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -13,9 +14,12 @@ import { ContentMultiDropdown } from "@/components/content/ContentMultiDropdown"
 import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
 
 const Products = () => {
+  const [params,setParams]=useSearchParams();
   const { products, addProduct, updateProduct, productTypes, addProductType, deleteProductType, formats, addFormat, deleteFormat } = useDataStore();
   const [showCreate, setShowCreate] = useState(false);
-  const [editing, setEditing] = useState<Product | null>(null);
+  const [editing, setEditingRaw] = useState<Product | null>(null);
+  const setEditing=(product:Product|null)=>{setEditingRaw(product);if(!product&&params.has('product')){const n=new URLSearchParams(params);n.delete('product');setParams(n,{replace:true});}};
+  useEffect(()=>{const id=Number(params.get('product'));if(id)setEditingRaw(products.find(p=>p.id===id)||null);},[params,products]);
   const [typeFilters, setTypeFilters] = useState<string[]>([]);
   const [formatFilters, setFormatFilters] = useState<string[]>([]);
   const [statusFilters, setStatusFilters] = useState<string[]>([]);

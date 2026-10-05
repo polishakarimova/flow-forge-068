@@ -11,6 +11,8 @@ export function usePublications(userId: string) {
   const [ready, setReady] = useState(false);
   const [approving, setApproving] = useState(false);
   const approvalLock = useRef(false);
+  const mounted=useRef(true);
+  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
   const state = useRef({ data: emptyPublications, revision: 'new', dirty: false, running: false, conflict: false, ready: false });
   const timer = useRef<ReturnType<typeof setTimeout>>();
   const key = `karta-publications-draft:${userId}`;
@@ -21,13 +23,14 @@ export function usePublications(userId: string) {
 
   const flush = useCallback(async () => {
     const s = state.current;
-    if (!s.dirty || s.running || s.conflict || !s.ready) return;
+    if (!mounted.current || !s.dirty || s.running || s.conflict || !s.ready) return;
     s.running = true;
     try {
       while (s.dirty && !s.conflict) {
         const snapshot = s.data;
         setStatus('saving');
-        const response = await fetch(endpoint, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json', 'If-Match': s.revision }, body: JSON.stringify({ data: snapshot }) });
+        const response = await fetch('/api/content-workspace', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'If-Match': s.revision }, body: JSON.stringify({type:"publications.replace",input:{data:snapshot},revisions:{publications:s.revision}}) });
+        if(!mounted.current)return;
         if (response.status === 409) { s.conflict = true; setStatus('conflict'); setMessage('Календарь изменился на другом устройстве. Ваши правки сохранены на этом устройстве.'); break; }
         if (!response.ok) throw new Error(response.status === 401 ? 'Войдите снова: сессия закончилась.' : 'Не удалось сохранить на сервере. Правки остаются на этом устройстве.');
         const result = await response.json();
@@ -35,11 +38,11 @@ export function usePublications(userId: string) {
         s.revision = result.revision;
         s.dirty = snapshot !== s.data;
         if (s.dirty) persistDraft();
-        else { localStorage.removeItem(key); setStatus('saved'); setMessage(''); }
+        else { localStorage.removeItem(key); setStatus('saved'); setMessage(''); window.dispatchEvent(new CustomEvent('content-map:saved',{detail:{...result,userId}})); }
       }
     } catch (error) { setStatus('error'); setMessage(error instanceof Error ? error.message : 'Ошибка сохранения.'); persistDraft(); }
     finally { s.running = false; }
-  }, [key, persistDraft]);
+  }, [key, persistDraft,userId]);
 
   const load = useCallback(async () => {
     setStatus('loading');
@@ -47,6 +50,7 @@ export function usePublications(userId: string) {
       const response = await fetch(endpoint, { credentials: 'include', cache: 'no-store' });
       if (!response.ok) throw new Error('Не удалось загрузить календарь. Попробуйте ещё раз.');
       const result = await response.json();
+      if(!mounted.current)return;
       // A revision is required before writing: old deployments must not silently overwrite data.
       if (typeof result.revision !== 'string') throw new Error('Сервер календаря ещё не обновлён.');
       const server = result.data ? parsePublications(result.data) : emptyPublications;
@@ -85,8 +89,8 @@ export function usePublications(userId: string) {
     const timer = setInterval(() => void refresh(), 20000);
     const visible = () => { if (document.visibilityState === 'visible') void refresh(); };
     document.addEventListener('visibilitychange', visible);
-    window.addEventListener('focus', visible);
-    return () => { active = false; clearInterval(timer); document.removeEventListener('visibilitychange', visible); window.removeEventListener('focus', visible); };
+    window.addEventListener('focus', visible); window.addEventListener('content-map:saved', visible);
+    return () => { active = false; clearInterval(timer); document.removeEventListener('visibilitychange', visible); window.removeEventListener('focus', visible); window.removeEventListener('content-map:saved', visible); };
   }, []);
   useEffect(() => {
     const hide = () => { if (document.visibilityState === 'hidden') void flush(); };
@@ -94,7 +98,7 @@ export function usePublications(userId: string) {
     const leave = (event: BeforeUnloadEvent) => { if (state.current.dirty) { event.preventDefault(); event.returnValue = ''; } };
     document.addEventListener('visibilitychange', hide);
     window.addEventListener('online', online); window.addEventListener('beforeunload', leave);
-    return () => { clearTimeout(timer.current); void flush(); document.removeEventListener('visibilitychange', hide); window.removeEventListener('online', online); window.removeEventListener('beforeunload', leave); };
+    return () => { clearTimeout(timer.current); document.removeEventListener('visibilitychange', hide); window.removeEventListener('online', online); window.removeEventListener('beforeunload', leave); };
   }, [flush]);
 
   const change = useCallback((next: PublicationState) => {

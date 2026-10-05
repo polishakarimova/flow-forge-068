@@ -17,6 +17,8 @@ import FunnelMapPage from "./pages/FunnelMapPage.tsx";
 import Publications from "./pages/Publications.tsx";
 import Welcome from "./pages/Welcome.tsx";
 import Home from "./pages/Home.tsx";
+import { EditorialProvider } from "./lib/editorialContext";
+import { MaterialCard } from "./components/content/MaterialCard";
 import Profile from "./pages/Profile.tsx";
 import Register from "./pages/Register.tsx";
 import Login from "./pages/Login.tsx";
@@ -88,7 +90,7 @@ const App = () => (
         <DataStoreProvider>
           <ContextProvider>
             <BrowserRouter basename="/">
-              <BackNavigationProvider><AppRoutes /></BackNavigationProvider>
+              <EditorialProvider><BackNavigationProvider><AppRoutes /><MaterialCard /></BackNavigationProvider></EditorialProvider>
             </BrowserRouter>
           </ContextProvider>
         </DataStoreProvider>
