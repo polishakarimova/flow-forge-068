@@ -14,3 +14,9 @@
 @media(max-width:767px){.ed-formats{display:flex;overflow-x:auto;max-width:100%;gap:6px;margin:10px 0;padding-bottom:4px}.ed-format,.ed-formats .ed-format:first-child{flex:0 0 auto;min-width:86px;min-height:52px;padding:7px 10px;font-size:13px}.ed-format small,.ed-format:first-child small{display:block;font-size:11px;margin:3px 0 0}.ed-focus{margin-bottom:8px}.ed-path{max-width:100%}.ed-note{font-size:12px}.ed-small-dialog{padding:18px}.ed-modes{margin-bottom:8px}}
 
 .ed-route{display:grid;gap:8px;margin:8px 0 12px}.ed-route li{display:flex;gap:10px;align-items:start;padding:9px;border-left:2px solid hsl(var(--primary)/.2);overflow-wrap:anywhere}.ed-route .ed-badge{flex-shrink:0}
+
+/* Ready files stay in the footer; the script owns the main reading space. */
+.ed-detail-footer .ed-download-action{margin-left:auto;min-height:44px;gap:6px;flex-shrink:0;font-size:12px}
+.ed-download-menu{z-index:80!important;max-width:min(300px,calc(100vw - 32px));max-height:50dvh;overflow-y:auto}
+.ed-download-menu [role="menuitem"]{min-height:44px;gap:8px}
+@media(max-width:479px){.ed-detail-footer .ed-download-action{width:44px;padding:0}.ed-download-action>span{display:none}}
