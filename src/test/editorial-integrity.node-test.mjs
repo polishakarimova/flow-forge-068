@@ -64,3 +64,8 @@ test('bundle import is idempotent, preserves edits, and never assigns dates or a
 test('preparation-only changes advance entity revision',()=>{
  let s=run(fresh(),'material.save',mat(fresh()));const before=mat(s).revision;s=run(s,'material.save',{...mat(s),status:'ready'});assert.equal(mat(s).revision,before+1);assert.throws(()=>run(s,'material.save',{...mat(s),revision:before,status:'in_progress'}),e=>e.status===409);
 });
+
+test('day move keeps destination story identity and handles old colliding block IDs',()=>{
+ const s=fresh();s.publications.items=[{id:'source',date:'2026-10-05',format:'Сторис',title:'Source',parts:[{id:'1',text:'Incoming',published:false}]},{id:'target',date:'2026-10-06',format:'Сторис',title:'Target',parts:[{id:'1',text:'Existing',published:true}]}];
+ const next=run(s,'day.move',{from:'2026-10-05',date:'2026-10-06'});assert.equal(next.publications.items.length,1);const item=next.publications.items[0];assert.equal(item.id,'target');assert.equal(item.parts[0].id,'1');assert.equal(item.parts[0].published,true);assert.notEqual(item.parts[1].id,'1');assert.equal(item.parts[1].text,'Incoming');
+});

@@ -281,7 +281,11 @@ export function applyEditorial(originalMain, originalPubs, command) {
     for(const p of moving){p.date=input.date;for(const b of p.parts){b.scheduledAt=b.scheduledAt?input.date+b.scheduledAt.slice(10):undefined;b.approvalStatus='draft';const m=all(main).find(m=>m.id===(b.contentItemId||p.contentItemId));if(m){m.publishDate=input.date;m.revision=(m.revision||1)+1;}}}
     for(const s of main.editorial.slots.filter(s=>s.date===input.from))s.date=input.date;
     const stories=pubs.items.filter(p=>p.date===input.date&&p.format==='Сторис');
-    if(stories.length>1){stories[0].parts=stories.flatMap(p=>p.parts);pubs.items=pubs.items.filter(p=>!stories.slice(1).includes(p));}
+    if(stories.length>1){
+      const target=stories.find(p=>!moving.includes(p))||stories[0],ids=new Set(target.parts.map(b=>b.id));
+      for(const source of stories.filter(p=>p!==target))for(const b of source.parts){if(ids.has(b.id))b.id=randomUUID();ids.add(b.id);target.parts.push(b);}
+      delete target.contentItemId;pubs.items=pubs.items.filter(p=>p===target||!stories.includes(p));
+    }
   } else if(type==='slot.dissolve') {
     const s=main.editorial.slots.find(s=>s.id===input.id);if(!s)fail('Группа не найдена.',404);
     for(const p of pubs.items.filter(p=>p.slotId===s.id))delete p.slotId;
