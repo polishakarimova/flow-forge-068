@@ -20,6 +20,7 @@ import Home from "./pages/Home.tsx";
 import { EditorialProvider } from "./lib/editorialContext";
 import { MaterialCard } from "./components/content/MaterialCard";
 import Profile from "./pages/Profile.tsx";
+import Agents from "./pages/Agents.tsx";
 import Register from "./pages/Register.tsx";
 import Login from "./pages/Login.tsx";
 import Admin from "./pages/Admin.tsx";
@@ -69,6 +70,7 @@ function AppRoutes() {
         <Route path="/map" element={<FunnelMapPage />} />
         <Route path="/calendar" element={<Publications />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/agents" element={<Agents />} />
         <Route path="/admin" element={<Admin />} />
         </Route>
         <Route path="/register" element={<Register />} />

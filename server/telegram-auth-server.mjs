@@ -13,6 +13,7 @@ import { ensureRemoteSchema, handleRemoteRequest, remoteStatus } from './threads
 import { approvePublicationDay } from './publications-approval.mjs';
 import { contentWorkspaceApi } from './content-workspace-api.mjs';
 import { updateWorkspace } from './content-workspace.mjs';
+import { agentApi, ensureAgentSchema } from './agent-api.mjs';
 
 const root = new URL("../", import.meta.url);
 const distDir = fileURLToPath(new URL("../dist", import.meta.url));
@@ -584,6 +585,7 @@ async function handleTelegramUpdate(update) {
 }
 
 async function api(req, res, url) {
+  if (url.pathname.startsWith('/api/agent/')) return agentApi(req,res,{path:url.pathname,pool:pgPool,send,requireUser,appUrl:APP_URL});
   if (url.pathname.startsWith('/api/internal/threads/')) {
     return handleRemoteRequest({ req, res, path: url.pathname, pool: pgPool, body, send, env: process.env });
   }
@@ -800,6 +802,7 @@ let telegramPollingStarted = false;
 await ensureSchema();
 await ensureThreadsSchema(pgPool);
 await ensureRemoteSchema(pgPool);
+await ensureAgentSchema(pgPool);
 setupTelegramBot().catch((error) => console.error("Telegram setup failed:", error));
 if (process.env.THREADS_AUTOPUBLISH_ENABLED === '1' && process.env.THREADS_REMOTE_ENABLED !== '1') {
   let threadsTickRunning = false;

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UserRound, LogOut, Package, FileText, Network, GraduationCap } from 'lucide-react';
+import { UserRound, LogOut, Package, FileText, Network, GraduationCap, Bot } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
@@ -36,6 +36,7 @@ export default function Profile() {
         {[{label:'Продукты',value:products.length,icon:Package},{label:'Материалы в разделе «Контент»',value:allContentItems.length,icon:FileText},{label:'Активные воронки',value:funnels.filter(f=>f.active).length,icon:Network}].map(item=><div key={item.label} className="flex items-center gap-3 py-3 text-sm"><item.icon size={17} className="text-muted-foreground"/><span className="flex-1">{item.label}</span><span className="font-medium">{item.value}</span></div>)}
       </div>
       <button className="flex items-center gap-2 min-h-11 mb-3 text-sm text-muted-foreground" onClick={() => { resetTour(); startTour(); }}><GraduationCap size={17}/>Обучение</button>
+      <button className="flex items-center gap-2 min-h-11 mb-3 text-sm text-primary" onClick={() => navigate('/agents')}><Bot size={17}/>Подключить агента</button>
       <Button variant="outline" className="rounded-xl" disabled={busy} onClick={signOut}><LogOut size={16}/>{busy?'Выходим…':'Выйти из аккаунта'}</Button>
       {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
     </div></main><MobileNav/>
