@@ -1,0 +1,7 @@
+[Unit]
+Description=Weekly Karta Kontenta recovery check
+[Timer]
+OnCalendar=Sun *-*-* 04:20:00 UTC
+Persistent=true
+[Install]
+WantedBy=timers.target

@@ -13,13 +13,13 @@ References: https://core.telegram.org/bots/api#getupdates and https://core.teleg
 Проект использует только Telegram-авторизацию:
 
 - Telegram Mini App: сервер проверяет `Telegram.WebApp.initData`.
-- Обычный браузер: сайт создаёт одноразовый login token и открывает бота с `/start login_<token>`.
-- Сессия хранится в `HttpOnly` cookie, подписанной HMAC через `SESSION_SECRET`.
+- Обычный браузер: сайт создаёт одноразовый login token, привязанный к закрытой cookie этого браузера, и открывает бота с `/start login_<token>`. В боте нужно отдельно нажать «Подтвердить вход». Возврат в другой браузер не потребляет токен.
+- Сессия хранится в `HttpOnly` cookie, подписанной HMAC через `SESSION_SECRET`; в БД хранится хеш и срок. Logout отзывает серверную запись. На HTTPS cookie Secure с префиксом __Host.
 - Пароли и SMS не используются.
 
 ## Env
 
-На сервере в `.env.local`:
+На сервере в закрытом `/etc/kartakontenta/runtime.env` (путь передаётся в KARTA_ENV_FILE):
 
 ```env
 NODE_ENV=production
@@ -32,11 +32,11 @@ TELEGRAM_BOT_TOKEN=000000:telegram_bot_token
 TELEGRAM_WEBHOOK_SECRET=long_random_webhook_secret
 SESSION_SECRET=long_random_session_secret
 
-ADMIN_TOKEN=long_random_admin_token
 ADMIN_TELEGRAM_IDS=123456789
+KARTA_SCHEMA_MODE=runtime
 ```
 
-`SESSION_SECRET`, `TELEGRAM_WEBHOOK_SECRET` и `ADMIN_TOKEN` должны быть разными длинными случайными строками.
+`SESSION_SECRET` и `TELEGRAM_WEBHOOK_SECRET` — разные случайные строки длиной не менее 32 символов. Админка требует разрешённый Telegram-аккаунт и свежую сессию; ADMIN_TOKEN не используется.
 
 ## BotFather
 
@@ -48,7 +48,7 @@ ADMIN_TELEGRAM_IDS=123456789
 ```bash
 curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
   -H "Content-Type: application/json" \
-  -d '{"url":"https://kartakontenta.ru/api/telegram/webhook","secret_token":"TELEGRAM_WEBHOOK_SECRET","allowed_updates":["message","edited_message"]}'
+  -d '{"url":"https://kartakontenta.ru/api/telegram/webhook","secret_token":"TELEGRAM_WEBHOOK_SECRET","allowed_updates":["message","edited_message","callback_query"]}'
 ```
 
 Или через API проекта:
@@ -70,14 +70,13 @@ curl -X POST https://kartakontenta.ru/api/telegram/setup-webhook \
 
 После установки зависимостей Prisma Client генерируется автоматически через `postinstall`.
 
-Для ручной синхронизации схемы:
+Генерация клиента:
 
 ```bash
 npm run prisma:generate
-npm run prisma:db-push
 ```
 
-На проде сервер также создаёт нужные таблицы при старте, чтобы деплой не падал из-за непрогнанной миграции.
+Production не создаёт таблицы: миграция запускается отдельно через ops/migrate.mjs с KARTA_ENV_FILE=/etc/kartakontenta/migration.env. Приложение использует ограниченную роль karta_runtime. Локальный тестовый стенд может создавать схему при KARTA_SCHEMA_MODE=bootstrap. Произвольный prisma db push на рабочей базе не используется.
 
 ## Проверка
 
@@ -91,8 +90,8 @@ systemctl is-active kartakontenta
 Ручные проверки:
 
 - `GET /api/auth/me` возвращает текущего пользователя или `null`;
-- `POST /api/auth/logout` очищает cookie;
+- `POST /api/auth/logout` отзывает сессию и очищает cookie;
 - Mini App открывается внутри Telegram и входит через `initData`;
-- браузерный вход открывает бота с одноразовым token;
+- браузерный вход открывает бота с одноразовым token; /start сам не авторизует, другая учётная запись не подтверждает запрос, другой браузер не потребляет его, два запроса выигрывают только один раз;
 - webhook отклоняет запросы без правильного `TELEGRAM_WEBHOOK_SECRET`;
 - после входа пользователь появляется в `users`, `auth_identities`, `telegram_accounts`.

@@ -3,7 +3,7 @@ export async function pollTelegramUpdates({ api, handleUpdate, shouldStop = () =
   let offset = 0;
   while (!shouldStop()) {
     try {
-      const updates = await api('getUpdates', { offset, timeout: 25, allowed_updates: ['message', 'edited_message'] });
+      const updates = await api('getUpdates', { offset, timeout: 25, allowed_updates: ['message', 'edited_message', 'callback_query'] });
       for (const update of updates) {
         if (shouldStop()) return;
         await handleUpdate(update);

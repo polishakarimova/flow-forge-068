@@ -344,12 +344,14 @@ export async function readWorkspace(pool, userId) {
   const main = rows.find(r => r.key === 'main'), pubs = rows.find(r => r.key === 'publications');
   return { main: main?.data || {}, publications: pubs?.data || { schema:1,items:[] }, revisions: { main: main?.revision || 'new', publications: pubs?.revision || 'new' } };
 }
-export async function updateWorkspace(pool, userId, command) {
+export async function updateWorkspace(pool, userId, command, hooks = {}) {
   const client = await pool.connect();
   try {
     await client.query('begin');
     // Serializes creation of initially absent state rows and double submits.
     await client.query('select pg_advisory_xact_lock(hashtext($1))', ['editorial:' + userId]);
+    const replay = await hooks.beforeApply?.(client);
+    if (replay) { await client.query('commit'); return replay; }
     const queue = (await client.query("select * from cm_threads_queue where user_id=$1 order by publication_id,part_id for update", [userId])).rows;
     await client.query("select key from cm_user_state where user_id=$1 and key='publications' for update", [userId]);
     await client.query("select key from cm_user_state where user_id=$1 and key='main' for update", [userId]);
@@ -357,7 +359,7 @@ export async function updateWorkspace(pool, userId, command) {
     const entity = command.type==='idea.save'?current.main.topics?.find(t=>t.id===command.input?.id):['material.save','material.metrics'].includes(command.type)?all(current.main).find(m=>m.id===command.input?.id):null;
     const entityMatches=entity&&command.input?.revision===(entity.revision||1);
     if (!entityMatches && (!command.revisions || (command.type !== 'publications.replace' && command.revisions.main !== current.revisions.main) || (command.type !== 'main.replace' && command.revisions.publications !== current.revisions.publications))) fail('Материалы обновились на другом устройстве. Обновите список; ваш текст остаётся в редакторе.', 409);
-    const next = applyEditorial(current.main, current.publications, command);
+    const next = hooks.apply ? hooks.apply(current.main, current.publications, command) : applyEditorial(current.main, current.publications, command);
     for (const job of queue.filter(q => ['sending','uncertain'].includes(q.status))) {
       const before = current.publications.items.find(p => p.id === job.publication_id)?.parts.find(p => p.id === job.part_id);
       const after = next.publications.items.find(p => p.id === job.publication_id)?.parts.find(p => p.id === job.part_id);
@@ -368,6 +370,7 @@ export async function updateWorkspace(pool, userId, command) {
       await client.query("insert into cm_user_state(user_id,key,data) values($1,$2,$3::jsonb) on conflict(user_id,key) do update set data=excluded.data,updated_at=now()", [userId,key,JSON.stringify(data)]);
     }
     const saved = await readWorkspace(client, userId);
+    await hooks.afterApply?.(client, { ...saved, result: next.result });
     await client.query('commit');
     return { ...saved, result: next.result };
   } catch (error) { await client.query('rollback'); throw error; }

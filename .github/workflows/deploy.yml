@@ -19,10 +19,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: oven-sh/setup-bun@v2
-
-      - run: bun install
-      - run: bun run build
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: node --test server/security.test.mjs server/agent-workspace.test.mjs server/karta-mcp.test.mjs
+      - run: npx tsc --noEmit -p tsconfig.app.json
+      - run: npm audit --omit=dev --audit-level=moderate
+      - run: npm run build
 
       - uses: actions/upload-pages-artifact@v3
         with:
