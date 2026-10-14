@@ -10,7 +10,7 @@ if(!existsSync(keyFile)){
  writeFileSync(keyFile,randomBytes(32),{mode:0o600,flag:'wx'});
 }
 const key=readFileSync(keyFile);if(key.length!==32)throw Error('Invalid backup key');
-const mode=process.argv[2]||'create',runtimeFile='/etc/kartakontenta/runtime.env',env=readEnv(mode==='verify'||!existsSync(runtimeFile)?'/etc/kartakontenta/migration.env':runtimeFile);
+const mode=process.argv[2]||'create',runtimeFile='/etc/kartakontenta/runtime.env',env=readEnv(mode==='verify'||!existsSync('/opt/kartakontenta/current/release.json')||!existsSync(runtimeFile)?'/etc/kartakontenta/migration.env':runtimeFile);
 const url=new URL(env.DATABASE_URL),pgEnv={...process.env,PGHOST:url.hostname,PGPORT:url.port||'5432',PGUSER:decodeURIComponent(url.username),PGPASSWORD:decodeURIComponent(url.password),PGDATABASE:url.pathname.slice(1),PGSSLMODE:'verify-full',PGSSLROOTCERT:env.PGSSLROOTCERT};
 const pool=databasePool(env),temp=mkdtempSync(join(base,'.staging-'));
 let restoreDb;

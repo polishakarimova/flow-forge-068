@@ -1,5 +1,5 @@
 export async function inspectRuntimeAccess(pool) {
-  const {rows} = await pool.query(`select
+  const {rows} = await pool.query(`select current_database() as database_name,
     has_schema_privilege(current_user,'public','CREATE') as migration_create,
     has_database_privilege(current_user,current_database(),'CONNECT WITH GRANT OPTION') as delegate_connect,
     has_schema_privilege(current_user,'public','USAGE WITH GRANT OPTION') as delegate_usage,
@@ -24,9 +24,10 @@ export function requireLimitedRuntime(access) {
 
 export function requireRuntimeBootstrap(access) {
   requireLimitedRuntime(access);
-  if (!access.migration_create) throw Error('Для миграции требуется CREATE схемы public в default_db.');
+  const database=access.database_name||'default_db';
+  if (!access.migration_create) throw Error('Для миграции требуется CREATE схемы public в '+database+'.');
   const missing = [];
-  if (!access.runtime_connect && !access.delegate_connect) missing.push('CONNECT к default_db');
+  if (!access.runtime_connect && !access.delegate_connect) missing.push('CONNECT к '+database);
   if (!access.runtime_usage && !access.delegate_usage) missing.push('USAGE схемы public');
   if (missing.length) {
     throw Error('Владелец базы должен выдать karta_runtime: ' + missing.join(', ') + '. Права делегирования у gen_user отсутствуют.');

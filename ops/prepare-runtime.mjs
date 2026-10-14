@@ -7,8 +7,10 @@ const dir='/etc/kartakontenta',source='/opt/flow-forge-068/.env.local';
 mkdirSync(dir,{recursive:true,mode:0o700});
 const previous=readEnv(source),beforeSession=previous.SESSION_SECRET||previous.TELEGRAM_WEBHOOK_SECRET||previous.ADMIN_TOKEN||previous.TELEGRAM_BOT_TOKEN;
 const migrationPath=dir+'/migration.env';
-const oldUrl=new URL(previous.DATABASE_URL);if(oldUrl.pathname!=='/default_db')throw Error('Unexpected target database');oldUrl.searchParams.set('sslmode','verify-full');
-const migration={DATABASE_URL:oldUrl.toString(),PGSSLROOTCERT:'/etc/ssl/certs/timeweb-cloud-root.crt'};
+const oldUrl=new URL(previous.DATABASE_URL);if(!['/default_db','/kartakontenta'].includes(oldUrl.pathname))throw Error('Unexpected source database');oldUrl.searchParams.set('sslmode','verify-full');
+const migration=existsSync(migrationPath)?readEnv(migrationPath):{DATABASE_URL:oldUrl.toString(),PGSSLROOTCERT:'/etc/ssl/certs/timeweb-cloud-root.crt'};
+const migrationUrl=new URL(migration.DATABASE_URL),databaseName=migrationUrl.pathname.slice(1);
+if(!['default_db','kartakontenta'].includes(databaseName)||migrationUrl.hostname!==oldUrl.hostname||migrationUrl.port!==oldUrl.port||migrationUrl.username!==oldUrl.username)throw Error('Unexpected migration target');
 const encode=env=>Object.entries(env).filter(([k])=>/^[A-Z0-9_]+$/.test(k)).map(([k,v])=>{if(/[\r\n]/.test(v))throw Error('Invalid environment entry');return k+'='+v;}).join('\n')+'\n';
 if(!existsSync(migrationPath))writeFileSync(migrationPath,encode(migration),{mode:0o600,flag:'wx'});
 if(process.argv[2]==='config'){console.log('Protected migration configuration ready.');process.exit(0);}
@@ -25,7 +27,7 @@ try{
  const password=existing?decodeURIComponent(new URL(existing.DATABASE_URL).password):randomBytes(32).toString('hex');
  if(!roles.length)await pool.query("create role karta_runtime login password '"+password+"' nosuperuser nocreatedb nocreaterole noinherit");
  if(!stage){
-   if(!access.runtime_connect)await pool.query('grant connect on database default_db to karta_runtime');
+   if(!access.runtime_connect)await pool.query('grant connect on database '+JSON.stringify(databaseName)+' to karta_runtime');
    if(!access.runtime_usage)await pool.query('grant usage on schema public to karta_runtime');
    for(const table of tables)await pool.query('grant select,insert,update,delete on table public."'+table+'" to karta_runtime');
  }
