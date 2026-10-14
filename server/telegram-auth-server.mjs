@@ -18,6 +18,7 @@ import {assertProductionConfig,requestProtection,readJsonBody,telegramAuthDateVa
 import {ensureSessionSchema,issueSession,readSession,revokeSession,authorizeAdmin} from './session-store.mjs';
 import {readContext,saveContext} from './context-state.mjs';
 import {ensureBaseSchema} from './schema.mjs';
+import {prismaDatabaseUrl} from './database-urls.mjs';
 
 const root = new URL("../", import.meta.url);
 const distDir = fileURLToPath(new URL("../dist", import.meta.url));
@@ -60,15 +61,7 @@ if (!DATABASE_URL) throw new Error("DATABASE_URL is required");
 if (!TELEGRAM_BOT_TOKEN) console.warn("TELEGRAM_BOT_TOKEN is empty: Telegram auth will be unavailable");
 assertProductionConfig(process.env);
 
-function createPrismaDatabaseUrl(rawUrl) {
-  const parsed = new URL(rawUrl);
-  if (parsed.searchParams.get("sslmode") && !parsed.searchParams.get("sslnegotiation")) {
-    parsed.searchParams.set("sslnegotiation", "direct");
-  }
-  return parsed.toString();
-}
-
-process.env.DATABASE_URL = process.env.PRISMA_DATABASE_URL || createPrismaDatabaseUrl(DATABASE_URL);
+process.env.DATABASE_URL = prismaDatabaseUrl(DATABASE_URL,PGSSLROOTCERT);
 
 function createPgPool() {
   const parsed = new URL(DATABASE_URL);

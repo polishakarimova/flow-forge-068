@@ -29,7 +29,17 @@ try {
   $taskProtected=[System.Security.Cryptography.ProtectedData]::Protect($taskBytes,$null,[System.Security.Cryptography.DataProtectionScope]::CurrentUser)
   [System.IO.File]::WriteAllBytes($taskRecovery,$taskProtected);[Array]::Clear($taskBytes,0,$taskBytes.Length);$taskEncoded=$null
  }
- [System.IO.File]::WriteAllText((Join-Path $Destination 'Статус копирования.json'),(@{ok=$true;at=(Get-Date).ToUniversalTime().ToString('o');archives=@($taskLines).Count}|ConvertTo-Json))
+ Add-Type -AssemblyName System.Security
+ $taskClear=[System.Security.Cryptography.ProtectedData]::Unprotect([System.IO.File]::ReadAllBytes($taskRecovery),$null,[System.Security.Cryptography.DataProtectionScope]::CurrentUser)
+ try {
+  $taskDigest=(& ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i $taskKey root@5.42.111.195 'sha256sum /etc/kartakontenta/backup.key') -join ''
+  if($LASTEXITCODE -ne 0){throw 'Не удалось проверить ключ восстановления'}
+  $taskDigest=($taskDigest -split '\s+')[0]
+  $taskHasher=[System.Security.Cryptography.SHA256]::Create()
+  try {$taskLocalDigest=[BitConverter]::ToString($taskHasher.ComputeHash($taskClear)).Replace('-','').ToLowerInvariant()}finally{$taskHasher.Dispose()}
+  if($taskDigest -notmatch '^[a-f0-9]{64}$' -or $taskLocalDigest -ne $taskDigest){throw 'Ключ восстановления на компьютере отличается от серверного; требуется проверка'}
+ }finally{[Array]::Clear($taskClear,0,$taskClear.Length)}
+ [System.IO.File]::WriteAllText((Join-Path $Destination 'Статус копирования.json'),(@{ok=$true;at=(Get-Date).ToUniversalTime().ToString('o');archives=@($taskLines).Count;recoveryKeyVerified=$true}|ConvertTo-Json))
 }catch {
  [System.IO.File]::WriteAllText((Join-Path $Destination 'Статус копирования.json'),(@{ok=$false;at=(Get-Date).ToUniversalTime().ToString('o');error=$_.Exception.Message}|ConvertTo-Json));throw
 }finally{$taskHandle.Dispose()}

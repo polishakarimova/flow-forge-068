@@ -5,6 +5,7 @@ import {requestProtection,readJsonBody,telegramAuthDateValid,productionConfigErr
 import {ensureSessionSchema,issueSession,readSession,revokeSession,authorizeAdmin} from './session-store.mjs';
 import {readContext,saveContext} from './context-state.mjs';
 import {PGlite} from '@electric-sql/pglite';
+import {prismaDatabaseUrl} from './database-urls.mjs';
 test('request protection blocks hostile origin, form body, oversized writes and untrusted proxy spoofing',async()=>{
  const headers={},res={setHeader:(k,v)=>headers[k]=v},url=new URL('https://kartakontenta.ru/api/content-workspace');
  const req={method:'POST',headers:{origin:url.origin,'content-type':'application/json'},socket:{remoteAddress:'10.0.0.1'}};
@@ -22,6 +23,8 @@ test('fresh Telegram dates and production secrets fail closed',()=>{
  const clock=1_000_000;assert.equal(telegramAuthDateValid(1000,clock),true);
  assert.equal(telegramAuthDateValid(699,clock),false);assert.equal(telegramAuthDateValid(1060,clock),false);
  assert.ok(productionConfigErrors({NODE_ENV:'production',APP_URL:'http://localhost',DATABASE_URL:'postgres://localhost/app',SESSION_SECRET:'weak'}).length>=4);
+ const prisma=new URL(prismaDatabaseUrl('postgres://fixture:fixture@db.invalid/app?sslmode=verify-full&sslaccept=accept_invalid_certs','/etc/fixture-ca.crt'));
+ assert.equal(prisma.searchParams.get('sslmode'),'require');assert.equal(prisma.searchParams.get('sslaccept'),'strict');assert.equal(prisma.searchParams.get('sslcert'),'/etc/fixture-ca.crt');
 });
 test('real SQL: revoked sessions, finite admin access, context version conflicts and account isolation',async()=>{
  const db=new PGlite(),query=async(sql,args)=>{const r=args?await db.query(sql,args):(await db.exec(sql)).at(-1);return {...r,rowCount:r?.affectedRows};};

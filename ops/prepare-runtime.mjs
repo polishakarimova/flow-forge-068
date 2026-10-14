@@ -1,6 +1,7 @@
 import {existsSync,readFileSync,writeFileSync,mkdirSync,chmodSync,copyFileSync} from 'node:fs';
 import {randomBytes} from 'node:crypto';
 import {readEnv,databasePool,tables,fingerprint} from './db-config.mjs';
+import {prismaDatabaseUrl} from '../server/database-urls.mjs';
 const dir='/etc/kartakontenta',source='/opt/flow-forge-068/.env.local';
 mkdirSync(dir,{recursive:true,mode:0o700});
 const previous=readEnv(source),beforeSession=previous.SESSION_SECRET||previous.TELEGRAM_WEBHOOK_SECRET||previous.ADMIN_TOKEN||previous.TELEGRAM_BOT_TOKEN;
@@ -22,8 +23,7 @@ try{
  await pool.query('grant connect on database default_db to karta_runtime');await pool.query('grant usage on schema public to karta_runtime');
  for(const table of tables)await pool.query('grant select,insert,update,delete on table public."'+table+'" to karta_runtime');
  const url=new URL(migration.DATABASE_URL);url.username='karta_runtime';url.password=password;
- const prismaUrl=new URL(url);prismaUrl.searchParams.set('sslnegotiation','direct');
- const env={...(existing||previous),DATABASE_URL:url.toString(),PRISMA_DATABASE_URL:prismaUrl.toString(),PGSSLROOTCERT:migration.PGSSLROOTCERT,KARTA_SCHEMA_MODE:'runtime'};
+ const env={...(existing||previous),DATABASE_URL:url.toString(),PRISMA_DATABASE_URL:prismaDatabaseUrl(url.toString(),migration.PGSSLROOTCERT),PGSSLROOTCERT:migration.PGSSLROOTCERT,KARTA_SCHEMA_MODE:'runtime'};
  delete env.ADMIN_TOKEN;
  env.THREADS_TOKEN_SECRET=env.THREADS_TOKEN_SECRET||beforeSession;
  if(!env.SESSION_SECRET||env.SESSION_SECRET.length<32||env.SESSION_SECRET===env.TELEGRAM_WEBHOOK_SECRET||env.SESSION_SECRET===env.TELEGRAM_BOT_TOKEN)env.SESSION_SECRET=randomBytes(32).toString('hex');
