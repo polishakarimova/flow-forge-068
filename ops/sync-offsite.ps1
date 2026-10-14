@@ -1,11 +1,11 @@
-param([string]$Destination='C:\Users\polin\CodexBackups\Карта контента')
+﻿param([string]$Destination='C:\Users\polin\CodexBackups\Карта контента')
 $ErrorActionPreference='Stop'
 $taskKey=Join-Path $env:USERPROFILE '.ssh\sobralis_deploy'
 New-Item -ItemType Directory -Path $Destination -Force | Out-Null
 $taskLock=Join-Path $Destination '.sync.lock'
 $taskHandle=[System.IO.File]::Open($taskLock,'OpenOrCreate','ReadWrite','None')
 try {
- $taskLines=& ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i $taskKey root@5.42.111.195 'find /opt/kartakontenta-backups/encrypted -maxdepth 1 -type f -name "karta-*.aes" -printf "%f\n"'
+ $taskLines=& ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i $taskKey root@5.42.111.195 'find /opt/kartakontenta-backups/encrypted -maxdepth 1 -type f -name ''karta-*.aes'' -printf ''%f\n'''
  if($LASTEXITCODE -ne 0){throw 'Не удалось прочитать список резервных копий'}
  foreach($taskName in $taskLines){
   if($taskName -notmatch '^karta-[0-9TZ-]+\.aes$'){throw 'Неожиданное имя архива'}
