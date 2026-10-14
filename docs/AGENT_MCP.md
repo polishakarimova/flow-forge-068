@@ -47,7 +47,8 @@ tool_timeout_sec = 60
 
 | Инструмент | Право | Действие |
 |---|---|---|
-| karta_overview, karta_list, karta_get | read | Количество, поиск, списки, полные тексты и контекст аккаунта |
+| karta_overview, karta_list, karta_get | read | Количество, поиск, списки и полные рабочие тексты |
+| karta_get с kind=context | read + context | Все ответы и личная фактура из «Контекста»; отдельный выбор, выключен по умолчанию |
 | karta_save_idea | content | Создание/правка/архив идеи |
 | karta_create_post, karta_update_post | content | Сценарий, экраны, CTA, готовые файлы и ссылки |
 | karta_save_metrics | content | Фактические ручные результаты |

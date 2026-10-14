@@ -7,7 +7,7 @@ import { agentTools, registerAgentTools } from './agent-tools.mjs';
 import { applyAgentCommand } from './agent-workspace.mjs';
 import { readWorkspace, updateWorkspace } from './content-workspace.mjs';
 
-export const AGENT_SCOPES = ['read','content','products','funnels','planning'];
+export const AGENT_SCOPES = ['read','content','products','funnels','planning','context'];
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
 const hash=v=>createHash('sha256').update(v).digest('hex');
 const token=()=>randomBytes(32).toString('base64url');
@@ -47,7 +47,7 @@ const publicConnection=row=>({id:row.id,name:row.name,scopes:row.scopes,createdA
 const credentialResponse=(row,access,refresh)=>({access_token:access,refresh_token:refresh,token_type:'Bearer',expires_in:3600,refresh_expires_in:2592000,agent:publicConnection(row)});
 
 export async function createAgentConnection(pool,userId,input) {
-  const parsed=z.object({name:z.string().trim().min(1).max(80),scopes:z.array(z.enum(AGENT_SCOPES)).min(1).max(5)}).strict().parse(input);
+  const parsed=z.object({name:z.string().trim().min(1).max(80),scopes:z.array(z.enum(AGENT_SCOPES)).min(1).max(AGENT_SCOPES.length)}).strict().parse(input);
   const scopes=[...new Set(['read',...parsed.scopes])];
   const alphabet='23456789ABCDEFGHJKLMNPQRSTUVWXYZ',bytes=randomBytes(10);
   const raw=[...bytes].map(b=>alphabet[b%alphabet.length]).join(''),code=raw.slice(0,5)+'-'+raw.slice(5);
@@ -93,7 +93,7 @@ export async function executeAgentTool(pool,agent,name,args) {
     const base={revisions:snapshot.revisions};
     if(name==='karta_overview')return {...base,agent:publicConnection(agent),counts:{ideas:(main.topics||[]).length,posts:all.length,products:(main.products||[]).length,funnels:(main.funnels||[]).length,calendar:snapshot.publications.items.length},platforms:main.platforms||[],productTypes:main.productTypes||[],keywords:main.keywords||[]};
     if(name==='karta_get'){
-      if(input.kind==='context'){const {rows}=await pool.query("select data from cm_user_state where user_id=$1 and key='context'",[agent.user_id]);return {...base,item:rows[0]?.data||null};}
+      if(input.kind==='context'){if(!agent.scopes.includes('context'))fail('Полный контекст требует отдельного разрешения владельца.',403);const {rows}=await pool.query("select data from cm_user_state where user_id=$1 and key='context'",[agent.user_id]);return {...base,item:rows[0]?.data||null};}
       const lists={idea:main.topics||[],post:all,product:main.products||[],funnel:main.funnels||[]};
       const item=lists[input.kind].find(m=>m.id===input.id);if(!item)fail('Материал не найден.',404);return {...base,item};
     }

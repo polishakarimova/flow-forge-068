@@ -39,6 +39,7 @@ export async function ensureBaseSchema(pgPool) {
     create table if not exists telegram_login_requests (
       id text primary key default gen_random_uuid()::text,
       "tokenHash" text not null unique,
+      "browserHash" text,
       "returnTo" text,
       status "TelegramLoginStatus" not null default 'PENDING',
       "userId" text references users(id) on delete set null,
@@ -49,6 +50,7 @@ export async function ensureBaseSchema(pgPool) {
       "confirmedAt" timestamptz,
       "usedAt" timestamptz
     );
+    alter table telegram_login_requests add column if not exists "browserHash" text;
     create table if not exists cm_users (
       id text primary key,
       data jsonb not null

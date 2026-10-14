@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await fetch('/api/auth/telegram-login-token/' + encodeURIComponent(token), { credentials: 'include', signal: AbortSignal.timeout(20000) });
     if (response.status === 202) return { success: false, message: 'Подтвердите вход в боте и нажмите «Я подтвердил(а)».' };
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) { if ([404,410].includes(response.status)) clearPending(); throw new Error(data.error || 'request_failed'); }
+    if (!response.ok) { if ([403,404,410].includes(response.status)) clearPending(); throw new Error(data.error || 'request_failed'); }
     if (!data.user) throw new Error('user_missing');
     clearPending(); acceptUser(data.user);
     return { success: true, message: '' };

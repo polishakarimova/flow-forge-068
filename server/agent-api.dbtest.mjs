@@ -8,9 +8,11 @@ export async function runAgentDbChecks(pool) {
   await pool.query(`create table cm_user_state(user_id text,key text,data jsonb,updated_at timestamptz default now(),primary key(user_id,key));create table cm_threads_queue(user_id text,publication_id text,part_id text,status text);`);
   await ensureAgentSchema(pool);
   const auth=access=>authenticateAgent(pool,{headers:{authorization:'Bearer '+access}});
-  const full=await createAgentConnection(pool,'owner',{name:'Writer',scopes:['content','products','funnels','planning']});
+  const full=await createAgentConnection(pool,'owner',{name:'Writer',scopes:['content','products','funnels','planning','context']});
   const credentials=await exchangeAgentCode(pool,full.code);let agent=await auth(credentials.access_token);
   assert.equal(agent.user_id,'owner');await assert.rejects(exchangeAgentCode(pool,full.code),e=>e.status===401);
+  await pool.query("insert into cm_user_state(user_id,key,data) values('owner','context','{\"privateFixture\":true}'::jsonb)");
+  assert.equal((await executeAgentTool(pool,agent,'karta_get',{kind:'context'})).item.privateFixture,true);
   const snap=()=>readWorkspace(pool,'owner');
   const write=async(name,input={},revisions)=>(await executeAgentTool(pool,agent,name,{...input,requestId:randomUUID(),revisions:revisions||(await snap()).revisions}));
   const first={title:'Синтетический пост',platformId:'tg_post',body:'Черновик',requestId:randomUUID(),revisions:(await snap()).revisions};
@@ -24,6 +26,7 @@ export async function runAgentDbChecks(pool) {
   const before=JSON.stringify(await snap());await assert.rejects(write('karta_create_post',bad));assert.equal(JSON.stringify(await snap()),before,'failed command rolls back idea + post + audit');
   const readOnly=await createAgentConnection(pool,'other',{name:'Reader',scopes:['read']});const readerCredentials=await exchangeAgentCode(pool,readOnly.code),reader=await auth(readerCredentials.access_token);
   assert.equal((await executeAgentTool(pool,reader,'karta_list',{kind:'posts'})).total,0);
+  await assert.rejects(executeAgentTool(pool,reader,'karta_get',{kind:'context'}),e=>e.status===403);
   await assert.rejects(executeAgentTool(pool,reader,'karta_get',{kind:'post',id}),e=>e.status===404);
   await assert.rejects(executeAgentTool(pool,reader,'karta_update_post',{id,body:'Hack',requestId:randomUUID(),revisions:(await snap()).revisions}),e=>e.status===403);
   const otherFull=await createAgentConnection(pool,'other',{name:'Other writer',scopes:['content']});const otherAgent=await auth((await exchangeAgentCode(pool,otherFull.code)).access_token);

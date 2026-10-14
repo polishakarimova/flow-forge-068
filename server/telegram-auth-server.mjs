@@ -23,8 +23,8 @@ const root = new URL("../", import.meta.url);
 const distDir = fileURLToPath(new URL("../dist", import.meta.url));
 
 function loadEnvFile() {
-  for (const name of [".env.local", ".env"]) {
-    const envPath = new URL(name, root);
+  const envPaths=process.env.KARTA_ENV_FILE?[process.env.KARTA_ENV_FILE]:[new URL('.env.local',root),new URL('.env',root)];
+  for (const envPath of envPaths) {
     if (!existsSync(envPath)) continue;
     for (const line of readFileSync(envPath, "utf8").split(/\r?\n/)) {
       const trimmed = line.trim();
@@ -52,7 +52,8 @@ const SESSION_SECRET = process.env.SESSION_SECRET || "";
 const THREADS_APP_ID = process.env.THREADS_APP_ID || "";
 const THREADS_APP_SECRET = process.env.THREADS_APP_SECRET || "";
 const THREADS_TOKEN_SECRET = process.env.THREADS_TOKEN_SECRET || SESSION_SECRET;
-const cookieName = "contentmap_session";
+const cookieName = APP_URL.startsWith('https:')?'__Host-contentmap_session':'contentmap_session';
+const browserCookieName=APP_URL.startsWith('https:')?'__Host-contentmap_login_browser':'contentmap_login_browser';
 let telegramBotInfo = null;
 
 if (!DATABASE_URL) throw new Error("DATABASE_URL is required");
@@ -246,6 +247,8 @@ function clearSessionCookie(res) {
   const secure = APP_URL.startsWith("https://") ? "; Secure" : "";
   res.setHeader("Set-Cookie", `${cookieName}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0${secure}`);
 }
+function appendCookie(res,value){const old=res.getHeader('Set-Cookie');res.setHeader('Set-Cookie',[...(Array.isArray(old)?old:old?[old]:[]),value]);}
+function setBrowserCookie(res,value){appendCookie(res,`${browserCookieName}=${value}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${value?600:0}${APP_URL.startsWith('https:')?'; Secure':''}`);}
 
 async function body(req) {
   return readJsonBody(req);
@@ -383,13 +386,14 @@ function safeReturnTo(returnTo = "") {
   return "/";
 }
 
-async function createTelegramLoginToken(returnTo = "/") {
+async function createTelegramLoginToken(returnTo = "/",browserKey) {
   const bot = TELEGRAM_BOT_TOKEN ? await getTelegramBotInfo() : null;
   if (!bot?.username) throw new Error("telegram_bot_not_configured");
   const token = uid(20);
   const loginRequest = await prisma.telegramLoginRequest.create({
     data: {
       tokenHash: tokenHash(token),
+      browserHash: tokenHash(browserKey),
       returnTo: safeReturnTo(returnTo),
       expiresAt: new Date(Date.now() + 10 * 60 * 1000),
     },
@@ -451,7 +455,24 @@ async function handleTelegramWebhook(req, res) {
 }
 
 async function handleTelegramUpdate(update) {
+  const callback=update.callback_query,callbackMatch=String(callback?.data||'').match(/^cm_auth_(yes|no)_([a-f0-9]{40})$/);
+  if(callback?.message?.chat?.type&&callback.message.chat.type!=='private')return;
+  if(callbackMatch){
+    const login=await readLoginToken(callbackMatch[2]);
+    if(!login||login.status!=='PENDING'||login.usedAt||login.expiresAt.getTime()<=Date.now()||login.telegramId!==String(callback.from?.id)){
+      await telegramApi('answerCallbackQuery',{callback_query_id:callback.id,text:'Этот запрос уже завершён или устарел.'}).catch(()=>{});return;
+    }
+    if(callbackMatch[1]==='no'){
+      await prisma.telegramLoginRequest.updateMany({where:{id:login.id,status:'PENDING',telegramId:String(callback.from.id)},data:{status:'EXPIRED',usedAt:new Date()}});
+      await telegramApi('answerCallbackQuery',{callback_query_id:callback.id,text:'Вход отменён.'}).catch(()=>{});return;
+    }
+    const user=await upsertTelegramUser(callback.from);
+    const saved=await prisma.telegramLoginRequest.updateMany({where:{id:login.id,status:'PENDING',telegramId:String(callback.from.id),expiresAt:{gt:new Date()}},data:{status:'CONFIRMED',userId:user.id,confirmedAt:new Date()}});
+    if(saved.count===1){await telegramApi('answerCallbackQuery',{callback_query_id:callback.id,text:'Вход подтверждён.'}).catch(()=>{});await sendTelegramLoginConfirmed(login.chatId,callbackMatch[2]).catch(()=>{});}
+    return;
+  }
   const message = update.message || update.edited_message;
+  if(message?.chat?.type&&message.chat.type!=='private')return;
   const chatId = message?.chat?.id;
   const text = String(message?.text || "");
   if (chatId && text.startsWith("/start")) {
@@ -467,16 +488,16 @@ async function handleTelegramUpdate(update) {
         }).catch(console.error);
         return;
       }
-      const user = await upsertTelegramUser(message.from);
+      if(loginToken.status!=='PENDING')return;
       Object.assign(loginToken, {
-        status: "CONFIRMED",
-        userId: user.id,
+        status: "PENDING",
+        userId: null,
         telegramId: String(message.from.id),
         chatId: String(chatId),
-        confirmedAt: new Date(),
+        confirmedAt: null,
       });
       await saveLoginToken(loginToken);
-      await sendTelegramLoginConfirmed(chatId, token).catch(console.error);
+      await telegramApi('sendMessage',{chat_id:chatId,text:'Подтвердить вход в «Карту контента»?\n\nЕсли вы не начинали вход на сайте, нажмите «Отменить».',reply_markup:{inline_keyboard:[[{text:'Подтвердить вход',callback_data:'cm_auth_yes_'+token},{text:'Отменить',callback_data:'cm_auth_no_'+token}]]}}).catch(()=>{});
       return;
     }
     await sendTelegramStart(chatId).catch(console.error);
@@ -513,6 +534,7 @@ async function api(req, res, url) {
     if (req.method !== "POST") return methodNotAllowed(res);
     await revokeSession(pgPool,parseCookies(req)[cookieName]);
     clearSessionCookie(res);
+    setBrowserCookie(res,'');
     return send(res, 200, { ok: true });
   }
 
@@ -536,7 +558,9 @@ async function api(req, res, url) {
     if (req.method !== "POST") return methodNotAllowed(res);
     try {
       const input = await body(req).catch(() => ({}));
-      const login = await createTelegramLoginToken(input.returnTo || url.searchParams.get("returnTo") || "/");
+      const browserKey=uid(32);
+      const login = await createTelegramLoginToken(input.returnTo || url.searchParams.get("returnTo") || "/",browserKey);
+      setBrowserCookie(res,browserKey);
       return send(res, 201, { ok: true, token: login.token, expiresAt: login.expiresAt, returnTo: login.returnTo, botLink: login.botLink, botUrl: login.botLink });
     } catch (error) {
       console.error("Telegram login start failed", { name: error.name, code: error.code });
@@ -554,6 +578,8 @@ async function api(req, res, url) {
       await prisma.telegramLoginRequest.update({ where: { id: loginToken.id }, data: { status: "EXPIRED" } }).catch(() => null);
       return send(res, 410, { error: "login_token_expired", status: "expired" });
     }
+    const browserKey=parseCookies(req)[browserCookieName];
+    if(!browserKey||!loginToken.browserHash||!safeCompare(tokenHash(browserKey),loginToken.browserHash))return send(res,403,{error:'telegram_browser_mismatch'});
     if (!loginToken.userId) return send(res, 202, { status: "pending" });
     const user = await getUserById(loginToken.userId);
     if (!user) return send(res, 404, { error: "telegram_user_not_found" });
@@ -561,6 +587,7 @@ async function api(req, res, url) {
     if(consumed.count!==1)return send(res,404,{error:'login_token_not_found',status:'missing'});
     const sessionToken = await createSession(user.id);
     setSessionCookie(res, sessionToken);
+    setBrowserCookie(res,'');
     return send(res, 200, { ok: true, status: "confirmed", returnTo: loginToken.returnTo || "/", user: publicUser(user) });
   }
 
@@ -701,7 +728,7 @@ async function setupTelegramBot() {
   } else await telegramApi("setWebhook", {
     url: `${APP_URL}/api/telegram/webhook`,
     secret_token: TELEGRAM_WEBHOOK_SECRET || undefined,
-    allowed_updates: ["message", "edited_message"],
+    allowed_updates: ["message", "edited_message", "callback_query"],
   });
   await telegramApi("setChatMenuButton", {
     menu_button: {

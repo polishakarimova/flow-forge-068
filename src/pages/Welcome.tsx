@@ -25,7 +25,7 @@ export default function Welcome() {
     completedToken.current = token;
     void completeTelegramLogin(token).then(result => {
       setMessage(result.message);
-      if (!result.success && result.message.startsWith('Ссылка для входа устарела')) setParams({ returnTo }, { replace: true });
+      if (!result.success && result.message.startsWith('Ссылка для входа')) setParams({ returnTo }, { replace: true });
     });
   }, [token, completeTelegramLogin, setParams, returnTo]);
 

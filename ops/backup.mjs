@@ -1,11 +1,14 @@
-import {readFileSync,writeFileSync,mkdirSync,mkdtempSync,rmSync,existsSync} from 'node:fs';
+import {readFileSync,writeFileSync,mkdirSync,mkdtempSync,rmSync,existsSync,readdirSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {createCipheriv,createDecipheriv,randomBytes,createHash} from 'node:crypto';
 import {join,resolve} from 'node:path';
 import {databasePool,readEnv,tables,fingerprint} from './db-config.mjs';
 const root=process.env.KARTA_CODE_ROOT||(existsSync('/opt/kartakontenta/current/server/telegram-auth-server.mjs')?'/opt/kartakontenta/current':'/opt/flow-forge-068'),base='/opt/kartakontenta-backups/encrypted',keyFile='/etc/kartakontenta/backup.key';
 mkdirSync(base,{recursive:true,mode:0o700});mkdirSync('/etc/kartakontenta',{recursive:true,mode:0o700});
-if(!existsSync(keyFile))writeFileSync(keyFile,randomBytes(32),{mode:0o600,flag:'wx'});
+if(!existsSync(keyFile)){
+ if(readdirSync(base).some(name=>/^karta-.*\.aes$/.test(name)))throw Error('Backup key is missing for existing archives; recover the original key before continuing');
+ writeFileSync(keyFile,randomBytes(32),{mode:0o600,flag:'wx'});
+}
 const key=readFileSync(keyFile);if(key.length!==32)throw Error('Invalid backup key');
 const mode=process.argv[2]||'create',runtimeFile='/etc/kartakontenta/runtime.env',env=readEnv(mode==='verify'||!existsSync(runtimeFile)?'/etc/kartakontenta/migration.env':runtimeFile);
 const url=new URL(env.DATABASE_URL),pgEnv={...process.env,PGHOST:url.hostname,PGPORT:url.port||'5432',PGUSER:decodeURIComponent(url.username),PGPASSWORD:decodeURIComponent(url.password),PGDATABASE:url.pathname.slice(1),PGSSLMODE:'verify-full',PGSSLROOTCERT:env.PGSSLROOTCERT};
