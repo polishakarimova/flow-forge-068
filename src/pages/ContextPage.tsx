@@ -1020,7 +1020,6 @@ export default function ContextPage() {
         [key]: value,
       },
     });
-    toast({ title: "Сохранено", description: "Контекст обновлен." });
   };
 
   const savePersonalityAnswer = (key: string, value: string) => {
@@ -1475,7 +1474,7 @@ export default function ContextPage() {
                 onSaveAndExit={(key, value) => {
                   savePersonalityAnswer(key, value);
                   setPersonalityBlock(null);
-                  toast({ title: "Сохранено", description: "Можно продолжить распаковку позже." });
+                  toast({ title: "Черновик подготовлен", description: "Можно продолжить распаковку позже. Подтверждение сохранения появится после ответа сервера." });
                 }}
                 onComplete={() => {
                   const currentIndex = PERSONALITY_BLOCKS.findIndex((block) => block.id === activePersonality.id);
@@ -1504,7 +1503,7 @@ export default function ContextPage() {
                 onSaveAndExit={(key, value) => {
                   saveAudienceFactAnswer(activeAudience, key, value);
                   setAudienceBlock(null);
-                  toast({ title: "Сохранено", description: "Можно продолжить фактуру для анализа позже." });
+                  toast({ title: "Черновик подготовлен", description: "Можно продолжить фактуру позже. Подтверждение сохранения появится после ответа сервера." });
                 }}
                 onComplete={() => {
                   const currentIndex = AUDIENCE_INPUT_BLOCKS.findIndex((block) => block.id === activeAudience.id);

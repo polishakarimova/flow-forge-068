@@ -4,6 +4,8 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { AppBackButton } from "@/components/AppBackButton";
 import { AlertCircle, Brain, ChevronDown, FileText, GitBranch, Loader2, Package, Search, ShieldCheck, UserRound, Users } from "lucide-react";
+import {useAuth} from '@/lib/authContext';
+import {useNavigate} from 'react-router-dom';
 
 interface AdminStats {
   products: number;
@@ -40,7 +42,6 @@ const statCards = [
   { key: "funnels", label: "Воронки", icon: GitBranch },
 ] as const;
 
-const ADMIN_TOKEN_STORAGE_KEY = "contentmap_admin_token";
 
 function formatDate(value: string) {
   if (!value) return "нет данных";
@@ -67,23 +68,19 @@ function displayContact(user: AdminUser) {
 }
 
 export default function Admin() {
+  const {logout}=useAuth();
+  const navigate=useNavigate();
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [search, setSearch] = useState("");
-  const [adminToken, setAdminToken] = useState(() => {
-    if (typeof window === "undefined") return "";
-    return window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY) || "";
-  });
-  const [tokenDraft, setTokenDraft] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadOverview = useCallback((token: string) => {
+  const loadOverview = useCallback(() => {
     let cancelled = false;
     setIsLoading(true);
     fetch("/api/admin/overview", {
       credentials: "include",
-      headers: token ? { "x-admin-token": token } : undefined,
     })
       .then(async (response) => {
         const data = await response.json().catch(() => ({}));
@@ -109,32 +106,15 @@ export default function Admin() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const urlToken = params.get("token")?.trim();
-    if (urlToken) {
-      window.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, urlToken);
-      setAdminToken(urlToken);
+    localStorage.removeItem('contentmap_admin_token');
+    if (params.has('token')) {
       params.delete("token");
       const nextQuery = params.toString();
       window.history.replaceState(null, "", `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash}`);
-      return;
     }
-    return loadOverview(adminToken);
-  }, [adminToken, loadOverview]);
-
-  const saveAdminToken = () => {
-    const next = tokenDraft.trim();
-    if (!next) return;
-    window.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, next);
-    setAdminToken(next);
-    setTokenDraft("");
-  };
-
-  const clearAdminToken = () => {
-    window.localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
-    setAdminToken("");
-    setOverview(null);
-    setError("");
-  };
+    return loadOverview();
+  }, [loadOverview]);
+  const reauthenticate=async()=>{try{await logout();navigate('/?returnTo=%2Fadmin',{replace:true});}catch{setError('Не удалось выйти. Проверьте интернет и повторите.');}};
 
   const filteredUsers = useMemo(() => {
     const users = overview?.users || [];
@@ -167,15 +147,6 @@ export default function Admin() {
                 </div>
                 <div className="flex items-center gap-2">
                   {overview && <span className="text-[12px] text-muted-foreground">{overview.totals.users} аккаунтов</span>}
-                  {adminToken && (
-                    <button
-                      type="button"
-                      onClick={clearAdminToken}
-                      className="rounded-lg border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
-                    >
-                      Сбросить токен
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
@@ -197,31 +168,21 @@ export default function Admin() {
                     <div className="font-semibold">Админка недоступна</div>
                     <div>
                       {error === "unauthorized"
-                        ? "Войдите в приложение или вставьте ADMIN_TOKEN."
+                        ? "Войдите через Telegram под аккаунтом администратора."
                         : error === "forbidden"
-                          ? "Токен не подошёл или ваш Telegram ID не указан в ADMIN_TELEGRAM_IDS."
-                          : error}
+                          ? "Для этого Telegram-аккаунта доступ администратора не выдан."
+                          : error==='admin_reauthentication_required'?'Для административного доступа подтвердите вход ещё раз. В Mini App при необходимости переоткройте приложение.':error}
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                  <input
-                    value={tokenDraft}
-                    onChange={(event) => setTokenDraft(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") saveAdminToken();
-                    }}
-                    placeholder="ADMIN_TOKEN"
-                    className="min-w-0 flex-1 rounded-xl border border-red-100 bg-white px-3 py-2 text-[12px] text-foreground outline-none focus:border-primary"
-                  />
                   <button
                     type="button"
-                    onClick={saveAdminToken}
+                    onClick={()=>void reauthenticate()}
                     className="rounded-xl bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
-                    disabled={!tokenDraft.trim()}
                   >
-                    Открыть админку
+                    Подтвердить вход в Telegram
                   </button>
                 </div>
               </div>

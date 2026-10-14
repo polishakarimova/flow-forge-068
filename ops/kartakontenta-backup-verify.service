@@ -1,0 +1,6 @@
+[Unit]
+Description=Verify Karta Kontenta backup in an isolated database
+[Service]
+Type=oneshot
+UMask=0077
+ExecStart=/usr/bin/flock /var/lock/kartakontenta-maintenance.lock /usr/bin/bash /opt/kartakontenta/tools/ops/verify-latest.sh

@@ -14,6 +14,10 @@ import { approvePublicationDay } from './publications-approval.mjs';
 import { contentWorkspaceApi } from './content-workspace-api.mjs';
 import { updateWorkspace } from './content-workspace.mjs';
 import { agentApi, ensureAgentSchema } from './agent-api.mjs';
+import {assertProductionConfig,requestProtection,readJsonBody,telegramAuthDateValid} from './request-security.mjs';
+import {ensureSessionSchema,issueSession,readSession,revokeSession,authorizeAdmin} from './session-store.mjs';
+import {readContext,saveContext} from './context-state.mjs';
+import {ensureBaseSchema} from './schema.mjs';
 
 const root = new URL("../", import.meta.url);
 const distDir = fileURLToPath(new URL("../dist", import.meta.url));
@@ -43,9 +47,8 @@ const PGSSLROOTCERT = process.env.PGSSLROOTCERT || "";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || "";
 const TELEGRAM_UPDATES_MODE = process.env.TELEGRAM_UPDATES_MODE || "webhook";
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 const ADMIN_TELEGRAM_IDS = new Set(String(process.env.ADMIN_TELEGRAM_IDS || "").split(",").map((id) => id.trim()).filter(Boolean));
-const SESSION_SECRET = process.env.SESSION_SECRET || TELEGRAM_WEBHOOK_SECRET || ADMIN_TOKEN || TELEGRAM_BOT_TOKEN || "";
+const SESSION_SECRET = process.env.SESSION_SECRET || "";
 const THREADS_APP_ID = process.env.THREADS_APP_ID || "";
 const THREADS_APP_SECRET = process.env.THREADS_APP_SECRET || "";
 const THREADS_TOKEN_SECRET = process.env.THREADS_TOKEN_SECRET || SESSION_SECRET;
@@ -54,7 +57,7 @@ let telegramBotInfo = null;
 
 if (!DATABASE_URL) throw new Error("DATABASE_URL is required");
 if (!TELEGRAM_BOT_TOKEN) console.warn("TELEGRAM_BOT_TOKEN is empty: Telegram auth will be unavailable");
-if (!SESSION_SECRET) console.warn("SESSION_SECRET is empty: set it in production for stable HMAC sessions");
+assertProductionConfig(process.env);
 
 function createPrismaDatabaseUrl(rawUrl) {
   const parsed = new URL(rawUrl);
@@ -72,7 +75,7 @@ function createPgPool() {
   parsed.searchParams.delete("sslmode");
   let ssl = false;
   if (sslMode && sslMode !== "disable") {
-    ssl = { rejectUnauthorized: false };
+    ssl = { rejectUnauthorized: true };
     if (PGSSLROOTCERT && existsSync(PGSSLROOTCERT)) {
       ssl = { ca: readFileSync(PGSSLROOTCERT, "utf8"), rejectUnauthorized: true };
     }
@@ -111,86 +114,6 @@ function publicUser(user) {
   };
 }
 
-async function ensureSchema() {
-  await pgPool.query(`
-    create extension if not exists pgcrypto;
-    do $$ begin
-      create type "AuthProvider" as enum ('telegram');
-    exception when duplicate_object then null; end $$;
-    do $$ begin
-      create type "TelegramLoginStatus" as enum ('PENDING', 'CONFIRMED', 'USED', 'EXPIRED');
-    exception when duplicate_object then null; end $$;
-    create table if not exists users (
-      id text primary key,
-      "displayName" text,
-      "avatarUrl" text,
-      "createdAt" timestamptz not null default now(),
-      "updatedAt" timestamptz not null default now()
-    );
-    create table if not exists auth_identities (
-      id text primary key default gen_random_uuid()::text,
-      "userId" text not null references users(id) on delete cascade,
-      provider "AuthProvider" not null,
-      "providerUserId" text not null,
-      "createdAt" timestamptz not null default now(),
-      "updatedAt" timestamptz not null default now(),
-      unique(provider, "providerUserId")
-    );
-    create table if not exists telegram_accounts (
-      id text primary key default gen_random_uuid()::text,
-      "userId" text not null references users(id) on delete cascade,
-      "telegramId" text not null unique,
-      username text,
-      "firstName" text,
-      "lastName" text,
-      "photoUrl" text,
-      "languageCode" text,
-      "chatId" text,
-      "createdAt" timestamptz not null default now(),
-      "updatedAt" timestamptz not null default now()
-    );
-    create table if not exists telegram_login_requests (
-      id text primary key default gen_random_uuid()::text,
-      "tokenHash" text not null unique,
-      "returnTo" text,
-      status "TelegramLoginStatus" not null default 'PENDING',
-      "userId" text references users(id) on delete set null,
-      "telegramId" text,
-      "chatId" text,
-      "createdAt" timestamptz not null default now(),
-      "expiresAt" timestamptz not null,
-      "confirmedAt" timestamptz,
-      "usedAt" timestamptz
-    );
-    create table if not exists cm_users (
-      id text primary key,
-      data jsonb not null
-    );
-    create table if not exists cm_login_tokens (
-      token text primary key,
-      data jsonb not null
-    );
-    create table if not exists cm_user_state (
-      user_id text not null,
-      key text not null,
-      data jsonb not null,
-      updated_at timestamptz not null default now(),
-      primary key (user_id, key)
-    );
-    create table if not exists cm_admin_actions (
-      id text primary key,
-      admin_user_id text,
-      action text not null,
-      data jsonb not null default '{}'::jsonb,
-      created_at timestamptz not null default now()
-    );
-    create index if not exists auth_identities_user_id_idx on auth_identities ("userId");
-    create index if not exists telegram_accounts_user_id_idx on telegram_accounts ("userId");
-    create index if not exists telegram_login_requests_user_id_idx on telegram_login_requests ("userId");
-    create index if not exists telegram_login_requests_telegram_id_idx on telegram_login_requests ("telegramId");
-  `);
-}
-
 async function readUsers() {
   const { rows } = await pgPool.query("select data from cm_users");
   return rows.map((row) => row.data);
@@ -202,17 +125,9 @@ function isAdminUser(user) {
   return ADMIN_TELEGRAM_IDS.has(String(user.telegramId || ""));
 }
 
-function getAdminToken(req, url) {
-  const auth = String(req.headers.authorization || "");
-  if (auth.toLowerCase().startsWith("bearer ")) return auth.slice(7).trim();
-  return String(req.headers["x-admin-token"] || url.searchParams.get("token") || "").trim();
-}
-
 async function requireAdmin(req, res, url) {
-  const token = getAdminToken(req, url);
-  if (ADMIN_TOKEN && token && safeCompare(token, ADMIN_TOKEN)) return { id: "admin-token", authProvider: "admin-token" };
-
-  const user = await getUserBySession(parseCookies(req)[cookieName]);
+  const session = await readSession(pgPool,parseCookies(req)[cookieName],SESSION_SECRET);
+  const user = session ? await getUserById(session.user_id) : null;
   if (!user) {
     send(res, 401, { error: "unauthorized" });
     return null;
@@ -221,6 +136,7 @@ async function requireAdmin(req, res, url) {
     send(res, 403, { error: "forbidden" });
     return null;
   }
+  if(!await authorizeAdmin(pgPool,session)){send(res,401,{error:'admin_reauthentication_required'});return null;}
   return user;
 }
 
@@ -301,25 +217,11 @@ async function getUserById(id) {
   };
 }
 
-function signSessionPayload(payload) {
-  return createHmac("sha256", SESSION_SECRET || "dev-session-secret").update(payload).digest("base64url");
-}
-
-function createSession(userId) {
-  const payload = Buffer.from(JSON.stringify({
-    userId,
-    exp: Date.now() + 30 * 24 * 60 * 60 * 1000,
-  }), "utf8").toString("base64url");
-  return `${payload}.${signSessionPayload(payload)}`;
-}
+async function createSession(userId) {return issueSession(pgPool,userId,SESSION_SECRET);}
 
 async function getUserBySession(token) {
-  if (!token) return null;
-  const [payload, signature] = String(token).split(".");
-  if (!payload || !signature || !safeCompare(signature, signSessionPayload(payload))) return null;
-  const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
-  if (!data.userId || !data.exp || Number(data.exp) <= Date.now()) return null;
-  return await getUserById(String(data.userId));
+  const session=await readSession(pgPool,token,SESSION_SECRET);
+  return session?getUserById(session.user_id):null;
 }
 
 function parseCookies(req) {
@@ -330,7 +232,7 @@ function parseCookies(req) {
       .filter(Boolean)
       .map((item) => {
         const index = item.indexOf("=");
-        return [item.slice(0, index), decodeURIComponent(item.slice(index + 1))];
+        try{return [item.slice(0,index),decodeURIComponent(item.slice(index+1))];}catch{return [item.slice(0,index),''];}
       }),
   );
 }
@@ -346,10 +248,7 @@ function clearSessionCookie(res) {
 }
 
 async function body(req) {
-  const chunks = [];
-  for await (const chunk of req) chunks.push(chunk);
-  const raw = Buffer.concat(chunks).toString("utf8");
-  return raw ? JSON.parse(raw) : {};
+  return readJsonBody(req);
 }
 
 function send(res, status, data, headers = {}) {
@@ -452,7 +351,7 @@ function validateTelegramInitData(initData) {
   const calculatedHash = createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
   if (!safeCompare(calculatedHash, receivedHash)) throw new Error("telegram_hash_invalid");
   const authDate = Number(params.get("auth_date") || 0);
-  if (!authDate || Date.now() / 1000 - authDate > 86400 * 14) throw new Error("telegram_auth_expired");
+  if (!telegramAuthDateValid(authDate)) throw new Error("telegram_auth_expired");
   const user = JSON.parse(params.get("user") || "{}");
   if (!user.id) throw new Error("telegram_user_missing");
   return user;
@@ -543,7 +442,7 @@ async function sendTelegramLoginConfirmed(chatId, token = "") {
 
 async function handleTelegramWebhook(req, res) {
   if (TELEGRAM_UPDATES_MODE === "polling") return send(res, 503, { error: "webhook_disabled" });
-  if (TELEGRAM_WEBHOOK_SECRET && !safeCompare(req.headers["x-telegram-bot-api-secret-token"], TELEGRAM_WEBHOOK_SECRET)) {
+  if (!TELEGRAM_WEBHOOK_SECRET || !safeCompare(req.headers["x-telegram-bot-api-secret-token"], TELEGRAM_WEBHOOK_SECRET)) {
     return send(res, 401, { error: "invalid_telegram_secret" });
   }
   const update = await body(req);
@@ -590,6 +489,10 @@ async function api(req, res, url) {
     return handleRemoteRequest({ req, res, path: url.pathname, pool: pgPool, body, send, env: process.env });
   }
   const path = url.pathname;
+  if(path==='/api/health'){
+    if(req.method!=='GET')return methodNotAllowed(res);
+    try{await pgPool.query('select 1 from cm_user_state limit 0');return send(res,200,{ok:true});}catch{return send(res,503,{ok:false});}
+  }
 
   if (path === "/api/auth/me") {
     if (req.method !== "GET") return methodNotAllowed(res);
@@ -608,6 +511,7 @@ async function api(req, res, url) {
 
   if (path === "/api/auth/logout") {
     if (req.method !== "POST") return methodNotAllowed(res);
+    await revokeSession(pgPool,parseCookies(req)[cookieName]);
     clearSessionCookie(res);
     return send(res, 200, { ok: true });
   }
@@ -653,8 +557,9 @@ async function api(req, res, url) {
     if (!loginToken.userId) return send(res, 202, { status: "pending" });
     const user = await getUserById(loginToken.userId);
     if (!user) return send(res, 404, { error: "telegram_user_not_found" });
-    const sessionToken = createSession(user.id);
-    await prisma.telegramLoginRequest.update({ where: { id: loginToken.id }, data: { status: "USED", usedAt: new Date() } });
+    const consumed=await prisma.telegramLoginRequest.updateMany({where:{id:loginToken.id,status:'CONFIRMED',usedAt:null,expiresAt:{gt:new Date()}},data:{status:'USED',usedAt:new Date()}});
+    if(consumed.count!==1)return send(res,404,{error:'login_token_not_found',status:'missing'});
+    const sessionToken = await createSession(user.id);
     setSessionCookie(res, sessionToken);
     return send(res, 200, { ok: true, status: "confirmed", returnTo: loginToken.returnTo || "/", user: publicUser(user) });
   }
@@ -749,6 +654,15 @@ async function api(req, res, url) {
     const user = await requireUser(req, res);
     if (!user) return;
     const key = stateMatch[1];
+    if(!['main','publications','context'].includes(key))return send(res,404,{error:'not_found'});
+    if(key==='context'){
+      if(req.method==='GET')return send(res,200,await readContext(pgPool,user.id));
+      if(req.method==='PUT'){
+        try{const input=await body(req);return send(res,200,{ok:true,...await saveContext(pgPool,user.id,input.data,req.headers['if-match'])});}
+        catch(error){return send(res,error.status||500,{error:error.status?error.message:'context_save_failed'});}
+      }
+      return methodNotAllowed(res);
+    }
     if (req.method === "GET") {
       const { rows } = await pgPool.query("select data, md5(data::text) as revision from cm_user_state where user_id = $1 and key = $2", [user.id, key]);
       return send(res, 200, { data: rows[0]?.data || null, revision: rows[0]?.revision || 'new' });
@@ -799,10 +713,12 @@ async function setupTelegramBot() {
 }
 
 let telegramPollingStarted = false;
-await ensureSchema();
-await ensureThreadsSchema(pgPool);
-await ensureRemoteSchema(pgPool);
-await ensureAgentSchema(pgPool);
+if(process.env.KARTA_SCHEMA_MODE==='runtime'){
+  const {rows}=await pgPool.query("select to_regclass(name) as present from unnest($1::text[]) as name",[['cm_user_state','cm_auth_sessions','cm_agent_connections','cm_agent_actions','cm_threads_queue','telegram_accounts']]);
+  if(rows.some(row=>!row.present))throw Error('database_migration_required');
+}else{
+  await ensureBaseSchema(pgPool);await ensureThreadsSchema(pgPool);await ensureRemoteSchema(pgPool);await ensureAgentSchema(pgPool);await ensureSessionSchema(pgPool);
+}
 setupTelegramBot().catch((error) => console.error("Telegram setup failed:", error));
 if (process.env.THREADS_AUTOPUBLISH_ENABLED === '1' && process.env.THREADS_REMOTE_ENABLED !== '1') {
   let threadsTickRunning = false;
@@ -817,14 +733,16 @@ if (process.env.THREADS_AUTOPUBLISH_ENABLED === '1' && process.env.THREADS_REMOT
   void tick();
 }
 
+const protect=requestProtection({appUrl:APP_URL,trustProxy:true});
 createServer(async (req, res) => {
   try {
     const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+    const rejection=protect(req,res,url);if(rejection)return send(res,rejection.status,{error:rejection.error});
     if (url.pathname.startsWith("/api/")) return await api(req, res, url);
     return await serveStatic(req, res, url);
   } catch (error) {
-    console.error(error);
-    return send(res, 500, { error: "server_error" });
+    console.error('Request failed',{name:error.name,code:error.code||'request_error'});
+    return send(res,error.status||500,{error:error.status?error.message:'server_error'});
   }
 }).listen(PORT, "127.0.0.1", () => {
   console.log(`Content Map server listening on http://127.0.0.1:${PORT}`);

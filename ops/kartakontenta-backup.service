@@ -1,0 +1,6 @@
+[Unit]
+Description=Encrypted Karta Kontenta backup
+[Service]
+Type=oneshot
+UMask=0077
+ExecStart=/usr/bin/flock /var/lock/kartakontenta-maintenance.lock /usr/bin/node /opt/kartakontenta/tools/ops/backup.mjs create

@@ -1,6 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
 import { useAuth } from "@/lib/authContext";
-import { toast } from "sonner";
+import {useContextPersistence} from "@/hooks/useContextPersistence";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -141,149 +141,31 @@ export function calculateContextCompletion(profile: ExpertProfile, productContex
   return Math.min(100, personality + niche + products + audience + refs);
 }
 
-async function loadState(): Promise<ContextState | null> {
-  const response = await fetch("/api/state/context", { credentials: "include", signal: AbortSignal.timeout(20000) });
-  if (!response.ok) throw new Error('context_load_failed');
-  const { data } = await response.json();
-  return data;
-}
-
-async function saveState(data: ContextState) {
-  const response = await fetch("/api/state/context", {
-    method: "PUT",
-    signal: AbortSignal.timeout(20000),
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ data }),
-  });
-  if (!response.ok) throw new Error('context_save_failed');
-}
-
 export function ContextProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated, user } = useAuth();
-  const [expertProfile, setExpertProfile] = useState<ExpertProfile>(emptyProfile);
-  const [productContexts, setProductContexts] = useState<ProductContext[]>([]);
-  const [references, setReferences] = useState<ReferenceItem[]>([]);
-  const [sourceMaterials, setSourceMaterials] = useState<SourceMaterial[]>([]);
-  const [aiAnalyses, setAiAnalyses] = useState<AiAnalysis[]>(emptyContextState.aiAnalyses);
-  const [isContextLoading, setIsContextLoading] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
-  const [stateError, setStateError] = useState('');
-  const [loadedUser, setLoadedUser] = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-    setHydrated(false); setLoadedUser(''); setStateError('');
-    if (!isAuthenticated) {
-      setExpertProfile(emptyProfile);
-      setProductContexts([]);
-      setReferences([]);
-      setSourceMaterials([]);
-      setAiAnalyses(emptyContextState.aiAnalyses);
-      setHydrated(false);
-      return;
-    }
-    setIsContextLoading(true);
-    loadState()
-      .then((data) => {
-        if (cancelled) return;
-        const next = data || emptyContextState;
-        setExpertProfile(next.expertProfile || emptyProfile);
-        setProductContexts(next.productContexts || []);
-        setReferences(next.references || []);
-        setSourceMaterials(next.sourceMaterials || []);
-        setAiAnalyses(next.aiAnalyses?.length ? next.aiAnalyses : emptyContextState.aiAnalyses);
-        setHydrated(true);
-        setLoadedUser(user?.id || '');
-      })
-      .catch(() => { if (!cancelled) setStateError('Не удалось загрузить контекст. Сохранённые данные не изменены.'); })
-      .finally(() => {
-        if (!cancelled) setIsContextLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [isAuthenticated, user?.id]);
-
-  useEffect(() => {
-    if (!isAuthenticated || !hydrated || loadedUser !== user?.id) return;
-    const timer = window.setTimeout(() => {
-      saveState({ expertProfile, productContexts, references, sourceMaterials, aiAnalyses }).then(() => toast.dismiss('context-save')).catch(() => toast.error('Контекст не сохранился. Не закрывайте страницу; проверьте интернет и повторите изменение.', { id: 'context-save', duration: Infinity }));
-    }, 250);
-    return () => window.clearTimeout(timer);
-  }, [isAuthenticated, hydrated, loadedUser, user?.id, expertProfile, productContexts, references, sourceMaterials, aiAnalyses]);
-
+  const {data,setData,isLoading:isContextLoading,stateReady,stateError}=useContextPersistence<ContextState>(isAuthenticated?user?.id||'':'',emptyContextState);
+  const {expertProfile,productContexts,references,sourceMaterials,aiAnalyses}=data;
   const loadExpertProfile = useCallback(async () => {}, []);
   const loadProductContexts = useCallback(async () => {}, []);
   const loadReferences = useCallback(async () => {}, []);
   const loadSourceMaterials = useCallback(async () => {}, []);
   const loadAiAnalyses = useCallback(async () => {}, []);
-
-  const updateExpertProfile = useCallback(async (patch: Partial<ExpertProfile>) => {
-    setExpertProfile((prev) => {
-      const next = { ...prev, ...patch };
-      return { ...next, completionScore: calculateContextCompletion(next, productContexts, references) };
-    });
-  }, [productContexts, references]);
-
-  const upsertProductContext = useCallback(async (ctx: ProductContext) => {
-    const temp = { ...ctx, id: ctx.id || Date.now(), updatedAt: new Date().toISOString() };
-    setProductContexts((prev) => {
-      const exists = prev.some((p) => p.id === temp.id || (ctx.productId && p.productId === ctx.productId));
-      return exists ? prev.map((p) => (p.id === temp.id || (ctx.productId && p.productId === ctx.productId) ? temp : p)) : [temp, ...prev];
-    });
-  }, []);
-
-  const addReference = useCallback(async (ref: ReferenceItem) => {
-    setReferences((prev) => [{ ...ref, id: Date.now(), createdAt: new Date().toISOString() }, ...prev]);
-  }, []);
-
-  const updateReference = useCallback(async (ref: ReferenceItem) => {
-    setReferences((prev) => prev.map((r) => r.id === ref.id ? ref : r));
-  }, []);
-
-  const deleteReference = useCallback(async (id: number) => {
-    setReferences((prev) => prev.filter((r) => r.id !== id));
-  }, []);
-
-  const addSourceMaterial = useCallback(async (material: SourceMaterial) => {
-    setSourceMaterials((prev) => [{ ...material, id: Date.now(), createdAt: new Date().toISOString() }, ...prev]);
-  }, []);
-
-  const updateSourceMaterial = useCallback(async (material: SourceMaterial) => {
-    setSourceMaterials((prev) => prev.map((m) => m.id === material.id ? material : m));
-  }, []);
-
-  const deleteSourceMaterial = useCallback(async (id: number) => {
-    setSourceMaterials((prev) => prev.filter((m) => m.id !== id));
-  }, []);
-
-  const value = useMemo(() => ({
-    expertProfile,
-    productContexts,
-    references,
-    sourceMaterials,
-    aiAnalyses,
-    isContextLoading,
-    stateReady: hydrated && loadedUser === user?.id, stateError,
-    loadExpertProfile,
-    updateExpertProfile,
-    loadProductContexts,
-    upsertProductContext,
-    loadReferences,
-    addReference,
-    updateReference,
-    deleteReference,
-    loadSourceMaterials,
-    addSourceMaterial,
-    updateSourceMaterial,
-    deleteSourceMaterial,
-    loadAiAnalyses,
-  }), [expertProfile, productContexts, references, sourceMaterials, aiAnalyses, isContextLoading, loadExpertProfile, updateExpertProfile, loadProductContexts, upsertProductContext, loadReferences, addReference, updateReference, deleteReference, loadSourceMaterials, addSourceMaterial, updateSourceMaterial, deleteSourceMaterial, loadAiAnalyses, hydrated, loadedUser, user?.id, stateError]);
-
+  const updateExpertProfile=useCallback(async(patch:Partial<ExpertProfile>)=>{
+    setData(prev=>{const profile={...prev.expertProfile,...patch};return {...prev,expertProfile:{...profile,completionScore:calculateContextCompletion(profile,prev.productContexts,prev.references)}};});
+  },[setData]);
+  const upsertProductContext=useCallback(async(ctx:ProductContext)=>{
+    const temp={...ctx,id:ctx.id||Date.now(),updatedAt:new Date().toISOString()};
+    setData(prev=>{const match=(p:ProductContext)=>p.id===temp.id||Boolean(ctx.productId&&p.productId===ctx.productId);return {...prev,productContexts:prev.productContexts.some(match)?prev.productContexts.map(p=>match(p)?temp:p):[temp,...prev.productContexts]};});
+  },[setData]);
+  const addReference=useCallback(async(ref:ReferenceItem)=>setData(prev=>({...prev,references:[{...ref,id:Date.now(),createdAt:new Date().toISOString()},...prev.references]})),[setData]);
+  const updateReference=useCallback(async(ref:ReferenceItem)=>setData(prev=>({...prev,references:prev.references.map(r=>r.id===ref.id?ref:r)})),[setData]);
+  const deleteReference=useCallback(async(id:number)=>setData(prev=>({...prev,references:prev.references.filter(r=>r.id!==id)})),[setData]);
+  const addSourceMaterial=useCallback(async(material:SourceMaterial)=>setData(prev=>({...prev,sourceMaterials:[{...material,id:Date.now(),createdAt:new Date().toISOString()},...prev.sourceMaterials]})),[setData]);
+  const updateSourceMaterial=useCallback(async(material:SourceMaterial)=>setData(prev=>({...prev,sourceMaterials:prev.sourceMaterials.map(m=>m.id===material.id?material:m)})),[setData]);
+  const deleteSourceMaterial=useCallback(async(id:number)=>setData(prev=>({...prev,sourceMaterials:prev.sourceMaterials.filter(m=>m.id!==id)})),[setData]);
+  const value=useMemo(()=>({expertProfile,productContexts,references,sourceMaterials,aiAnalyses,isContextLoading,stateReady,stateError,loadExpertProfile,updateExpertProfile,loadProductContexts,upsertProductContext,loadReferences,addReference,updateReference,deleteReference,loadSourceMaterials,addSourceMaterial,updateSourceMaterial,deleteSourceMaterial,loadAiAnalyses}),[expertProfile,productContexts,references,sourceMaterials,aiAnalyses,isContextLoading,stateReady,stateError,loadExpertProfile,updateExpertProfile,loadProductContexts,upsertProductContext,loadReferences,addReference,updateReference,deleteReference,loadSourceMaterials,addSourceMaterial,updateSourceMaterial,deleteSourceMaterial,loadAiAnalyses]);
   return <ContextStoreContext.Provider value={value}>{children}</ContextStoreContext.Provider>;
 }
-
 export function useContextStore() {
   const ctx = useContext(ContextStoreContext);
   if (!ctx) throw new Error("useContextStore must be used within ContextProvider");
