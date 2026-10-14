@@ -4,8 +4,8 @@ import {join} from 'node:path';
 import {createDecipheriv} from 'node:crypto';
 if(process.platform!=='win32')throw Error('Use the Windows account that owns the DPAPI recovery key');
 const directory=process.argv[2]||join(process.env.USERPROFILE,'CodexBackups','Карта контента');
-const script="Add-Type -AssemblyName System.Security; $p=[Console]::In.ReadToEnd(); $b=[Security.Cryptography.ProtectedData]::Unprotect([IO.File]::ReadAllBytes($p),$null,[Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::Out.Write([Convert]::ToBase64String($b)); [Array]::Clear($b,0,$b.Length)";
-const result=spawnSync('powershell.exe',['-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(script,'utf16le').toString('base64')],{input:join(directory,'Ключ восстановления.dpapi'),encoding:'utf8',windowsHide:true,timeout:15000});
+const script="Add-Type -AssemblyName System.Security; $p=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String([Console]::In.ReadToEnd())); $b=[Security.Cryptography.ProtectedData]::Unprotect([IO.File]::ReadAllBytes($p),$null,[Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::Out.Write([Convert]::ToBase64String($b)); [Array]::Clear($b,0,$b.Length)";
+const result=spawnSync('powershell.exe',['-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(script,'utf16le').toString('base64')],{input:Buffer.from(join(directory,'Ключ восстановления.dpapi'),'utf8').toString('base64'),encoding:'utf8',windowsHide:true,timeout:15000});
 if(result.status!==0)throw Error('Could not unlock the local recovery key');
 const key=Buffer.from(result.stdout.trim(),'base64');result.stdout='';
 try{
