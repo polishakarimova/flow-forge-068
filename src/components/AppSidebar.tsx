@@ -22,7 +22,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { TourButton, resetTour } from "@/components/OnboardingTour";
+import { TourButton } from "@/components/OnboardingTour";
 import { useTour } from "@/App";
 
 const navItems = [
@@ -69,6 +69,7 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild>
                       <NavLink
                         to={item.url}
+                        data-tour={['/products', '/dashboard', '/map'].includes(item.url) ? 'sales' : item.url.slice(1)}
                         end
                         className={`flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs sm:text-[14px] font-medium transition-colors ${
                           active
@@ -91,7 +92,7 @@ export function AppSidebar() {
         {/* Tour button at bottom */}
         {!collapsed && (
           <div className="mt-auto px-3 pb-4">
-            <TourButton onClick={() => { resetTour(); startTour(); }} />
+            <TourButton onClick={startTour} />
           </div>
         )}
       </SidebarContent>

@@ -5,6 +5,7 @@ const path=require('node:path');
  const browser=await chromium.launch({channel:'msedge',headless:true});
  try{
  const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+ await ctx.addInitScript(()=>localStorage.setItem('karta-home-tour:v1:fullscreen-test','true'));
  const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.route('https://telegram.org/js/telegram-web-app.js?63',r=>r.fulfill({contentType:'application/javascript',body:`
  window.tgCalls=[];window.tgEvents={};window.Telegram={WebApp:{platform:'ios',isFullscreen:false,viewportStableHeight:844,safeAreaInset:{top:47,bottom:34,left:0,right:0},contentSafeAreaInset:{top:56,bottom:0,left:0,right:0},isVersionAtLeast:()=>true,ready:()=>tgCalls.push('ready'),expand:()=>tgCalls.push('expand'),requestFullscreen:()=>{tgCalls.push('full');Telegram.WebApp.isFullscreen=true;tgEvents.fullscreenChanged?.()},onEvent:(e,h)=>{tgEvents[e]=h},offEvent:e=>delete tgEvents[e]}};

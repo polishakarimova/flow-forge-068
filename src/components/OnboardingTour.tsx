@@ -1,255 +1,155 @@
-import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronRight, ChevronLeft, X, GraduationCap, Sparkles, Package, FileText, GitBranch, Map, CalendarDays, Rocket } from "lucide-react";
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { ArrowRight, ChevronLeft, GraduationCap, X } from 'lucide-react';
+import { TOUR_STEPS, completeTour, placeTourNote, type TourRect } from '@/lib/homeTour';
+import './onboarding-tour.css';
 
-/* ── Tour steps ──────────────────────────────────── */
-
-interface TourStep {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  targetPage?: string; // navigate here when step is shown
-  highlight?: string;  // CSS selector to highlight
-  position?: "center" | "bottom-left" | "bottom-right" | "top";
-  accent: string;
+function findTargets(id?: string) {
+  const targets = id ? Array.from(document.querySelectorAll<HTMLElement>(`[data-tour="${id}"]`))
+    .filter(el => el.getClientRects().length && el.getBoundingClientRect().width > 0) : [];
+  const mainTargets = targets.filter(el => el.closest('main'));
+  return mainTargets.length ? mainTargets : targets;
 }
 
-const TOUR_STEPS: TourStep[] = [
-  {
-    title: "Добро пожаловать в Content Map!",
-    description: "Это ваш конструктор маркетинговых воронок. Давайте пройдём быстрый тур и разберёмся, как всё работает.",
-    icon: <Sparkles className="w-8 h-8" />,
-    position: "center",
-    accent: "#8B5CF6",
-  },
-  {
-    title: "1. Создайте продукты",
-    description: "Начните с добавления продуктов: лид-магнитов, трипвайеров, флагманов. Это основа вашей воронки.",
-    icon: <Package className="w-8 h-8" />,
-    targetPage: "/products",
-    accent: "#8B5CF6",
-  },
-  {
-    title: "2. Добавьте контент",
-    description: "Создайте темы и единицы контента для разных платформ: Telegram, Instagram, YouTube и других.",
-    icon: <FileText className="w-8 h-8" />,
-    targetPage: "/content",
-    accent: "#6366f1",
-  },
-  {
-    title: "3. Постройте воронки",
-    description: "Соедините контент с продуктами в воронку. Укажите ключевое слово (CTA) и привяжите продукты к этапам.",
-    icon: <GitBranch className="w-8 h-8" />,
-    targetPage: "/dashboard",
-    accent: "#f59e0b",
-  },
-  {
-    title: "4. Смотрите на карте",
-    description: "Визуальная карта покажет все связи: от контента через CTA до продуктов. Двигайте, масштабируйте, изучайте.",
-    icon: <Map className="w-8 h-8" />,
-    targetPage: "/map",
-    accent: "#22c55e",
-  },
-  {
-    title: "5. Планируйте в календаре",
-    description: "Расставляйте даты публикаций контента и запусков продуктов. Добавляйте свои события.",
-    icon: <CalendarDays className="w-8 h-8" />,
-    targetPage: "/calendar",
-    accent: "#0ea5e9",
-  },
-  {
-    title: "Вы готовы!",
-    description: "Начните с создания первого продукта. Помните: Продукты → Контент → Воронки. Режим обучения можно включить снова в любой момент.",
-    icon: <Rocket className="w-8 h-8" />,
-    targetPage: "/products",
-    accent: "#8B5CF6",
-  },
-];
-
-/* ── Storage ─────────────────────────────────────── */
-
-const TOUR_KEY = "contentmap-tour-completed";
-
-export function isTourCompleted(): boolean {
-  return localStorage.getItem(TOUR_KEY) === "true";
+function measureTargets(targets: HTMLElement[]): TourRect | null {
+  if (!targets.length) return null;
+  const rects = targets.map(el => el.getBoundingClientRect());
+  const x = Math.min(...rects.map(r => r.left)) - 5;
+  const y = Math.min(...rects.map(r => r.top)) - 5;
+  return { x, y, width: Math.max(...rects.map(r => r.right)) - x + 5, height: Math.max(...rects.map(r => r.bottom)) - y + 5 };
 }
 
-export function resetTour() {
-  localStorage.removeItem(TOUR_KEY);
-}
-
-function completeTour() {
-  localStorage.setItem(TOUR_KEY, "true");
-}
-
-/* ── Component ───────────────────────────────────── */
-
-export function OnboardingTour({ onClose }: { onClose: () => void }) {
+export function OnboardingTour({ userId, onClose }: { userId: string; onClose: () => void }) {
   const [step, setStep] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [layout, setLayout] = useState<{ left: number; top: number; target: TourRect | null }>({ left: 0, top: 0, target: null });
+  const dialog = useRef<HTMLDialogElement>(null);
+  const note = useRef<HTMLDivElement>(null);
+  const next = useRef<HTMLButtonElement>(null);
   const current = TOUR_STEPS[step];
-  const isLast = step === TOUR_STEPS.length - 1;
-  const isFirst = step === 0;
-  const progress = ((step + 1) / TOUR_STEPS.length) * 100;
+  const last = step === TOUR_STEPS.length - 1;
+  const finish = useCallback(() => { completeTour(userId); onClose(); }, [userId, onClose]);
 
-  const goTo = useCallback((nextStep: number) => {
-    setIsAnimating(true);
-    setTimeout(() => {
-      setStep(nextStep);
-      const target = TOUR_STEPS[nextStep];
-      if (target.targetPage && location.pathname !== target.targetPage) {
-        navigate(target.targetPage);
-      }
-      setIsAnimating(false);
-    }, 200);
-  }, [navigate, location.pathname]);
-
-  const handleNext = () => {
-    if (isLast) {
-      completeTour();
-      onClose();
-      navigate("/products");
-    } else {
-      goTo(step + 1);
-    }
-  };
-
-  const handlePrev = () => {
-    if (!isFirst) goTo(step - 1);
-  };
-
-  const handleSkip = () => {
-    completeTour();
-    onClose();
-  };
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" || e.key === "Enter") handleNext();
-      else if (e.key === "ArrowLeft") handlePrev();
-      else if (e.key === "Escape") handleSkip();
+  useLayoutEffect(() => {
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const scroll = { left: window.scrollX, top: window.scrollY };
+    const previousOverflow = document.body.style.overflow;
+    const node = dialog.current!;
+    node.showModal();
+    document.body.style.overflow = 'hidden';
+    next.current?.focus({ preventScroll: true });
+    return () => {
+      node.close();
+      document.body.style.overflow = previousOverflow;
+      window.scrollTo({ ...scroll, behavior: 'instant' });
+      const focus = previousFocus?.isConnected && previousFocus !== document.body ? previousFocus : document.querySelector<HTMLElement>('[data-tour-launch]');
+      focus?.focus({ preventScroll: true });
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [step]);
+  }, []);
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={handleSkip}
-      />
+  useLayoutEffect(() => {
+    const node = dialog.current!;
+    const card = note.current!;
+    let frame = 0;
+    const muted = new Set<Element>();
+    const sharp = new Set<Element>();
+    function clearBlur() {
+      for (const el of muted) el.classList.remove('kk-tour-muted');
+      muted.clear();
+      for (const el of sharp) el.classList.remove('kk-tour-sharp');
+      sharp.clear();
+    }
+    function update() {
+      const targets = findTargets(current.target);
+      clearBlur();
+      for (const target of targets) { target.classList.add('kk-tour-sharp'); sharp.add(target); }
+      // Blur sibling branches, never a target's ancestors (including on WebKit).
+      const keep = new Set<Element>([node]);
+      for (const el of [node, ...targets]) for (let branch: Element | null = el; branch; branch = branch.parentElement) keep.add(branch);
+      function blurBranches(parent: Element) {
+        if (parent === node || targets.includes(parent as HTMLElement)) return;
+        for (const child of Array.from(parent.children)) {
+          if (['SCRIPT', 'STYLE', 'LINK'].includes(child.tagName)) continue;
+          if (keep.has(child)) blurBranches(child);
+          else { child.classList.add('kk-tour-muted'); muted.add(child); }
+        }
+      }
+      blurBranches(document.body);
+      const target = measureTargets(targets);
+      const viewport = window.visualViewport;
+      const style = getComputedStyle(node);
+      const safe = { top: parseFloat(style.paddingTop) || 0, bottom: parseFloat(style.paddingBottom) || 0, left: parseFloat(style.paddingLeft) || 0, right: parseFloat(style.paddingRight) || 0 };
+      const position = placeTourNote({ x: (viewport?.offsetLeft || 0) + safe.left, y: (viewport?.offsetTop || 0) + safe.top, width: (viewport?.width || window.innerWidth) - safe.left - safe.right, height: (viewport?.height || window.innerHeight) - safe.top - safe.bottom }, { width: card.offsetWidth, height: card.offsetHeight }, target);
+      setLayout({ ...position, target });
+    }
+    function schedule() { cancelAnimationFrame(frame); frame = requestAnimationFrame(update); }
+    // Only changing a step scrolls the page. Resizing and scrolling remeasure.
+    const initial = findTargets(current.target);
+    initial[0]?.scrollIntoView({ block: initial[0]?.closest('main') ? 'center' : 'nearest', inline: 'nearest', behavior: 'instant' });
+    update();
+    const observer = new ResizeObserver(schedule);
+    observer.observe(card);
+    observer.observe(document.body);
+    initial.forEach(el => observer.observe(el));
+    window.addEventListener('resize', schedule);
+    window.addEventListener('scroll', schedule, true);
+    window.visualViewport?.addEventListener('resize', schedule);
+    window.visualViewport?.addEventListener('scroll', schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      clearBlur();
+      window.removeEventListener('resize', schedule);
+      window.removeEventListener('scroll', schedule, true);
+      window.visualViewport?.removeEventListener('resize', schedule);
+      window.visualViewport?.removeEventListener('scroll', schedule);
+    };
+  }, [current]);
 
-      {/* Card */}
-      <div
-        className={`relative w-full max-w-[420px] mx-4 transition-all duration-300 ${isAnimating ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}
-      >
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
-          {/* Progress bar */}
-          <div className="h-1 bg-gray-100">
-            <div
-              className="h-full transition-all duration-500 ease-out rounded-full"
-              style={{ width: `${progress}%`, background: current.accent }}
-            />
-          </div>
+  const target = layout.target;
+  const above = target && layout.top < target.y;
+  const beside = target && layout.left >= target.x + target.width + 20;
+  const arrowStartX = beside ? layout.left - 6 : layout.left + (note.current?.offsetWidth || 300) * .55;
+  const arrowStartY = layout.top + (beside ? (note.current?.offsetHeight || 0) / 2 : above ? (note.current?.offsetHeight || 0) + 3 : -6);
+  const arrowEndX = target ? (beside ? target.x + target.width + 7 : Math.max(target.x + 12, Math.min(arrowStartX + 22, target.x + target.width - 12))) : 0;
+  const arrowEndY = target ? (beside ? target.y + target.height / 2 : above ? target.y - 7 : target.y + target.height + 7) : 0;
 
-          {/* Icon area */}
-          <div className="pt-8 pb-4 flex justify-center">
-            <div
-              className="w-20 h-20 rounded-2xl flex items-center justify-center text-white shadow-lg"
-              style={{ background: `linear-gradient(135deg, ${current.accent}, ${current.accent}dd)` }}
-            >
-              {current.icon}
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="px-8 pb-4 text-center">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">{current.title}</h2>
-            <p className="text-sm text-gray-500 leading-relaxed">{current.description}</p>
-          </div>
-
-          {/* Step dots */}
-          <div className="flex justify-center gap-1.5 py-3">
-            {TOUR_STEPS.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => goTo(i)}
-                className="border-none cursor-pointer p-0 transition-all duration-300"
-                style={{
-                  width: i === step ? 20 : 6,
-                  height: 6,
-                  borderRadius: 3,
-                  background: i === step ? current.accent : "#e5e7eb",
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Buttons */}
-          <div className="px-6 pb-6 pt-2 flex items-center gap-3">
-            {isFirst ? (
-              <button
-                onClick={handleSkip}
-                className="flex-1 py-3 text-sm text-gray-400 font-medium bg-transparent border-none cursor-pointer hover:text-gray-600 transition-colors rounded-xl"
-              >
-                Пропустить
-              </button>
-            ) : (
-              <button
-                onClick={handlePrev}
-                className="flex items-center justify-center gap-1 flex-1 py-3 text-sm text-gray-600 font-medium bg-gray-100 border-none cursor-pointer hover:bg-gray-200 transition-colors rounded-xl"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Назад
-              </button>
-            )}
-            <button
-              onClick={handleNext}
-              className="flex items-center justify-center gap-1 flex-[2] py-3 text-sm text-white font-semibold border-none cursor-pointer transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl"
-              style={{ background: `linear-gradient(135deg, ${current.accent}, ${current.accent}cc)` }}
-            >
-              {isLast ? (
-                <>
-                  <Rocket className="w-4 h-4" />
-                  Начать работу
-                </>
-              ) : (
-                <>
-                  Продолжить
-                  <ChevronRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Close button */}
-        <button
-          onClick={handleSkip}
-          className="absolute -top-2 -right-2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-400 hover:text-gray-600 border-none cursor-pointer transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
+  return createPortal(<dialog ref={dialog} className="kk-tour" aria-labelledby="kk-tour-title" aria-describedby="kk-tour-copy" onCancel={e => { e.preventDefault(); finish(); }} onKeyDown={e => {
+    if (e.key === 'Tab') {
+      const buttons = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));
+      const first = buttons[0], end = buttons[buttons.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); end?.focus(); }
+      else if (!e.shiftKey && document.activeElement === end) { e.preventDefault(); first?.focus(); }
+    }
+    if (e.key === 'ArrowRight') { e.preventDefault(); if (!last) setStep(s => s + 1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); setStep(s => Math.max(0, s - 1)); }
+  }}>
+    <svg className="kk-tour-guide" width="100%" height="100%" aria-hidden="true">
+      <defs>
+        <mask id="kk-tour-mask"><rect width="100%" height="100%" fill="white" />{target && <rect x={target.x} y={target.y} width={target.width} height={target.height} rx="16" fill="black" />}</mask>
+        <marker id="kk-tour-arrowhead" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M 2 2 Q 6 5 10 6 Q 6 7 2 10" /></marker>
+      </defs>
+      <rect className="kk-tour-veil" width="100%" height="100%" mask="url(#kk-tour-mask)" />
+      {target && <g>
+        <rect className="kk-tour-outline" x={target.x} y={target.y} width={target.width} height={target.height} rx="16" />
+        <rect className="kk-tour-outline-echo" x={target.x - 2} y={target.y + 2} width={target.width + 3} height={target.height} rx="18" />
+        <path className="kk-tour-arrow" d={`M ${arrowStartX} ${arrowStartY} Q ${beside ? (arrowStartX + arrowEndX) / 2 : arrowStartX + 48} ${beside ? arrowStartY + 35 : (arrowStartY + arrowEndY) / 2} ${arrowEndX} ${arrowEndY}`} markerEnd="url(#kk-tour-arrowhead)" />
+      </g>}
+    </svg>
+    <div ref={note} className={`kk-tour-note ${!current.target ? 'kk-tour-note-glass' : ''}`} style={{ left: layout.left, top: layout.top }}>
+      <button type="button" className="kk-tour-close" aria-label="Закрыть экскурсию" onClick={finish}><X size={16} /></button>
+      <div className="kk-tour-content" aria-live="polite" aria-atomic="true">
+        <p className="kk-tour-counter">{step > 0 && !last ? `${step} из ${TOUR_STEPS.length - 2}` : 'Короткая экскурсия'}</p>
+        <h2 id="kk-tour-title">{current.title}</h2>
+        <p id="kk-tour-copy">{current.description}</p>
+      </div>
+      <div className="kk-tour-actions">
+        {step === 0 ? <button type="button" className="kk-tour-secondary" onClick={finish}>Пропустить</button> : <button type="button" className="kk-tour-secondary" onClick={() => setStep(s => s - 1)}><ChevronLeft size={14} />Назад</button>}
+        <button ref={next} type="button" className="kk-tour-next" onClick={() => last ? finish() : setStep(s => s + 1)}>{current.action || 'Дальше'}<ArrowRight size={15} /></button>
       </div>
     </div>
-  );
+  </dialog>, document.body);
 }
 
-/* ── Re-enable button (for sidebar/profile) ─────── */
-
 export function TourButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors bg-transparent border-none cursor-pointer w-full"
-    >
-      <GraduationCap className="w-[18px] h-[18px] shrink-0" />
-      <span>Обучение</span>
-    </button>
-  );
+  return <button type="button" onClick={onClick} className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors bg-transparent border-none cursor-pointer w-full"><GraduationCap className="w-[18px] h-[18px] shrink-0" /><span>Обучение</span></button>;
 }

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate, Outlet, useLocation } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +8,7 @@ import { ContextProvider, useContextStore } from "@/lib/contextStore";
 import { AuthProvider, useAuth } from "@/lib/authContext";
 import { BackNavigationProvider } from '@/lib/backNavigation';
 import { OnboardingTour } from "@/components/OnboardingTour";
+import { isTourCompleted } from "@/lib/homeTour";
 import { createContext, useContext, useState, useEffect } from "react";
 import Index from "./pages/Index.tsx";
 import Content from "./pages/Content.tsx";
@@ -49,16 +50,25 @@ export const TourContext = createContext<{ startTour: () => void }>({ startTour:
 export const useTour = () => useContext(TourContext);
 
 function AppRoutes() {
-  const { isAuthenticated } = useAuth();
-  const [showTour, setShowTour] = useState(false);
+  const { isAuthenticated, user } = useAuth();
+  const main = useDataStore();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [tourOwner, setTourOwner] = useState<string | null>(null);
+  const homeReady = isAuthenticated && main.stateReady && !main.stateError && location.pathname === '/home' && !location.search;
 
-  // Training is available on demand and never interrupts a successful sign-in.
+  // Wait for the actual home workspace. Direct material/calendar links stay usable.
   useEffect(() => {
-    if (!isAuthenticated) setShowTour(false);
-  }, [isAuthenticated]);
+    if (!homeReady || !user) { setTourOwner(null); return; }
+    if (isTourCompleted(user.id)) return;
+    const timer = window.setTimeout(() => {
+      if (!isTourCompleted(user.id) && !document.querySelector('[role="dialog"], dialog[open]')) setTourOwner(user.id);
+    }, 650);
+    return () => window.clearTimeout(timer);
+  }, [homeReady, user]);
 
   return (
-    <TourContext.Provider value={{ startTour: () => setShowTour(true) }}>
+    <TourContext.Provider value={{ startTour: () => { if (user) { navigate('/home'); setTourOwner(user.id); } } }}>
       <Routes>
         <Route path="/" element={<Welcome />} />
         <Route element={<RequireAuth />}>
@@ -78,7 +88,7 @@ function AppRoutes() {
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-      {showTour && <OnboardingTour onClose={() => setShowTour(false)} />}
+      {homeReady && user && tourOwner === user.id && <OnboardingTour key={user.id} userId={user.id} onClose={() => setTourOwner(null)} />}
     </TourContext.Provider>
   );
 }

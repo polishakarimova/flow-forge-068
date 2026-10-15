@@ -15,7 +15,7 @@ export function SalesNavigation() {
   const { pathname } = useLocation();
   const active = salesLinks.some(link => link.to === pathname);
   return <Sheet open={open} onOpenChange={setOpen}>
-    <SheetTrigger asChild><button type="button" aria-label="Продажи" aria-current={active ? 'true' : undefined} className={`flex flex-1 min-w-0 flex-col items-center gap-1 px-2 py-2 rounded-lg transition-colors duration-200 ${active ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
+    <SheetTrigger asChild><button type="button" data-tour="sales" aria-label="Продажи" aria-current={active ? 'true' : undefined} className={`flex flex-1 min-w-0 flex-col items-center gap-1 px-2 py-2 rounded-lg transition-colors duration-200 ${active ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
       <Waypoints className="w-5 h-5" /><span className="text-[10px] font-medium">Продажи</span>
     </button></SheetTrigger>
     <SheetContent side="bottom" className="z-[80] p-4 pb-[max(16px,env(safe-area-inset-bottom))] motion-reduce:animate-none [&>button]:h-8 [&>button]:w-8 [&>button]:flex [&>button]:items-center [&>button]:justify-center">
