@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import { BackContext } from '@/lib/backNavigationContext';
 
-const workspacePaths = new Set(['/home', '/context', '/dashboard', '/content', '/products', '/map', '/calendar', '/profile', '/admin']);
+const workspacePaths = new Set(['/home', '/context', '/dashboard', '/content', '/products', '/map', '/calendar', '/profile', '/profile/dashboard', '/profile/agents', '/admin']);
 
 // Only go back through workspace entries seen in this app session. Never send
 // a fresh deep link back to Telegram, a login screen or an external referrer.
@@ -21,7 +21,7 @@ export function BackNavigationProvider({ children }: { children: ReactNode }) {
   }, [location.key, location.pathname, action]);
   function back() {
     if (entries.current.length > 1) navigate(-1);
-    else navigate('/home', { replace: true });
+    else navigate(location.pathname.startsWith('/profile/') ? '/profile' : '/home', { replace: true });
   }
   return <BackContext.Provider value={back}>{children}</BackContext.Provider>;
 }

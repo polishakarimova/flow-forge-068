@@ -21,6 +21,7 @@ import {ensureBaseSchema} from './schema.mjs';
 import {prismaDatabaseUrl} from './database-urls.mjs';
 import {ensureReferralSchema, referralCode, referralStart, rememberReferralEntry, completeReferralAuthorization, referralSummary} from './referrals.mjs';
 import {readAdminOverview as readAdminMetrics} from './admin-overview.mjs';
+import {readUserDashboard} from './user-dashboard.mjs';
 import {adminEntry,adminKeyboard,isPrivateAdmin} from './admin-bot.mjs';
 
 const root = new URL("../", import.meta.url);
@@ -490,6 +491,13 @@ async function api(req, res, url) {
     const user = await getUserBySession(parseCookies(req)[cookieName]);
     if (!user) return send(res, 401, { error: 'unauthorized' });
     return send(res, 200, await referralSummary(pgPool, user.id, APP_URL));
+  }
+
+  if (path === '/api/account/dashboard') {
+    if (req.method !== 'GET') return methodNotAllowed(res);
+    const user = await requireUser(req, res);
+    if (!user) return;
+    return send(res, 200, await readUserDashboard(pgPool, user.id));
   }
 
   if (path === "/api/auth/register") {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { UserRound, LogOut, Package, FileText, Network, GraduationCap, Bot, ChevronRight, Heart, UsersRound, Copy, Check, Share2, History } from 'lucide-react';
+import { UserRound, LogOut, Package, FileText, Network, GraduationCap, Bot, ChevronRight, Heart, UsersRound, Copy, Check, Share2, History, ChartNoAxesCombined } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
@@ -84,6 +84,10 @@ function ProfileAccount() {
         </div>
         <div className="min-w-0"><h2 className="text-xl font-semibold break-words">{user?.name}</h2><p className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1"><Check size={13} />Telegram подключён</p></div>
       </section>
+      <Link to="/profile/dashboard" className="mb-4 flex min-h-20 items-center gap-3 rounded-2xl border border-primary/20 bg-card p-4 transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><ChartNoAxesCombined size={21} /></span>
+        <span className="min-w-0 flex-1"><strong className="block text-sm font-semibold">Мой дашборд</strong><span className="mt-1 block text-xs text-muted-foreground">Контент, публикации и результаты</span></span><ChevronRight size={17} className="shrink-0 text-muted-foreground" />
+      </Link>
       <section aria-label="Лайки и приглашения" className="border border-border bg-card rounded-2xl overflow-hidden mb-6">
         <button type="button" className="w-full flex items-center gap-3 p-4 text-left hover:bg-muted/40 transition-colors disabled:opacity-70" disabled={!wallet || loading} onClick={() => setDialog('history')}>
           <span className="w-10 h-10 shrink-0 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><Heart size={21} fill="currentColor" /></span>

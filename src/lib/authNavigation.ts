@@ -1,4 +1,4 @@
-const routes = new Set(['/home', '/calendar', '/products', '/content', '/context', '/dashboard', '/map', '/profile', '/profile/agents', '/admin', '/agents']);
+const routes = new Set(['/home', '/calendar', '/products', '/content', '/context', '/dashboard', '/map', '/profile', '/profile/agents', '/profile/dashboard', '/admin', '/agents']);
 export function safeAuthReturn(value: string | null | undefined, fallback = '/home') {
   try {
     const url = new URL(value || fallback, 'https://app.invalid');

@@ -1,46 +1,9 @@
-// Administrative summaries only. Never return workspace text, context or credentials.
-const list = value => Array.isArray(value) ? value.filter(v => v && typeof v === 'object' && !Array.isArray(v)) : [];
-const number = value => typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : 0;
+// Service administration: usage counts only, never users' business results.
+import { countWorkspace } from './workspace-summary.mjs';
 const iso = value => value && Number.isFinite(new Date(value).getTime()) ? new Date(value).toISOString() : '';
 const day = value => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Kaliningrad', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value));
 const counts = () => ({ products: 0, topics: 0, ideas: 0, archivedIdeas: 0, contentItems: 0, funnels: 0, keywords: 0, calendarItems: 0 });
-export function summarizeWorkspace(main = {}, publications = {}) {
-  main = main && typeof main === 'object' ? main : {};
-  publications = publications && typeof publications === 'object' ? publications : {};
-  const topics = list(main.topics).filter(t => !t.archived);
-  const materials = topics.flatMap(t => list(t.contentItems));
-  const products = list(main.products), funnels = list(main.funnels);
-  const productIds = new Set(products.map(p => p.id).filter(id => id !== undefined && id !== null));
-  const status = { idea: 0, in_progress: 0, ready: 0, published: 0 };
-  const formats = Object.create(null), results = { materials: 0, reach: 0, responses: 0, leads: 0, sales: 0, coverage: { reach: 0, responses: 0, leads: 0, sales: 0 } };
-  let withProduct = 0, withFunnel = 0, withCta = 0, approvedScripts = 0;
-  for (const m of materials) {
-    status[Object.hasOwn(status, m.status) ? m.status : 'idea']++;
-    const format = String(m.platformId || 'other');
-    formats[format] = (formats[format] || 0) + 1;
-    if (productIds.has(m.productId)) withProduct++;
-    if (funnels.some(f => f.id === m.funnelId || (Array.isArray(f.contentItemIds) && f.contentItemIds.includes(m.id)))) withFunnel++;
-    if (typeof m.cta === 'string' && m.cta.trim()) withCta++;
-    if (m.scriptApproval === 'approved' && Number.isFinite(m.revision) && m.approvedRevision === m.revision) approvedScripts++;
-    if (m.metrics && ['reach', 'responses', 'leads', 'sales'].some(k => typeof m.metrics[k] === 'number' && Number.isFinite(m.metrics[k]) && m.metrics[k] >= 0)) {
-      results.materials++;
-      for (const key of ['reach', 'responses', 'leads', 'sales']) {
-        results[key] += number(m.metrics[key]);
-        if (typeof m.metrics[key] === 'number' && Number.isFinite(m.metrics[key]) && m.metrics[key] >= 0) results.coverage[key]++;
-      }
-    }
-  }
-  const items = list(publications.items), parts = items.flatMap(i => list(i.parts));
-  return {
-    stats: { products: products.length, topics: topics.filter(t => !t.isIdeaBank).length, ideas: topics.filter(t => t.isIdeaBank).length,
-      archivedIdeas: list(main.topics).filter(t => t.archived).length, contentItems: materials.length, funnels: funnels.length,
-      keywords: Array.isArray(main.keywords) ? main.keywords.length : 0, calendarItems: items.length },
-    content: { status, formats, withProduct, withFunnel, withCta, approvedScripts, activeFunnels: funnels.filter(f => f.active).length, results },
-    calendar: { parts: parts.length, published: parts.filter(p => p.published === true).length,
-      approved: parts.filter(p => !p.published && p.approvalStatus === 'approved').length,
-      drafts: parts.filter(p => !p.published && p.approvalStatus !== 'approved').length },
-  };
-}
+
 
 export function buildAdminOverview({ accounts = [], states = [], logins = [], agents = [], actions = [], actionCount = 0, queue = [], threads = {}, system = {}, days = 30, clock = Date.now() }) {
   days = [7, 30, 90].includes(Number(days)) ? Number(days) : 30;
@@ -60,20 +23,12 @@ export function buildAdminOverview({ accounts = [], states = [], logins = [], ag
     const previous = loginByUser.get(row.user_id);
     if (!previous || Date.parse(previous) < Date.parse(row.last_login)) loginByUser.set(row.user_id, row.last_login);
   }
-  const totals = { users: accounts.length, ...counts() }, status = { idea: 0, in_progress: 0, ready: 0, published: 0 };
-  const content = { status, formats: Object.create(null), withProduct: 0, withFunnel: 0, withCta: 0, approvedScripts: 0, activeFunnels: 0, results: { materials: 0, reach: 0, responses: 0, leads: 0, sales: 0, coverage: { reach: 0, responses: 0, leads: 0, sales: 0 } } };
-  const calendar = { parts: 0, published: 0, approved: 0, drafts: 0 };
+  const totals = { users: accounts.length, ...counts() };
   const adoption = { withProducts: 0, withContent: 0, withFunnels: 0, complete: 0, empty: 0 };
   const users = accounts.map(account => {
     const state = stateByUser.get(account.id) || {};
-    const summary = summarizeWorkspace(state.main?.data, state.publications?.data);
+    const summary = { stats: countWorkspace(state.main?.data, state.publications?.data) };
     for (const key of Object.keys(summary.stats)) totals[key] += summary.stats[key];
-    for (const key of Object.keys(status)) status[key] += summary.content.status[key];
-    for (const key of ['withProduct', 'withFunnel', 'withCta', 'approvedScripts', 'activeFunnels']) content[key] += summary.content[key];
-    for (const [key, value] of Object.entries(summary.content.formats)) content.formats[key] = (content.formats[key] || 0) + value;
-    for (const key of ['materials', 'reach', 'responses', 'leads', 'sales']) content.results[key] += summary.content.results[key];
-    for (const key of Object.keys(content.results.coverage)) content.results.coverage[key] += summary.content.results.coverage[key];
-    for (const key of Object.keys(calendar)) calendar[key] += summary.calendar[key];
     const hasProducts = summary.stats.products > 0, hasContent = summary.stats.contentItems > 0, hasFunnels = summary.stats.funnels > 0;
     if (hasProducts) adoption.withProducts++;
     if (hasContent) adoption.withContent++;
@@ -90,7 +45,7 @@ export function buildAdminOverview({ accounts = [], states = [], logins = [], ag
   const activeAgents = agents.filter(a => !a.revoked_at && a.connected_at && Date.parse(a.refresh_expires_at) > clock);
   return { generatedAt: new Date(clock).toISOString(), period: { days, from: firstDay, to: today, timeZone: 'Europe/Kaliningrad' }, totals,
     audience: { newUsers: users.filter(u => inPeriod(u.createdAt)).length, activeUsers: users.filter(u => u.active).length,
-      returningUsers: users.filter(u => u.active && u.createdAt && day(u.createdAt) < firstDay).length, adoption, daily }, content, calendar,
+      returningUsers: users.filter(u => u.active && u.createdAt && day(u.createdAt) < firstDay).length, adoption, daily },
     agents: { connected: activeAgents.length, owners: new Set(activeAgents.map(a => a.user_id)).size,
       actions: Number(actionCount), recent: actions.map(a => ({ tool: a.tool, name: a.name, createdAt: iso(a.created_at) })) },
     publishing: { threadsConnected: Number(threads.connected || 0), healthyWorkers: Number(threads.workers || 0), queue: Object.fromEntries(queue.map(q => [q.status, Number(q.count)])) },

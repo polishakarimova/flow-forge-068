@@ -24,6 +24,7 @@ import Agents from "./pages/Agents.tsx";
 import Register from "./pages/Register.tsx";
 import Login from "./pages/Login.tsx";
 import Admin from "./pages/Admin.tsx";
+import UserDashboard from './pages/UserDashboard';
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -70,6 +71,7 @@ function AppRoutes() {
         <Route path="/map" element={<FunnelMapPage />} />
         <Route path="/calendar" element={<Publications />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/profile/dashboard" element={<UserDashboard />} />
         <Route path="/profile/agents" element={<Agents />} />
         <Route path="/agents" element={<Navigate replace to="/profile/agents" />} />
         </Route>

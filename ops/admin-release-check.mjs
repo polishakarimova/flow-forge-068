@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { readEnv, databasePool, fingerprint } from './db-config.mjs';
 import { issueSession } from '../server/session-store.mjs';
 import { readAdminOverview } from '../server/admin-overview.mjs';
+import {readUserDashboard} from '../server/user-dashboard.mjs';
 const env = readEnv(process.env.KARTA_ENV_FILE || '/etc/kartakontenta/runtime.env');
 const pool = databasePool(env);
 const ids = String(env.ADMIN_TELEGRAM_IDS || '').split(',').map(v => v.trim()).filter(Boolean);
@@ -15,8 +16,8 @@ try {
   const overview = await readAdminOverview(pool, { days: 30, telegramMode: env.TELEGRAM_UPDATES_MODE });
   assert.ok(overview.totals.users >= 0); assert.equal(overview.system.database, 'ok');
   if (process.argv.includes('--http')) {
-    for (const endpoint of ['/api/admin/overview', '/api/admin/users']) assert.equal((await fetch(origin + endpoint)).status, 401);
-    const { rows } = await pool.query('select "userId" as id,"telegramId" as telegram_id from telegram_accounts');
+    for (const endpoint of ['/api/admin/overview', '/api/admin/users', '/api/account/dashboard']) assert.equal((await fetch(origin + endpoint)).status, 401);
+    const { rows } = await pool.query('select u.id,t."telegramId" as telegram_id from users u left join telegram_accounts t on t."userId"=u.id');
     for (const admin of [true, false]) {
       const account = rows.find(r => ids.includes(r.telegram_id) === admin);
       if (!account) { if (admin) throw Error('No configured administrator account'); continue; }
@@ -26,7 +27,13 @@ try {
       const response = await fetch(origin + '/api/admin/overview?days=7', { headers });
       assert.equal(response.status, admin ? 200 : 403);
       const result = await response.json();
+      const own = await readUserDashboard(pool, account.id);
+      const personalResponse = await fetch(origin + '/api/account/dashboard?userId=someone-else', {headers});
+      assert.equal(personalResponse.status,200);
+      const personal=await personalResponse.json();assert.deepEqual(personal.stats,own.stats);assert.deepEqual(personal.content.results,own.content.results);
+      assert.equal(personal.users,undefined);assert.equal(personal.system,undefined);
       if (admin) {
+        assert.equal(result.content,undefined);assert.equal(result.calendar,undefined);
         assert.equal(result.period.days, 7); assert.equal(result.totals.users, overview.totals.users);
         assert.equal(result.totals.contentItems, overview.totals.contentItems);
         const me = await (await fetch(origin + '/api/auth/me', { headers })).json(); assert.equal(me.user.isAdmin, true);
