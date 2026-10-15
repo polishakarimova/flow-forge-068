@@ -19,7 +19,7 @@ export function requestProtection({appUrl,clock=Date.now,trustProxy=false}){
  return (req,res,url)=>{
   res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');
   res.setHeader('Permissions-Policy','camera=(), microphone=(), geolocation=()');
-  res.setHeader('Content-Security-Policy',"default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' https://telegram.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self'; frame-src https://oauth.telegram.org; frame-ancestors 'self' https://web.telegram.org https://*.web.telegram.org");
+  res.setHeader('Content-Security-Policy',"default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' https://telegram.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self'; frame-src 'self' https://oauth.telegram.org; frame-ancestors 'self' https://web.telegram.org https://*.web.telegram.org");
   if(origin.startsWith('https:'))res.setHeader('Strict-Transport-Security','max-age=31536000');
   if(url.pathname.startsWith('/api/'))res.setHeader('Cache-Control','no-store');
   if(!url.pathname.startsWith('/api/'))return null;
