@@ -8,7 +8,6 @@ import {
   ShieldCheck,
   Brain,
   House,
-  Bot,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -35,7 +34,6 @@ const navItems = [
   { title: "Карта", url: "/map", icon: Map },
   { title: "Контекст", url: "/context", icon: Brain },
   { title: "Профиль", url: "/profile", icon: User },
-  { title: "Подключить агента", url: "/agents", icon: Bot },
   { title: "Админ", url: "/admin", icon: ShieldCheck },
 ];
 
@@ -65,7 +63,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.filter(item => item.url !== '/admin' || user?.isAdmin).map((item) => {
-                const active = location.pathname === item.url;
+                const active = location.pathname === item.url || item.url === '/profile' && location.pathname.startsWith('/profile/');
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>

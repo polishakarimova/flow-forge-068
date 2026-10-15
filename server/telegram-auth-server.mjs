@@ -19,6 +19,7 @@ import {ensureSessionSchema,issueSession,readSession,revokeSession,authorizeAdmi
 import {readContext,saveContext} from './context-state.mjs';
 import {ensureBaseSchema} from './schema.mjs';
 import {prismaDatabaseUrl} from './database-urls.mjs';
+import {ensureReferralSchema, referralCode, referralStart, rememberReferralEntry, completeReferralAuthorization, referralSummary} from './referrals.mjs';
 import {readAdminOverview as readAdminMetrics} from './admin-overview.mjs';
 import {adminEntry,adminKeyboard,isPrivateAdmin} from './admin-bot.mjs';
 
@@ -167,7 +168,6 @@ async function getUserById(id) {
   };
 }
 
-async function createSession(userId) {return issueSession(pgPool,userId,SESSION_SECRET);}
 
 async function getUserBySession(token) {
   const session=await readSession(pgPool,token,SESSION_SECRET);
@@ -335,7 +335,7 @@ function safeReturnTo(returnTo = "") {
   return "/";
 }
 
-async function createTelegramLoginToken(returnTo = "/",browserKey) {
+async function createTelegramLoginToken(returnTo = "/",browserKey,sourceCode) {
   const bot = TELEGRAM_BOT_TOKEN ? await getTelegramBotInfo() : null;
   if (!bot?.username) throw new Error("telegram_bot_not_configured");
   const token = uid(20);
@@ -343,6 +343,7 @@ async function createTelegramLoginToken(returnTo = "/",browserKey) {
     data: {
       tokenHash: tokenHash(token),
       browserHash: tokenHash(browserKey),
+      referralCode: referralCode(sourceCode) || null,
       returnTo: safeReturnTo(returnTo),
       expiresAt: new Date(Date.now() + 10 * 60 * 1000),
     },
@@ -434,6 +435,12 @@ async function handleTelegramUpdate(update) {
     return;
   }
   if (chatId && text.startsWith("/start")) {
+    const source = referralStart(text.match(/^\/start\s+(\S+)$/)?.[1]);
+    if (source) {
+      await rememberReferralEntry(pgPool, message.from?.id, source);
+      await telegramApi('sendMessage',{chat_id:chatId,text:'Вас пригласили в «Карту контента». Откройте приложение и войдите через Telegram. После первого входа нового пользователя пригласивший получит 50 лайков.',reply_markup:{inline_keyboard:[[{text:'Открыть карту',web_app:{url:APP_URL+'/?ref='+source}}]]}}).catch(()=>{});
+      return;
+    }
     const loginMatch = text.match(/^\/start\s+login_([a-f0-9]{40})/i);
     if (loginMatch) {
       const token = loginMatch[1];
@@ -478,6 +485,13 @@ async function api(req, res, url) {
     return send(res, 200, { user: publicUser(await getUserBySession(parseCookies(req)[cookieName])) });
   }
 
+  if (path === '/api/account/referral') {
+    if (req.method !== 'GET') return methodNotAllowed(res);
+    const user = await getUserBySession(parseCookies(req)[cookieName]);
+    if (!user) return send(res, 401, { error: 'unauthorized' });
+    return send(res, 200, await referralSummary(pgPool, user.id, APP_URL));
+  }
+
   if (path === "/api/auth/register") {
     if (req.method !== "POST") return methodNotAllowed(res);
     return send(res, 410, { error: "password_auth_disabled", message: "Use Telegram auth" });
@@ -502,7 +516,8 @@ async function api(req, res, url) {
       const input = await body(req);
       const telegramUser = validateTelegramInitData(String(input.initData || ""));
       const user = await upsertTelegramUser(telegramUser);
-      const token = await createSession(user.id);
+      const signedStart = new URLSearchParams(String(input.initData || '')).get('start_param');
+      const { session: token } = await completeReferralAuthorization(pgPool, user.id, referralStart(signedStart) || input.referralCode, client => issueSession(client,user.id,SESSION_SECRET));
       setSessionCookie(res, token);
       return send(res, 200, { user: publicUser(user) });
     } catch (error) {
@@ -517,7 +532,7 @@ async function api(req, res, url) {
     try {
       const input = await body(req).catch(() => ({}));
       const browserKey=uid(32);
-      const login = await createTelegramLoginToken(input.returnTo || url.searchParams.get("returnTo") || "/",browserKey);
+      const login = await createTelegramLoginToken(input.returnTo || url.searchParams.get("returnTo") || "/",browserKey,input.referralCode);
       setBrowserCookie(res,browserKey);
       return send(res, 201, { ok: true, token: login.token, expiresAt: login.expiresAt, returnTo: login.returnTo, botLink: login.botLink, botUrl: login.botLink });
     } catch (error) {
@@ -541,9 +556,16 @@ async function api(req, res, url) {
     if (!loginToken.userId) return send(res, 202, { status: "pending" });
     const user = await getUserById(loginToken.userId);
     if (!user) return send(res, 404, { error: "telegram_user_not_found" });
-    const consumed=await prisma.telegramLoginRequest.updateMany({where:{id:loginToken.id,status:'CONFIRMED',usedAt:null,expiresAt:{gt:new Date()}},data:{status:'USED',usedAt:new Date()}});
-    if(consumed.count!==1)return send(res,404,{error:'login_token_not_found',status:'missing'});
-    const sessionToken = await createSession(user.id);
+    // Token consumption, reward and session creation commit together.
+    let sessionToken;
+    try {
+      const result = await completeReferralAuthorization(pgPool, user.id, loginToken.referralCode, async client => {
+        const consumed = await client.query(`update telegram_login_requests set status='USED',"usedAt"=now() where id=$1 and status='CONFIRMED' and "usedAt" is null and "expiresAt">now() returning id`,[loginToken.id]);
+        if(consumed.rowCount!==1)throw Object.assign(new Error('login_token_not_found'),{status:404});
+        return issueSession(client,user.id,SESSION_SECRET);
+      });
+      sessionToken = result.session;
+    } catch(error) { if(error.status===404)return send(res,404,{error:'login_token_not_found',status:'missing'});throw error; }
     setSessionCookie(res, sessionToken);
     setBrowserCookie(res,'');
     return send(res, 200, { ok: true, status: "confirmed", returnTo: loginToken.returnTo || "/", user: publicUser(user) });
@@ -699,10 +721,10 @@ async function setupTelegramBot() {
 
 let telegramPollingStarted = false;
 if(process.env.KARTA_SCHEMA_MODE==='runtime'){
-  const {rows}=await pgPool.query("select to_regclass(name) as present from unnest($1::text[]) as name",[['cm_user_state','cm_auth_sessions','cm_agent_connections','cm_agent_actions','cm_threads_queue','telegram_accounts']]);
+  const {rows}=await pgPool.query("select to_regclass(name) as present from unnest($1::text[]) as name",[['cm_user_state','cm_auth_sessions','cm_agent_connections','cm_agent_actions','cm_threads_queue','telegram_accounts','cm_referral_accounts','cm_referral_entries','cm_like_transactions']]);
   if(rows.some(row=>!row.present))throw Error('database_migration_required');
 }else{
-  await ensureBaseSchema(pgPool);await ensureThreadsSchema(pgPool);await ensureRemoteSchema(pgPool);await ensureAgentSchema(pgPool);await ensureSessionSchema(pgPool);
+  await ensureBaseSchema(pgPool);await ensureThreadsSchema(pgPool);await ensureRemoteSchema(pgPool);await ensureAgentSchema(pgPool);await ensureSessionSchema(pgPool);await ensureReferralSchema(pgPool);
 }
 setupTelegramBot().catch((error) => console.error("Telegram setup failed:", error));
 if (process.env.THREADS_AUTOPUBLISH_ENABLED === '1' && process.env.THREADS_REMOTE_ENABLED !== '1') {

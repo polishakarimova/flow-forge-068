@@ -70,7 +70,8 @@ function AppRoutes() {
         <Route path="/map" element={<FunnelMapPage />} />
         <Route path="/calendar" element={<Publications />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/agents" element={<Agents />} />
+        <Route path="/profile/agents" element={<Agents />} />
+        <Route path="/agents" element={<Navigate replace to="/profile/agents" />} />
         </Route>
         <Route path="/admin" element={<Admin />} />
         <Route path="/register" element={<Register />} />

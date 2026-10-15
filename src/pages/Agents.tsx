@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Bot, Check, Copy, RefreshCw, Unplug } from 'lucide-react';
+import { ArrowLeft, Bot, Check, Copy, RefreshCw, Unplug } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { MobileNav } from '@/components/MobileNav';
-import { AppBackButton } from '@/components/AppBackButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -35,7 +35,8 @@ export default function Agents(){
   const active=agents.filter(a=>!a.revokedAt&&(a.connectedAt||a.codeExpiresAt&&new Date(a.codeExpiresAt).getTime()>now));
   return <SidebarProvider><div className="min-h-screen flex w-full bg-background"><div className="hidden md:block"><AppSidebar/></div>
     <main className="flex-1 min-w-0 px-4 pt-1 md:pt-6 pb-24"><div className="max-w-xl mx-auto">
-      <div className="flex items-center gap-2 mb-4"><AppBackButton/><h1 className="kk-page-title text-lg font-semibold">Подключить агента</h1></div>
+      <Link to="/profile" className="inline-flex items-center gap-2 min-h-11 text-sm text-muted-foreground mb-2"><ArrowLeft size={16}/>В профиль</Link>
+      <h1 className="kk-page-title text-lg font-semibold mb-3">Мои агенты</h1>
       <p className="text-sm text-muted-foreground mb-5">Дайте своему AI-агенту доступ к постам, продуктам и воронкам. Правки появятся в вашей карте.</p>
       <section className="bg-card border border-border rounded-xl p-4 space-y-4" aria-label="Новое подключение">
         <div><label htmlFor="agent-name" className="block text-sm font-medium mb-1.5">Название агента</label><Input id="agent-name" value={name} maxLength={80} onChange={e=>setName(e.target.value)} className="h-11"/></div>
@@ -48,7 +49,7 @@ export default function Agents(){
         </div>}
       </section>
       {error&&<p role="alert" className="text-sm text-destructive mt-3">{error}</p>}
-      <section className="mt-6" aria-label="Подключённые агенты"><div className="flex items-center justify-between gap-2 mb-2"><h2 className="font-medium text-sm">Мои агенты</h2><Button variant="ghost" size="icon" className="h-11 w-11" aria-label="Обновить подключения" onClick={load}><RefreshCw size={16}/></Button></div>
+      <section className="mt-6" aria-label="Подключённые агенты"><div className="flex items-center justify-between gap-2 mb-2"><h2 className="font-medium text-sm">Подключённые агенты</h2><Button variant="ghost" size="icon" className="h-11 w-11" aria-label="Обновить подключения" onClick={load}><RefreshCw size={16}/></Button></div>
         {loading?<p role="status" className="text-sm text-muted-foreground">Загружаем подключения…</p>:active.length===0?<p className="text-sm text-muted-foreground">Пока нет подключений. Создайте код выше.</p>:<div className="divide-y divide-border">{active.map(a=><div key={a.id} className="flex items-center gap-3 py-3"><Bot size={19} className="text-primary shrink-0"/><div className="flex-1 min-w-0"><p className="text-sm font-medium break-words">{a.name}</p><p className="text-xs text-muted-foreground">{a.connectedAt?'Подключён':'Ожидает код'}{a.lastSeenAt?` · ${time(a.lastSeenAt)}`:''}</p><p className="text-xs text-muted-foreground mt-1">{a.scopes.filter(s=>s!=='read').map(s=>permissionLabels.find(r=>r.id===s)?.label).filter(Boolean).join(' · ')||'Только чтение'}</p></div><Button variant="ghost" className="min-h-11 px-2 shrink-0 text-muted-foreground" aria-label={`Отключить ${a.name}`} onClick={()=>setRemove(a)}><Unplug size={16}/><span className="hidden sm:inline">Отключить</span></Button></div>)}</div>}
       </section>
       {actions.length>0&&<section className="mt-5"><h2 className="text-sm font-medium mb-2">Последние правки</h2><div className="divide-y divide-border">{actions.map((a,i)=><div key={i} className="py-2.5"><p className="text-sm">{labels[a.tool]||'Сохранён материал'}</p><p className="text-xs text-muted-foreground break-words">{a.name} · {time(a.createdAt)}</p></div>)}</div></section>}

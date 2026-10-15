@@ -34,7 +34,7 @@ npm test
 npx tsc --noEmit -p tsconfig.app.json
 npm run build
 node --check server/telegram-auth-server.mjs
-node --test server/security.test.mjs server/agent-workspace.test.mjs server/karta-mcp.test.mjs server/admin-overview.test.mjs ops/runtime-access.test.mjs ops/operations.test.mjs
+node --test server/security.test.mjs server/agent-workspace.test.mjs server/karta-mcp.test.mjs server/referrals.test.mjs server/admin-overview.test.mjs ops/runtime-access.test.mjs ops/operations.test.mjs
 node ops/prepare-runtime.mjs check
 if test -L "$BASE/current"; then node "$BASE/current/ops/backup.mjs" create; fi
 node ops/migrate.mjs

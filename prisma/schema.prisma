@@ -67,6 +67,7 @@ model TelegramLoginRequest {
   id          String              @id @default(cuid())
   tokenHash   String              @unique
   browserHash String?
+  referralCode String?
   returnTo    String?
   status      TelegramLoginStatus @default(PENDING)
   userId      String?
