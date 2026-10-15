@@ -57,6 +57,8 @@ try{
         await expect(page.locator('#legal-terms')).toBeChecked();
         await continueButton.click();
         await expect(page.getByRole('heading',{name:'Перед началом работы',exact:true})).toHaveCount(0);
+        await expect(page.getByRole('heading',{name:'Тестовый, привет',exact:true})).toBeVisible();
+        await expect(page.getByText('Загружаем публикации…',{exact:true})).toHaveCount(0);
         await page.goto('http://127.0.0.1:8087/profile');
         await expect(page.getByRole('link',{name:'Документы и согласия',exact:true})).toBeVisible();
         await page.getByRole('link',{name:'Документы и согласия',exact:true}).click();
@@ -75,6 +77,8 @@ try{
         const after=(await query('select * from cm_legal_events order by sequence')).rows;if(after.length!==3||after[2].action!=='withdraw')throw Error('Invalid withdrawal journal');
         const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth);if(overflow)throw Error('Horizontal overflow');
         await page.goto('http://127.0.0.1:8087/home');await expect(page.getByRole('heading',{name:'Перед началом работы'})).toHaveCount(0);
+        await expect(page.getByRole('heading',{name:'Тестовый, привет',exact:true})).toBeVisible();
+        await expect(page.getByText('Загружаем публикации…',{exact:true})).toHaveCount(0);
         cases.push({engine,width,passed:true,checks:17});await context.close();
       }
       const anonymous=await browser.newContext({viewport:{width:390,height:844}}),page=await anonymous.newPage();
