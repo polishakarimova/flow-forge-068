@@ -6,6 +6,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { agentTools, registerAgentTools } from './agent-tools.mjs';
 import { applyAgentCommand } from './agent-workspace.mjs';
 import { readWorkspace, updateWorkspace } from './content-workspace.mjs';
+import { requireLegal } from './legal-consent.mjs';
 
 export const AGENT_SCOPES = ['read','content','products','funnels','planning','context'];
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
@@ -145,6 +146,7 @@ export async function agentApi(req,res,{path,pool,send,requireUser,appUrl}) {
       const input=await limitedBody(req);const result=path.endsWith('/connect')?await exchangeAgentCode(pool,input.code):await refreshAgentToken(pool,input.refresh_token);return send(res,200,result);
     }
     const agent=await authenticateAgent(pool,req);
+    await requireLegal(pool,agent.user_id);
     if(path==='/api/agent/me'&&req.method==='GET')return send(res,200,{agent:publicConnection(agent)});
     if(path==='/api/agent/tools'&&req.method==='GET')return send(res,200,{tools:Object.entries(agentTools).filter(([,t])=>agent.scopes.includes(t.scope)).map(([name,t])=>({name,description:t.description,inputSchema:zodToJsonSchema(t.schema,{$refStrategy:'none'})}))});
     if(path==='/api/agent/actions'&&req.method==='POST'){const input=await limitedBody(req);return send(res,200,await executeAgentTool(pool,agent,input.name,input.arguments||{}));}

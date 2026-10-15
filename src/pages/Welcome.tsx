@@ -62,6 +62,7 @@ export default function Welcome() {
         {isLoading ? <><Loader2 className="animate-spin" />{attempted || token ? 'Входим…' : 'Проверяем вход…'}</> : botLink ? 'Я подтвердил(а)' : <>Начать<ArrowRight /></>}
       </button>
       <p className="entry-footnote">Вход через Telegram</p>
+      <a href="/legal" className="text-xs text-muted-foreground underline underline-offset-4 inline-flex items-center min-h-11">Документы сервиса</a>
       {(message || botLink) && <div role={botLink ? 'status' : 'alert'} className="entry-feedback">
         <p>{message}</p>
         {botLink && <a href={botLink} target="_blank" rel="noopener noreferrer" className="inline-flex py-2 text-primary underline underline-offset-4">Открыть Telegram</a>}
