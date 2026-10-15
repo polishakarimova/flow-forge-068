@@ -72,8 +72,8 @@ function AppRoutes() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/profile/agents" element={<Agents />} />
         <Route path="/agents" element={<Navigate replace to="/profile/agents" />} />
-        <Route path="/admin" element={<Admin />} />
         </Route>
+        <Route path="/admin" element={<Admin />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

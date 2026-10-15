@@ -15,6 +15,8 @@ for (const [engine, type] of [['chromium', chromium], ['webkit', webkit]]) {
       const context = await browser.newContext({ viewport: { width, height: 850 } });
       const page = await context.newPage(), errors = [];
       page.on('pageerror', e => errors.push(e.message));
+      // These fixture checks need only the local application; remote SDK/fonts must not stall them.
+      await page.route('**/*', route => new URL(route.request().url()).origin === new URL(base).origin ? route.fallback() : route.abort());
       let failWallet = false, balance = 100;
       await page.route('**/api/**', async route => {
         const path = new URL(route.request().url()).pathname;
