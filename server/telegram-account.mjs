@@ -21,5 +21,8 @@ export async function saveTelegramAccount(tx, telegramUser, legacyId) {
   });
   const details = { username: telegramUser.username || null, firstName: telegramUser.first_name || null, lastName: telegramUser.last_name || null, photoUrl: telegramUser.photo_url || null, languageCode: telegramUser.language_code || null };
   await tx.telegramAccount.upsert({ where: { telegramId }, update: details, create: { ...details, telegramId, userId } });
+  const code = randomBytes(12).toString('hex');
+  const newUser = !account && !identity && !legacyId;
+  await tx.$executeRaw`insert into cm_referral_accounts(user_id,code,new_user) values(${userId},${code},${newUser}) on conflict(user_id) do nothing`;
   return { ...user, telegramId, telegramUsername: telegramUser.username ? `@${telegramUser.username}` : '' };
 }

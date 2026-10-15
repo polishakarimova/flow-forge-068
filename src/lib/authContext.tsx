@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { authErrorMessage, safeAuthReturn } from './authNavigation';
+import { captureReferral, clearReferral, pendingReferral } from './referral';
 
 export interface User { id: string; name: string; email: string; avatar?: string; provider: 'email' | 'google' | 'telegram'; emailVerified: boolean }
 type AuthResult = { success: boolean; message: string; botLink?: string };
@@ -28,10 +29,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const flight = useRef<Promise<AuthResult> | null>(null);
   const generation = useRef(0);
   const acceptUser = useCallback((value: ApiUser | null) => {
+    if (value) clearReferral();
     const user = value ? mapUser(value) : null;
     setState({ user, isAuthenticated: Boolean(user), isLoading: false });
   }, []);
   useEffect(() => {
+    captureReferral();
     let active = true;
     const initialGeneration = generation.current;
     // Restoring is read-only. New sign-in starts only on a user's tap.
@@ -62,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginWithTelegram = useCallback((destination?: string) => runLogin(async () => {
     const webApp = (window as TelegramWindow).Telegram?.WebApp;
     if (webApp?.initData) {
-      const data = await api('/api/auth/telegram-mini-app', { method: 'POST', body: JSON.stringify({ initData: webApp.initData }) });
+      const data = await api('/api/auth/telegram-mini-app', { method: 'POST', body: JSON.stringify({ initData: webApp.initData, referralCode: pendingReferral() }) });
       if (!data.user) throw new Error('user_missing');
       acceptUser(data.user);
       return { success: true, message: '' };
@@ -77,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const popup = webApp?.openTelegramLink ? null : window.open('about:blank', '_blank');
     if (popup) popup.opener = null;
     try {
-      const start = await api('/api/auth/telegram-login-token', { method: 'POST', body: JSON.stringify({ returnTo: safeAuthReturn(destination) }) });
+      const start = await api('/api/auth/telegram-login-token', { method: 'POST', body: JSON.stringify({ returnTo: safeAuthReturn(destination), referralCode: pendingReferral() }) });
       try { sessionStorage.setItem(pendingKey, JSON.stringify(start)); } catch { /* optional */ }
       if (webApp?.openTelegramLink) webApp.openTelegramLink(start.botLink);
       else if (popup) popup.location.href = start.botLink;
@@ -87,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     await api('/api/auth/logout', { method: 'POST' });
-    clearPending(); acceptUser(null);
+    clearPending(); clearReferral(); acceptUser(null);
   }, [acceptUser]);
   return <AuthContext.Provider value={{ ...state, loginWithTelegram, completeTelegramLogin, logout }}>{children}</AuthContext.Provider>;
 }
