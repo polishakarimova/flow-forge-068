@@ -5,7 +5,6 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { MobileNav } from '@/components/MobileNav';
 import { AppBackButton } from '@/components/AppBackButton';
-import { resetTour } from '@/components/OnboardingTour';
 import { useTour } from '@/App';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/authContext';
@@ -35,7 +34,7 @@ export default function Profile() {
       <div className="divide-y divide-border mb-5">
         {[{label:'Продукты',value:products.length,icon:Package},{label:'Материалы в разделе «Контент»',value:allContentItems.length,icon:FileText},{label:'Активные воронки',value:funnels.filter(f=>f.active).length,icon:Network}].map(item=><div key={item.label} className="flex items-center gap-3 py-3 text-sm"><item.icon size={17} className="text-muted-foreground"/><span className="flex-1">{item.label}</span><span className="font-medium">{item.value}</span></div>)}
       </div>
-      <button className="flex items-center gap-2 min-h-11 mb-3 text-sm text-muted-foreground" onClick={() => { resetTour(); startTour(); }}><GraduationCap size={17}/>Обучение</button>
+      <button className="flex items-center gap-2 min-h-11 mb-3 text-sm text-muted-foreground" onClick={startTour}><GraduationCap size={17}/>Обучение</button>
       <button className="flex items-center gap-2 min-h-11 mb-3 text-sm text-primary" onClick={() => navigate('/agents')}><Bot size={17}/>Подключить агента</button>
       <Button variant="outline" className="rounded-xl" disabled={busy} onClick={signOut}><LogOut size={16}/>{busy?'Выходим…':'Выйти из аккаунта'}</Button>
       {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}

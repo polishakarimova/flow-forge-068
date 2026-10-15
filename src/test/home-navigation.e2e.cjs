@@ -32,6 +32,7 @@ try{
   return json({data:null,revision:'new'});
  });
  await context.addInitScript(({today,items})=>{
+  localStorage.setItem('karta-home-tour:v1:navigation-test','true');
   localStorage.setItem('karta-publications-view:navigation-test',JSON.stringify({date:today,month:today.slice(0,7),screen:'publication',item:items[0].id,open:[`${items[0].id}:part1`],lastCopied:'',scroll:0}));
  },{today,items});
  await page.goto('http://127.0.0.1:8080/');await page.waitForURL('**/home');

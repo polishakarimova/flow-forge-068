@@ -5,6 +5,7 @@ const path=require('node:path');
  const browser=await chromium.launch({channel:'msedge',headless:true});
  try{
  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+ await context.addInitScript(()=>localStorage.setItem('karta-home-tour:v1:back-test','true'));
  const page=await context.newPage();page.setDefaultTimeout(15000);
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.route('https://telegram.org/js/telegram-web-app.js?63',r=>r.fulfill({contentType:'application/javascript',body:''}));
@@ -40,7 +41,7 @@ const path=require('node:path');
  await page.getByRole('button',{name:'Назад',exact:true}).click();await page.locator('.pub-grid').waitFor();
  await page.getByRole('button',{name:'Назад',exact:true}).click();await page.waitForURL('**/home');
  await page.getByRole('link',{name:'Мой профиль'}).click();await page.getByRole('button',{name:'Обучение',exact:true}).click();
- await page.getByText('Добро пожаловать в Content Map!',{exact:true}).waitFor();
+ await page.getByRole('heading',{name:/Добро пожаловать.*в «Карту контента»/}).waitFor();
  assert.deepEqual(errors,[]);
  console.log('PASS: no top strip, all page back buttons, safe deep links, nested route back, calendar detail/day/month, mobile overflow checks.');
  }finally{await browser.close()}

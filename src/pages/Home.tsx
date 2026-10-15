@@ -3,7 +3,8 @@ import { useEditorial } from '@/lib/editorialContext';
 import { todayKey, materialAction, formatLabel } from '@/lib/editorial';
 import { WeeklyFocus } from '@/components/content/WeeklyFocus';
 import './editorial.css';
-import { ArrowRight, Bookmark, Brain, CalendarDays, ChevronRight, FileText, Lightbulb, Package, Plus, UserRound } from 'lucide-react';
+import { ArrowRight, Bookmark, Brain, CalendarDays, ChevronRight, FileText, GraduationCap, Lightbulb, Package, Plus, UserRound } from 'lucide-react';
+import { useTour } from '@/App';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { MobileNav } from '@/components/MobileNav';
@@ -22,6 +23,7 @@ export default function Home() {
 }
 
 function HomeWorkspace({ userId, name }: { userId: string; name: string }) {
+  const { startTour } = useTour();
   const overview = usePublicationOverview(userId);
   const editorial=useEditorial();
   const today = todayKey();
@@ -48,13 +50,14 @@ function HomeWorkspace({ userId, name }: { userId: string; name: string }) {
     <main className="flex-1 min-w-0 pt-1 md:pt-6 px-4 pb-24 md:pb-8" data-home>
       <div className="max-w-lg mx-auto">
         <header className="flex items-center justify-between gap-3 mb-4">
-          <h1 className="kk-page-title min-w-0 text-xl font-semibold tracking-tight break-words">{firstName ? `${firstName}, привет` : 'Главная'}</h1>
-          <Link to="/profile" aria-label="Мой профиль" className="shrink-0 w-11 h-11 rounded-full bg-primary/10 text-primary flex items-center justify-center"><UserRound size={22} /></Link>
+          <div className="min-w-0"><h1 className="kk-page-title text-xl font-semibold tracking-tight break-words">{firstName ? `${firstName}, привет` : 'Главная'}</h1>
+            <button type="button" data-tour-launch onClick={startTour} className="inline-flex items-center gap-1.5 min-h-11 text-xs text-muted-foreground hover:text-primary"><GraduationCap size={15} />Экскурсия по разделам</button></div>
+          <Link to="/profile" data-tour="profile" aria-label="Мой профиль" className="shrink-0 w-11 h-11 rounded-full bg-primary/10 text-primary flex items-center justify-center"><UserRound size={22} /></Link>
         </header>
         {overview.status === 'ready' && resume && <Link to="/calendar" className="flex items-center gap-3 p-3 mb-4 rounded-2xl bg-primary/10 text-foreground" aria-label={`Продолжить: ${resume.title}`}>
           <Bookmark size={18} className="text-primary shrink-0" /><span className="flex-1 min-w-0"><span className="block text-[11px] text-muted-foreground">Продолжить с места остановки</span><strong className="block text-sm font-medium break-words">{resume.format}{partNumber > 0 ? ` · часть ${partNumber} из ${resume.parts.length}` : ` · ${resume.title}`}</strong></span><ArrowRight size={16} className="shrink-0" />
         </Link>}
-        <WeeklyFocus date={today} compact/>
+        <div data-tour="home"><WeeklyFocus date={today} compact/></div>
         <section aria-labelledby="home-today">
           <h2 id="home-today" className="text-sm font-semibold mb-3">На сегодня</h2>
           {overview.status === 'loading' && <p role="status" className="text-sm text-muted-foreground py-4">Загружаем публикации…</p>}
@@ -75,7 +78,7 @@ function HomeWorkspace({ userId, name }: { userId: string; name: string }) {
         <section aria-labelledby="home-foundation">
           <h2 id="home-foundation" className="text-sm font-semibold mb-3">Основа твоего блога</h2>
           <div className="border border-border bg-card rounded-2xl divide-y divide-border overflow-hidden">
-            {[{to:'/context',title:'Мой контекст',text:'Распаковка, аудитория, референсы',icon:Brain},{to:'/products',title:'Мои продукты',text:'Предложения и продуктовая линейка',icon:Package}].map(({to,title,text,icon:Icon})=><Link key={to} to={to} className="flex items-center gap-3 px-3 py-3 min-h-14 hover:bg-muted/50"><Icon size={18} className="text-primary shrink-0"/><span className="flex-1 min-w-0"><strong className="block text-sm font-medium">{title}</strong><span className="block text-xs text-muted-foreground">{text}</span></span><ChevronRight size={16} className="shrink-0 text-muted-foreground"/></Link>)}
+            {[{to:'/context',title:'Мой контекст',text:'Распаковка, аудитория, референсы',icon:Brain},{to:'/products',title:'Мои продукты',text:'Предложения и продуктовая линейка',icon:Package}].map(({to,title,text,icon:Icon})=><Link key={to} to={to} data-tour={to === '/context' ? 'context' : undefined} className="flex items-center gap-3 px-3 py-3 min-h-14 hover:bg-muted/50"><Icon size={18} className="text-primary shrink-0"/><span className="flex-1 min-w-0"><strong className="block text-sm font-medium">{title}</strong><span className="block text-xs text-muted-foreground">{text}</span></span><ChevronRight size={16} className="shrink-0 text-muted-foreground"/></Link>)}
           </div>
         </section>
         <Link to={dayLink} className="mt-4 text-xs text-muted-foreground inline-flex min-h-11 items-center gap-2"><CalendarDays size={15} />Открыть план публикаций</Link>
