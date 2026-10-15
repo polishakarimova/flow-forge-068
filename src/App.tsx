@@ -71,8 +71,8 @@ function AppRoutes() {
         <Route path="/calendar" element={<Publications />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/agents" element={<Agents />} />
-        <Route path="/admin" element={<Admin />} />
         </Route>
+        <Route path="/admin" element={<Admin />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
