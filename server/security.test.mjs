@@ -6,6 +6,17 @@ import {ensureSessionSchema,issueSession,readSession,revokeSession,authorizeAdmi
 import {readContext,saveContext} from './context-state.mjs';
 import {PGlite} from '@electric-sql/pglite';
 import {prismaDatabaseUrl} from './database-urls.mjs';
+
+test('document reader permits same-origin frames while preserving Telegram embedding restrictions',()=>{
+ const headers={},protect=requestProtection({appUrl:'https://kartakontenta.ru'});
+ protect({method:'GET',headers:{},socket:{remoteAddress:'127.0.0.1'}},{setHeader:(key,value)=>{headers[key]=value;}},new URL('https://kartakontenta.ru/legal'));
+ const policy=headers['Content-Security-Policy'];
+ const frameSources=policy.split(';').find(directive=>directive.trim().startsWith('frame-src ')).trim().split(/\s+/).slice(1);
+ assert.ok(frameSources.includes("'self'"));assert.ok(frameSources.includes('https://oauth.telegram.org'));
+ assert.equal(frameSources.includes('*'),false);
+ assert.ok(policy.includes("frame-ancestors 'self' https://web.telegram.org https://*.web.telegram.org"));
+ assert.ok(policy.includes("object-src 'none'"));
+});
 test('request protection blocks hostile origin, form body, oversized writes and untrusted proxy spoofing',async()=>{
  const headers={},res={setHeader:(k,v)=>headers[k]=v},url=new URL('https://kartakontenta.ru/api/content-workspace');
  const req={method:'POST',headers:{origin:url.origin,'content-type':'application/json'},socket:{remoteAddress:'10.0.0.1'}};
