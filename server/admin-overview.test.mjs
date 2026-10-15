@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PGlite } from '@electric-sql/pglite';
-import { buildAdminOverview, readAdminOverview, summarizeWorkspace } from './admin-overview.mjs';
+import { buildAdminOverview, readAdminOverview } from './admin-overview.mjs';
+import { summarizeWorkspace } from './workspace-summary.mjs';
 import { adminEntry, adminKeyboard, isPrivateAdmin } from './admin-bot.mjs';
 
 const clock = Date.parse('2026-10-15T12:00:00Z');
@@ -69,6 +70,7 @@ test('SQL snapshot counts unique daily sign-ins, all account state, and exposes 
     await db.query('insert into cm_user_state values($1,$2,$3,now()),($1,$4,$5,now()),($1,$6,$7,now())', ['owner', 'main', JSON.stringify(main), 'publications', JSON.stringify(publications), 'context', '{"secret":"PRIVATE CONTEXT"}']);
     const result = await readAdminOverview(pool, { days: 7 });
     assert.equal(result.audience.daily.at(-1).signIns, 1); assert.equal(result.totals.contentItems, 2); assert.equal(result.agents.actions, 1); assert.equal(result.publishing.queue.uncertain, 1);
+    assert.equal(result.content, undefined); assert.equal(result.calendar, undefined); assert.ok(!JSON.stringify(result).includes('reach'));
     assert.equal(result.agents.recent[0].name, 'Мой агент'); assert.equal(result.system.database, 'ok');
     for (const secret of ['PRIVATE TEXT', 'PRIVATE CONTEXT', 'SECRET HASH', 'SECRET RESULT']) assert.ok(!JSON.stringify(result).includes(secret));
   } finally { await db.close(); }
