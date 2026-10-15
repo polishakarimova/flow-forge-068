@@ -19,6 +19,8 @@ import {ensureSessionSchema,issueSession,readSession,revokeSession,authorizeAdmi
 import {readContext,saveContext} from './context-state.mjs';
 import {ensureBaseSchema} from './schema.mjs';
 import {prismaDatabaseUrl} from './database-urls.mjs';
+import {readAdminOverview as readAdminMetrics} from './admin-overview.mjs';
+import {adminEntry,adminKeyboard,isPrivateAdmin} from './admin-bot.mjs';
 
 const root = new URL("../", import.meta.url);
 const distDir = fileURLToPath(new URL("../dist", import.meta.url));
@@ -105,6 +107,7 @@ function publicUser(user) {
     authProvider: user.authProvider || "telegram",
     telegramId: user.telegramId || user.telegramAccount?.telegramId || "",
     telegramUsername: user.telegramUsername || user.telegramAccount?.username || "",
+    isAdmin: isAdminUser(user),
   };
 }
 
@@ -131,58 +134,11 @@ async function requireAdmin(req, res, url) {
     return null;
   }
   if(!await authorizeAdmin(pgPool,session)){send(res,401,{error:'admin_reauthentication_required'});return null;}
-  return user;
+  return { ...user, adminExpiresAt: session.admin_until ? new Date(session.admin_until).toISOString() : new Date(Date.now()+900000).toISOString() };
 }
 
-function countUserState(data) {
-  const products = Array.isArray(data?.products) ? data.products.length : 0;
-  const topics = Array.isArray(data?.topics) ? data.topics : [];
-  const funnels = Array.isArray(data?.funnels) ? data.funnels.length : 0;
-  const keywords = Array.isArray(data?.keywords) ? data.keywords.length : 0;
-  const contentItems = topics.reduce((sum, topic) => sum + (Array.isArray(topic?.contentItems) ? topic.contentItems.length : 0), 0);
-  const activeTopics = topics.filter((topic) => !topic?.isIdeaBank).length;
-  const ideas = topics.filter((topic) => topic?.isIdeaBank).length;
-  return { products, topics: activeTopics, ideas, contentItems, funnels, keywords };
-}
-
-async function readAdminOverview() {
-  const prismaUsers = await prisma.user.findMany({
-    include: { telegramAccounts: { take: 1 } },
-    orderBy: { updatedAt: "desc" },
-  });
-  const ids = prismaUsers.map((user) => user.id);
-  const { rows } = ids.length
-    ? await pgPool.query("select user_id, data, updated_at from cm_user_state where key = 'main' and user_id = any($1)", [ids])
-    : { rows: [] };
-  const states = new Map(rows.map((row) => [row.user_id, row]));
-  const users = prismaUsers.map((user) => {
-    const state = states.get(user.id);
-    const telegramAccount = user.telegramAccounts[0] || null;
-    const stats = countUserState(state?.data || {});
-    return {
-      id: user.id,
-      name: user.displayName || telegramAccount?.username || "Пользователь",
-      email: telegramAccount ? `telegram:${telegramAccount.telegramId}` : "",
-      telegramId: telegramAccount?.telegramId || "",
-      telegramUsername: telegramAccount?.username ? `@${telegramAccount.username}` : "",
-      provider: "telegram",
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString(),
-      stateUpdatedAt: state?.updated_at || "",
-      stats,
-    };
-  });
-  const totals = users.reduce((acc, user) => {
-    acc.products += user.stats.products;
-    acc.topics += user.stats.topics;
-    acc.ideas += user.stats.ideas;
-    acc.contentItems += user.stats.contentItems;
-    acc.funnels += user.stats.funnels;
-    acc.keywords += user.stats.keywords;
-    return acc;
-  }, { users: users.length, products: 0, topics: 0, ideas: 0, contentItems: 0, funnels: 0, keywords: 0 });
-  return { totals, users };
-}
+const readAdminOverview = (days, adminExpiresAt) => readAdminMetrics(pgPool, { days, adminExpiresAt, telegramMode: TELEGRAM_UPDATES_MODE,
+  autopublishEnabled: process.env.THREADS_AUTOPUBLISH_ENABLED === '1', remotePublisherEnabled: process.env.THREADS_REMOTE_ENABLED === '1' });
 
 async function saveUser(user) {
   await pgPool.query(
@@ -416,13 +372,16 @@ async function deleteLoginToken(token) {
   await prisma.telegramLoginRequest.delete({ where: { tokenHash: tokenHash(token) } }).catch(() => null);
 }
 
-async function sendTelegramStart(chatId) {
+async function sendTelegramStart(chatId, message) {
   await telegramApi("sendMessage", {
     chat_id: chatId,
     text: "Карта контента поможет собрать контекст, продукты, контент и воронки в одной системе.",
     reply_markup: {
       inline_keyboard: [[{ text: "Открыть карту контента", web_app: { url: APP_URL } }]],
     },
+  });
+  if (isPrivateAdmin(message, ADMIN_TELEGRAM_IDS)) await telegramApi('sendMessage', {
+    chat_id: chatId, text: 'Управление сервисом — кнопка «Admin панель» под строкой ввода.', reply_markup: adminKeyboard(),
   });
 }
 
@@ -468,6 +427,12 @@ async function handleTelegramUpdate(update) {
   if(message?.chat?.type&&message.chat.type!=='private')return;
   const chatId = message?.chat?.id;
   const text = String(message?.text || "");
+  const entry = adminEntry(message, ADMIN_TELEGRAM_IDS, APP_URL);
+  if (entry) {
+    if (isPrivateAdmin(message, ADMIN_TELEGRAM_IDS) && text.trim() !== 'Admin панель') await telegramApi('sendMessage', { chat_id: chatId, text: 'Постоянная кнопка администратора — под строкой ввода.', reply_markup: adminKeyboard(APP_URL) });
+    await telegramApi('sendMessage', entry);
+    return;
+  }
   if (chatId && text.startsWith("/start")) {
     const loginMatch = text.match(/^\/start\s+login_([a-f0-9]{40})/i);
     if (loginMatch) {
@@ -493,7 +458,7 @@ async function handleTelegramUpdate(update) {
       await telegramApi('sendMessage',{chat_id:chatId,text:'Подтвердить вход в «Карту контента»?\n\nЕсли вы не начинали вход на сайте, нажмите «Отменить».',reply_markup:{inline_keyboard:[[{text:'Подтвердить вход',callback_data:'cm_auth_yes_'+token},{text:'Отменить',callback_data:'cm_auth_no_'+token}]]}}).catch(()=>{});
       return;
     }
-    await sendTelegramStart(chatId).catch(console.error);
+    await sendTelegramStart(chatId, message).catch(console.error);
   }
 }
 
@@ -604,7 +569,7 @@ async function api(req, res, url) {
     if (req.method !== "GET") return methodNotAllowed(res);
     const admin = await requireAdmin(req, res, url);
     if (!admin) return;
-    return send(res, 200, await readAdminOverview());
+    return send(res, 200, await readAdminOverview(url.searchParams.get('days'), admin.adminExpiresAt));
   }
 
   if (path === '/api/threads/status') {

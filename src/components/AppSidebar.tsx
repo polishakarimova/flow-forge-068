@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/sidebar";
 import { TourButton, resetTour } from "@/components/OnboardingTour";
 import { useTour } from "@/App";
+import { useAuth } from '@/lib/authContext';
 
 const navItems = [
   { title: "Главная", url: "/home", icon: House },
@@ -39,6 +40,7 @@ const navItems = [
 ];
 
 export function AppSidebar() {
+  const { user } = useAuth();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
@@ -62,7 +64,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => {
+              {navItems.filter(item => item.url !== '/admin' || user?.isAdmin).map((item) => {
                 const active = location.pathname === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>

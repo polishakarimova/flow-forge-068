@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { authErrorMessage, safeAuthReturn } from './authNavigation';
 
-export interface User { id: string; name: string; email: string; avatar?: string; provider: 'email' | 'google' | 'telegram'; emailVerified: boolean }
+export interface User { id: string; name: string; email: string; avatar?: string; provider: 'email' | 'google' | 'telegram'; emailVerified: boolean; isAdmin?: boolean }
 type AuthResult = { success: boolean; message: string; botLink?: string };
 interface AuthState { user: User | null; isAuthenticated: boolean; isLoading: boolean }
 interface AuthContextValue extends AuthState {
@@ -11,8 +11,8 @@ interface AuthContextValue extends AuthState {
 }
 const AuthContext = createContext<AuthContextValue | null>(null);
 interface TelegramWindow extends Window { Telegram?: { WebApp?: { initData?: string; openTelegramLink?: (url: string) => void } } }
-interface ApiUser { id: string | number; name?: string; email?: string; avatar?: string; authProvider?: string }
-const mapUser = (user: ApiUser): User => ({ id: String(user.id), name: user.name || 'Пользователь', email: user.email || '', avatar: user.avatar, provider: 'telegram', emailVerified: true });
+interface ApiUser { id: string | number; name?: string; email?: string; avatar?: string; authProvider?: string; isAdmin?: boolean }
+const mapUser = (user: ApiUser): User => ({ id: String(user.id), name: user.name || 'Пользователь', email: user.email || '', avatar: user.avatar, provider: 'telegram', emailVerified: true, isAdmin: user.isAdmin === true });
 const pendingKey = 'contentmap_pending_login';
 type PendingLogin = { token: string; expiresAt: string; botLink: string };
 function clearPending() { try { sessionStorage.removeItem(pendingKey); } catch { /* optional */ } }
