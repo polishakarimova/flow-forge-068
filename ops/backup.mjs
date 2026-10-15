@@ -32,7 +32,11 @@ try{
   if(existsSync('/opt/flow-forge-068/.env.local')){writeFileSync(join(temp,'old-runtime.env'),readFileSync('/opt/flow-forge-068/.env.local'),{mode:0o600});configArgs.push('-C',temp,'old-runtime.env');}
   execFileSync('tar',configArgs,{stdio:'pipe'});
   execFileSync('tar',['-czf',join(temp,'code.tgz'),'--exclude=node_modules','--exclude=.git','--exclude=.env.local','-C',root,'.'],{stdio:'pipe',timeout:120000});
-  const tar=join(temp,'bundle.tgz');execFileSync('tar',['-czf',tar,'-C',temp,'database.dump','manifest.json','config.tgz','code.tgz']);
+  const operationalPaths=['opt/kartakontenta/operations','usr/local/bin/deploy-kartakontenta',
+   ...['kartakontenta.service','kartakontenta.service.d','kartakontenta-deploy.service','kartakontenta-deploy.timer','kartakontenta-backup.service','kartakontenta-backup.timer','kartakontenta-backup-verify.service','kartakontenta-backup-verify.timer','kartakontenta-health.service','kartakontenta-health.timer'].map(name=>'etc/systemd/system/'+name)].filter(path=>existsSync('/'+path));
+  const bundleFiles=['database.dump','manifest.json','config.tgz','code.tgz'];
+  if(operationalPaths.length){execFileSync('tar',['-czf',join(temp,'operations.tgz'),'-C','/',...operationalPaths],{stdio:'pipe',timeout:120000});bundleFiles.push('operations.tgz');}
+  const tar=join(temp,'bundle.tgz');execFileSync('tar',['-czf',tar,'-C',temp,...bundleFiles]);
   const iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',key,iv),encrypted=Buffer.concat([cipher.update(readFileSync(tar)),cipher.final()]);
   const payload=Buffer.concat([Buffer.from('KARTA01'),iv,cipher.getAuthTag(),encrypted]);
   const name='karta-'+new Date().toISOString().replace(/[:.]/g,'-')+'.aes',path=join(base,name);

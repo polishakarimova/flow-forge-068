@@ -1,0 +1,12 @@
+[Unit]
+Description=Check Karta Kontenta app and backups
+After=network-online.target
+[Service]
+Type=oneshot
+UMask=0077
+ExecStart=/usr/bin/node /opt/kartakontenta/operations/current/health.mjs --run
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/kartakontenta-health
