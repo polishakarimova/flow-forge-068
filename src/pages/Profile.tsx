@@ -109,6 +109,7 @@ function ProfileAccount() {
         </div>
       </section>
       <button type="button" className="flex items-center gap-3 min-h-12 w-full px-3 text-sm text-left hover:bg-muted/40 rounded-xl" onClick={() => { resetTour(); startTour(); }}><GraduationCap size={18} className="text-muted-foreground" /><span className="flex-1">Как пользоваться картой</span><ChevronRight size={15} className="text-muted-foreground" /></button>
+      <Link to="/legal" className="flex items-center gap-3 min-h-12 w-full px-3 text-sm hover:bg-muted/40 rounded-xl"><FileText size={18} className="text-muted-foreground" /><span className="flex-1">Документы и согласия</span><ChevronRight size={15} className="text-muted-foreground" /></Link>
       <Button variant="ghost" className="rounded-xl mt-2 text-muted-foreground min-h-11" disabled={busy} onClick={signOut}><LogOut size={16} />{busy ? 'Выходим…' : 'Выйти из аккаунта'}</Button>
       {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
     </div></main><MobileNav />

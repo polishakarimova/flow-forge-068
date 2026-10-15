@@ -26,6 +26,8 @@ import Login from "./pages/Login.tsx";
 import Admin from "./pages/Admin.tsx";
 import UserDashboard from './pages/UserDashboard';
 import NotFound from "./pages/NotFound.tsx";
+import {LegalProvider,useLegal} from './lib/legalContext';
+import {LegalEntry,LegalCentre} from './components/legal/LegalDocuments';
 
 const queryClient = new QueryClient();
 
@@ -86,19 +88,25 @@ function AppRoutes() {
   );
 }
 
+function AppWorkspace(){
+  const {isAuthenticated,isLoading}=useAuth(),{status,loading,error,refresh}=useLegal(),location=useLocation();
+  if(location.pathname==='/legal')return <LegalCentre />;
+  if(isAuthenticated){
+    if(loading)return <div role="status" className="p-6 text-sm text-muted-foreground">Загружаем документы…</div>;
+    if(error||!status)return <div role="alert" className="max-w-sm mx-auto p-6 space-y-4 text-sm"><p>{error||'Документы не загрузились.'}</p><button className="text-primary underline min-h-11" onClick={()=>void refresh()}>Повторить загрузку</button></div>;
+    if(!status.accepted)return <LegalEntry />;
+  }
+  if(isLoading)return <div role="status" className="p-6 text-sm text-muted-foreground">Проверяем вход…</div>;
+  return <DataStoreProvider><ContextProvider><EditorialProvider><BackNavigationProvider><AppRoutes /><MaterialCard /></BackNavigationProvider></EditorialProvider></ContextProvider></DataStoreProvider>;
+}
+function LegalSession(){const {user}=useAuth();return <LegalProvider key={user?.id||'guest'}><AppWorkspace /></LegalProvider>;}
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <AuthProvider>
-        <DataStoreProvider>
-          <ContextProvider>
-            <BrowserRouter basename="/">
-              <EditorialProvider><BackNavigationProvider><AppRoutes /><MaterialCard /></BackNavigationProvider></EditorialProvider>
-            </BrowserRouter>
-          </ContextProvider>
-        </DataStoreProvider>
+        <BrowserRouter basename="/"><LegalSession /></BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

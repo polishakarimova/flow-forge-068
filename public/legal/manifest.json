@@ -1,0 +1,33 @@
+{
+  "version": "2026-10-15",
+  "documents": [
+    {
+      "id": "terms",
+      "title": "Условия использования Карты контента",
+      "href": "/legal/2026-10-15/terms.html",
+      "pdf": "/legal/2026-10-15/terms.pdf",
+      "sha256": "868be37301be5465d3dc274f86671c6473d45e285c3ac05b34805c640db50b19"
+    },
+    {
+      "id": "privacy",
+      "title": "Политика обработки персональных данных Карты контента",
+      "href": "/legal/2026-10-15/privacy.html",
+      "pdf": "/legal/2026-10-15/privacy.pdf",
+      "sha256": "f6530ab4e6f2a7704caf136aface177c0317a41f861b08b6481214e718589939"
+    },
+    {
+      "id": "personal-data",
+      "title": "Согласие на обработку данных для рассылки Карты контента",
+      "href": "/legal/2026-10-15/personal-data.html",
+      "pdf": "/legal/2026-10-15/personal-data.pdf",
+      "sha256": "fee70b7b9c454d4a3041e4489e0b71c52c5c8604838f8d5fcceaa55fbbd71d36"
+    },
+    {
+      "id": "advertising",
+      "title": "Согласие на рекламные сообщения Карты контента",
+      "href": "/legal/2026-10-15/advertising.html",
+      "pdf": "/legal/2026-10-15/advertising.pdf",
+      "sha256": "b0c2049f80623fdf48c778bcc3ea49b4be45d7eb857a22ef4554a63306fce698"
+    }
+  ]
+}

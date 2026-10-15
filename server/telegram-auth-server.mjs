@@ -23,6 +23,7 @@ import {ensureReferralSchema, referralCode, referralStart, rememberReferralEntry
 import {readAdminOverview as readAdminMetrics} from './admin-overview.mjs';
 import {readUserDashboard} from './user-dashboard.mjs';
 import {adminEntry,adminKeyboard,isPrivateAdmin} from './admin-bot.mjs';
+import {ensureLegalSchema, requireLegal, legalApi} from './legal-consent.mjs';
 
 const root = new URL("../", import.meta.url);
 const distDir = fileURLToPath(new URL("../dist", import.meta.url));
@@ -136,6 +137,7 @@ async function requireAdmin(req, res, url) {
     return null;
   }
   if(!await authorizeAdmin(pgPool,session)){send(res,401,{error:'admin_reauthentication_required'});return null;}
+  try {await requireLegal(pgPool,user.id);} catch(error){send(res,error.status||503,{error:'legal_required',message:error.message});return null;}
   return { ...user, adminExpiresAt: session.admin_until ? new Date(session.admin_until).toISOString() : new Date(Date.now()+900000).toISOString() };
 }
 
@@ -211,6 +213,7 @@ function send(res, status, data, headers = {}) {
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
+  ".pdf": "application/pdf",
   ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".json": "application/json; charset=utf-8",
@@ -267,7 +270,8 @@ function methodNotAllowed(res) {
 
 async function requireUser(req, res) {
   const user = await getUserBySession(parseCookies(req)[cookieName]);
-  if (!user) send(res, 401, { error: "unauthorized" });
+  if (!user) {send(res, 401, { error: "unauthorized" });return null;}
+  try {await requireLegal(pgPool,user.id);} catch(error){send(res,error.status||503,{error:'legal_required',message:error.message});return null;}
   return user;
 }
 
@@ -471,6 +475,7 @@ async function handleTelegramUpdate(update) {
 }
 
 async function api(req, res, url) {
+  if(url.pathname==='/api/legal'||url.pathname.startsWith('/api/legal/'))return legalApi(req,res,{path:url.pathname,pool:pgPool,send,readBody:body,getUser:()=>getUserBySession(parseCookies(req)[cookieName])});
   if (url.pathname.startsWith('/api/agent/')) return agentApi(req,res,{path:url.pathname,pool:pgPool,send,requireUser,appUrl:APP_URL});
   if (url.pathname.startsWith('/api/internal/threads/')) {
     return handleRemoteRequest({ req, res, path: url.pathname, pool: pgPool, body, send, env: process.env });
@@ -488,8 +493,8 @@ async function api(req, res, url) {
 
   if (path === '/api/account/referral') {
     if (req.method !== 'GET') return methodNotAllowed(res);
-    const user = await getUserBySession(parseCookies(req)[cookieName]);
-    if (!user) return send(res, 401, { error: 'unauthorized' });
+    const user = await requireUser(req,res);
+    if (!user) return;
     return send(res, 200, await referralSummary(pgPool, user.id, APP_URL));
   }
 
@@ -729,10 +734,10 @@ async function setupTelegramBot() {
 
 let telegramPollingStarted = false;
 if(process.env.KARTA_SCHEMA_MODE==='runtime'){
-  const {rows}=await pgPool.query("select to_regclass(name) as present from unnest($1::text[]) as name",[['cm_user_state','cm_auth_sessions','cm_agent_connections','cm_agent_actions','cm_threads_queue','telegram_accounts','cm_referral_accounts','cm_referral_entries','cm_like_transactions']]);
+  const {rows}=await pgPool.query("select to_regclass(name) as present from unnest($1::text[]) as name",[['cm_user_state','cm_auth_sessions','cm_agent_connections','cm_agent_actions','cm_threads_queue','telegram_accounts','cm_referral_accounts','cm_referral_entries','cm_like_transactions','cm_legal_state','cm_legal_events']]);
   if(rows.some(row=>!row.present))throw Error('database_migration_required');
 }else{
-  await ensureBaseSchema(pgPool);await ensureThreadsSchema(pgPool);await ensureRemoteSchema(pgPool);await ensureAgentSchema(pgPool);await ensureSessionSchema(pgPool);await ensureReferralSchema(pgPool);
+  await ensureBaseSchema(pgPool);await ensureThreadsSchema(pgPool);await ensureRemoteSchema(pgPool);await ensureAgentSchema(pgPool);await ensureSessionSchema(pgPool);await ensureReferralSchema(pgPool);await ensureLegalSchema(pgPool);
 }
 setupTelegramBot().catch((error) => console.error("Telegram setup failed:", error));
 if (process.env.THREADS_AUTOPUBLISH_ENABLED === '1' && process.env.THREADS_REMOTE_ENABLED !== '1') {
