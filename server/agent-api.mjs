@@ -2,7 +2,6 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
 import { agentTools, registerAgentTools } from './agent-tools.mjs';
 import { applyAgentCommand } from './agent-workspace.mjs';
 import { readWorkspace, updateWorkspace } from './content-workspace.mjs';
@@ -148,7 +147,7 @@ export async function agentApi(req,res,{path,pool,send,requireUser,appUrl}) {
     const agent=await authenticateAgent(pool,req);
     await requireLegal(pool,agent.user_id);
     if(path==='/api/agent/me'&&req.method==='GET')return send(res,200,{agent:publicConnection(agent)});
-    if(path==='/api/agent/tools'&&req.method==='GET')return send(res,200,{tools:Object.entries(agentTools).filter(([,t])=>agent.scopes.includes(t.scope)).map(([name,t])=>({name,description:t.description,inputSchema:zodToJsonSchema(t.schema,{$refStrategy:'none'})}))});
+    if(path==='/api/agent/tools'&&req.method==='GET')return send(res,200,{tools:Object.entries(agentTools).filter(([,t])=>agent.scopes.includes(t.scope)).map(([name,t])=>({name,description:t.description,inputSchema:z.toJSONSchema(t.schema,{target:'draft-7',io:'input'})}))});
     if(path==='/api/agent/actions'&&req.method==='POST'){const input=await limitedBody(req);return send(res,200,await executeAgentTool(pool,agent,input.name,input.arguments||{}));}
     if(path==='/api/agent/mcp'){
       if(req.method!=='POST')return send(res,405,{message:'Streamable HTTP: используйте POST.'},{Allow:'POST'});

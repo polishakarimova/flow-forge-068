@@ -70,8 +70,7 @@
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",
     "vaul": "^0.9.9",
-    "zod": "^3.25.76",
-    "zod-to-json-schema": "3.25.2"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.9",
@@ -101,6 +100,9 @@
     "vitest": "^5.0.4"
   },
   "overrides": {
-    "deepmerge-ts": "8.0.2"
+    "deepmerge-ts": "8.0.2",
+    "@prisma/config": {
+      "effect": "3.22.1"
+    }
   }
 }
