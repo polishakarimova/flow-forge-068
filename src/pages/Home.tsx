@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useCardNavigation } from '@/lib/editorialNavigation';
 import { useEditorial } from '@/lib/editorialContext';
 import { todayKey, materialAction, formatLabel } from '@/lib/editorial';
 import { WeeklyFocus } from '@/components/content/WeeklyFocus';
@@ -12,7 +13,6 @@ import { usePublicationOverview } from '@/hooks/usePublicationOverview';
 import { dayKey, type Publication } from '@/lib/publications';
 
 function publicationLink(item: Publication) {
-  if(item.contentItemId)return `/home?material=${item.contentItemId}`;
   return `/calendar?${new URLSearchParams({ date: item.date, item: item.id })}`;
 }
 
@@ -24,6 +24,7 @@ export default function Home() {
 function HomeWorkspace({ userId, name }: { userId: string; name: string }) {
   const overview = usePublicationOverview(userId);
   const editorial=useEditorial();
+  const cards=useCardNavigation();
   const today = todayKey();
   const materials=editorial.data?.main.topics?.flatMap(t=>t.contentItems)||[];
   const todayItems = (overview.hasDraft?overview.data.items:editorial.data?.publications.items||overview.data.items).filter(item => item.date === today);
@@ -60,16 +61,16 @@ function HomeWorkspace({ userId, name }: { userId: string; name: string }) {
           {overview.status === 'loading' && <p role="status" className="text-sm text-muted-foreground py-4">Загружаем публикации…</p>}
           {overview.status === 'error' && <p role="alert" className="text-sm text-muted-foreground py-3">Не удалось загрузить обзор. <Link to="/calendar" className="text-primary underline">Открыть календарь</Link></p>}
           {overview.status === 'ready' && <>
-            {todayItems.length ? <div className="border border-border rounded-2xl bg-card divide-y divide-border overflow-hidden">{todayItems.slice(0, 3).map(item => <Link key={item.id} to={publicationLink(item)} className="flex gap-3 items-center px-3 py-3 min-h-14 hover:bg-muted/50 transition-colors">
+            {todayItems.length ? <div className="border border-border rounded-2xl bg-card divide-y divide-border overflow-hidden">{todayItems.slice(0, 3).map(item => <Link key={item.id} {...(item.contentItemId ? cards.link({material:item.contentItemId}) : {to:publicationLink(item)})} className="flex gap-3 items-center px-3 py-3 min-h-14 hover:bg-muted/50 transition-colors">
               <FileText size={18} className="shrink-0 text-primary" /><span className="min-w-0 flex-1"><strong className="block text-sm font-medium">{item.format}</strong><span className="block text-xs text-muted-foreground break-words">{item.title}</span>{item.contentItemId&&!item.parts.every(p=>p.published)&&<span className="block text-xs text-primary mt-1">{(()=>{const m=materials.find(m=>m.id===item.contentItemId);return m?materialAction(editorial.data,m):"Открыть сценарий";})()}</span>}{item.parts.every(part => part.published) && <span className="text-[11px] text-muted-foreground">Опубликовано</span>}</span><ChevronRight size={16} className="shrink-0 text-muted-foreground" />
             </Link>)}</div> : <div className="border border-border bg-card rounded-2xl px-4 py-4"><p className="text-sm">На сегодня публикаций нет</p><p className="text-xs text-muted-foreground mt-1">Выбери день в календаре или добавь публикацию.</p></div>}
             {todayItems.length>3&&<Link className="block text-sm text-primary py-3" to={dayLink}>Ещё {todayItems.length-3} публикаций на сегодня →</Link>}
-            {pendingSlots.map(s=><Link key={s.id} className="ed-row bg-card border rounded-xl mt-2" to={'/home?slot='+s.id+'&material='+(s.recommendedId||s.variantIds[0])}><span>{s.title}<small>{formatLabel(materials.find(m=>m.id===s.variantIds[0])?.platformId||'reels')} · Выбрать сценарий</small></span></Link>)}
+            {pendingSlots.map(s=><Link key={s.id} className="ed-row bg-card border rounded-xl mt-2" {...cards.link({slot:s.id,material:s.recommendedId||s.variantIds[0]})}><span>{s.title}<small>{formatLabel(materials.find(m=>m.id===s.variantIds[0])?.platformId||'reels')} · Выбрать сценарий</small></span></Link>)}
             {overview.hasDraft && <p className="mt-2 text-xs text-muted-foreground">Есть правки на этом устройстве. Проверь сохранение в календаре.</p>}
           </>}
         </section>
         <div className="grid grid-cols-2 gap-2 mt-3 mb-5">
-          <Link to="/content?action=idea" className="flex items-center justify-center gap-2 min-h-11 px-2 border border-border bg-card rounded-xl text-xs hover:bg-muted/50"><Lightbulb size={16} />Записать идею</Link>
+          <Link {...cards.link({action:'idea'})} className="flex items-center justify-center gap-2 min-h-11 px-2 border border-border bg-card rounded-xl text-xs hover:bg-muted/50"><Lightbulb size={16} />Записать идею</Link>
           <Link to={`/calendar?date=${today}&action=add`} className="flex items-center justify-center gap-2 min-h-11 px-2 border border-border bg-card rounded-xl text-xs hover:bg-muted/50"><Plus size={16} />Публикация</Link>
         </div>
         <section aria-labelledby="home-foundation">
