@@ -35,8 +35,8 @@ export function requestProtection({appUrl,clock=Date.now,trustProxy=false}){
   if(!['GET','HEAD','OPTIONS','DELETE'].includes(req.method)&&String(req.headers['content-type']||'').split(';')[0].trim().toLowerCase()!=='application/json')return bad('application_json_required',415);
   if(Number(req.headers['content-length'])>2_000_000)return bad('request_too_large',413);
   if(service||webhook)return null;
-  const category=/^\/api\/auth\/(?:telegram-login-token|telegram\/start)$/.test(url.pathname)&&req.method==='POST'?'login-start':url.pathname.startsWith('/api/auth/')?'auth':url.pathname.startsWith('/api/admin/')?'admin':mutates?'write':'read';
-  const limit=category==='login-start'?10:category==='auth'?120:category==='admin'?60:category==='write'?240:600;
+  const category=url.pathname==='/api/diagnostics/client'?'diagnostics':/^\/api\/auth\/(?:telegram-login-token|telegram\/start)$/.test(url.pathname)&&req.method==='POST'?'login-start':url.pathname.startsWith('/api/auth/')?'auth':url.pathname.startsWith('/api/admin/')?'admin':mutates?'write':'read';
+  const limit=category==='diagnostics'?6:category==='login-start'?10:category==='auth'?120:category==='admin'?60:category==='write'?240:600;
   const remote=req.socket?.remoteAddress||'local',local=['127.0.0.1','::1','::ffff:127.0.0.1'].includes(remote);
   const ip=trustProxy&&local?String(req.headers['x-real-ip']||remote):remote;
   const key=category+':'+ip.slice(0,100),now=clock();

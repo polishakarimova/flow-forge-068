@@ -22,7 +22,8 @@ import {prismaDatabaseUrl} from './database-urls.mjs';
 import {ensureReferralSchema, referralCode, referralStart, rememberReferralEntry, completeReferralAuthorization, referralSummary} from './referrals.mjs';
 import {readAdminOverview as readAdminMetrics} from './admin-overview.mjs';
 import {readUserDashboard} from './user-dashboard.mjs';
-import {adminEntry,adminKeyboard,isPrivateAdmin} from './admin-bot.mjs';
+import { ensureOwnerCommand,adminEntry,adminKeyboard,isPrivateAdmin} from './admin-bot.mjs';
+import {ensureNoticeSchema,firstAuthorization,recordFault,readNotices,deliverNotice,noticeRecipient} from './admin-notices.mjs';
 import {ensureLegalSchema, requireLegal, legalApi} from './legal-consent.mjs';
 
 const root = new URL("../", import.meta.url);
@@ -83,6 +84,8 @@ function createPgPool() {
 }
 
 const pgPool = createPgPool();
+const noticeOwner = noticeRecipient(process.env);
+const backgroundFault = reason => recordFault(pgPool,{kind:'worker',reason}).catch(()=>console.error('Cannot record background incident'));
 const prisma = new PrismaClient();
 
 function uid(bytes = 16) {
@@ -284,7 +287,7 @@ async function telegramApi(method, payload = {}) {
     signal: AbortSignal.timeout(method === "getUpdates" ? 40000 : 15000),
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok || data.ok === false) throw new Error(data.description || `telegram_${method}_failed`);
+  if (!response.ok || data.ok === false) throw Object.assign(new Error(data.description || `telegram_${method}_failed`), {retryAfter:data.parameters?.retry_after});
   return data.result;
 }
 
@@ -452,7 +455,7 @@ async function handleTelegramUpdate(update) {
 }
 
 async function api(req, res, url) {
-  if(url.pathname==='/api/legal'||url.pathname.startsWith('/api/legal/'))return legalApi(req,res,{path:url.pathname,pool:pgPool,send,readBody:body,getUser:()=>getUserBySession(parseCookies(req)[cookieName])});
+  if(url.pathname==='/api/legal'||url.pathname.startsWith('/api/legal/'))return legalApi(req,res,{path:url.pathname,pool:pgPool,send,readBody:body,onFirstAccept:firstAuthorization,getUser:()=>getUserBySession(parseCookies(req)[cookieName])});
   if (url.pathname.startsWith('/api/agent/')) return agentApi(req,res,{path:url.pathname,pool:pgPool,send,requireUser,appUrl:APP_URL});
   if (url.pathname.startsWith('/api/internal/threads/')) {
     return handleRemoteRequest({ req, res, path: url.pathname, pool: pgPool, body, send, env: process.env });
@@ -590,6 +593,22 @@ async function api(req, res, url) {
     return send(res, 200, { ok: true, webhook });
   }
 
+  if (path === '/api/diagnostics/client') {
+    if (req.method !== 'POST') return methodNotAllowed(res);
+    const report = await readJsonBody(req,1024);
+    if (!report || !['Error','TypeError','ReferenceError','RangeError','SyntaxError','ChunkLoadError','network'].includes(report.reason)) return send(res,400,{error:'invalid_report'});
+    const session = await readSession(pgPool,parseCookies(req)[cookieName],SESSION_SECRET);
+    await recordFault(pgPool,{kind:'client',userId:session?.user_id,path:report.page,reason:report.reason,sourceLine:report.sourceLine});
+    return send(res,202,{ok:true});
+  }
+  if (path === '/api/admin/notices') {
+    if (req.method !== 'GET') return methodNotAllowed(res);
+    if (!await requireAdmin(req,res,url)) return;
+    const id=url.searchParams.get('event');
+    if (id && !/^[a-f0-9-]{36}$/.test(id)) return send(res,400,{error:'invalid_event'});
+    return send(res,200,{configured:Boolean(noticeOwner),items:await readNotices(pgPool,id)});
+  }
+
   if (path === "/api/admin/overview") {
     if (req.method !== "GET") return methodNotAllowed(res);
     const admin = await requireAdmin(req, res, url);
@@ -706,7 +725,7 @@ async function setupTelegramBot() {
     if (!telegramPollingStarted) {
       telegramPollingStarted = true;
       console.log("Telegram update delivery: polling");
-      void pollTelegramUpdates({ api: telegramApi, handleUpdate: handleTelegramUpdate });
+      void pollTelegramUpdates({ api: telegramApi, handleUpdate: handleTelegramUpdate, onError:()=>{console.error('Telegram polling failed');void backgroundFault('telegram_updates');} });
     }
   } else await telegramApi("setWebhook", {
     url: `${APP_URL}/api/telegram/webhook`,
@@ -724,19 +743,38 @@ async function setupTelegramBot() {
 
 let telegramPollingStarted = false;
 if(process.env.KARTA_SCHEMA_MODE==='runtime'){
-  const {rows}=await pgPool.query("select to_regclass(name) as present from unnest($1::text[]) as name",[['cm_user_state','cm_auth_sessions','cm_agent_connections','cm_agent_actions','cm_threads_queue','telegram_accounts','cm_referral_accounts','cm_referral_entries','cm_like_transactions','cm_legal_state','cm_legal_events']]);
+  const {rows}=await pgPool.query("select to_regclass(name) as present from unnest($1::text[]) as name",[['cm_admin_notices','cm_user_state','cm_auth_sessions','cm_agent_connections','cm_agent_actions','cm_threads_queue','telegram_accounts','cm_referral_accounts','cm_referral_entries','cm_like_transactions','cm_legal_state','cm_legal_events']]);
   if(rows.some(row=>!row.present))throw Error('database_migration_required');
 }else{
-  await ensureBaseSchema(pgPool);await ensureThreadsSchema(pgPool);await ensureRemoteSchema(pgPool);await ensureAgentSchema(pgPool);await ensureSessionSchema(pgPool);await ensureReferralSchema(pgPool);await ensureLegalSchema(pgPool);
+  await ensureBaseSchema(pgPool);await ensureThreadsSchema(pgPool);await ensureRemoteSchema(pgPool);await ensureAgentSchema(pgPool);await ensureSessionSchema(pgPool);await ensureReferralSchema(pgPool);await ensureLegalSchema(pgPool);await ensureNoticeSchema(pgPool);
 }
-setupTelegramBot().catch((error) => console.error("Telegram setup failed:", error));
+setupTelegramBot().then(()=>ensureOwnerCommand(telegramApi,noticeOwner)).catch(()=>{console.error('Telegram setup failed');void backgroundFault('telegram_setup');});
+if (noticeOwner && TELEGRAM_BOT_TOKEN) {
+  let delivering = false, nextCleanup = 0;
+  const tick = async () => {
+    if (delivering) return;
+    delivering = true;
+    try {
+      if (Date.now() >= nextCleanup) {
+        await pgPool.query("delete from cm_admin_notices where last_at<now()-interval '90 days'");
+        nextCleanup=Date.now()+86400000;
+      }
+      for (let sent=0;sent<3;sent++) {
+        if (!await deliverNotice(pgPool,noticeOwner,APP_URL,telegramApi)) break;
+      }
+    } catch { console.error('Admin notice delivery pending'); }
+    finally { delivering=false; }
+  };
+  setInterval(tick,10000).unref();
+  void tick();
+}
 if (process.env.THREADS_AUTOPUBLISH_ENABLED === '1' && process.env.THREADS_REMOTE_ENABLED !== '1') {
   let threadsTickRunning = false;
   const tick = async () => {
     if (threadsTickRunning) return;
     threadsTickRunning = true;
     try { const result = await runThreadsScheduler(pgPool, THREADS_TOKEN_SECRET); if (result) console.log('Threads scheduler', result); }
-    catch (error) { console.error('Threads scheduler failed', { message: error.message }); }
+    catch { console.error('Threads scheduler failed');void backgroundFault('threads_scheduler'); }
     finally { threadsTickRunning = false; }
   };
   setInterval(() => void tick(), 20_000).unref();
@@ -745,12 +783,22 @@ if (process.env.THREADS_AUTOPUBLISH_ENABLED === '1' && process.env.THREADS_REMOT
 
 const protect=requestProtection({appUrl:APP_URL,trustProxy:true});
 createServer(async (req, res) => {
+  let failureKind='api', failureReason='request_failed';
+  res.once('finish',()=>{
+    const path=(req.url||'/').split('?')[0];
+    if(res.statusCode<500 || !path.startsWith('/api/') || ['/api/health','/api/diagnostics/client','/api/telegram/webhook','/api/auth/telegram/webhook'].includes(path)) return;
+    void (async()=>{
+      const session=await readSession(pgPool,parseCookies(req)[cookieName],SESSION_SECRET);
+      await recordFault(pgPool,{kind:failureKind,reason:failureReason,path,method:req.method,status:res.statusCode,userId:session?.user_id});
+    })().catch(()=>console.error('Cannot record request incident'));
+  });
   try {
     const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
     const rejection=protect(req,res,url);if(rejection)return send(res,rejection.status,{error:rejection.error});
     if (url.pathname.startsWith("/api/")) return await api(req, res, url);
     return await serveStatic(req, res, url);
   } catch (error) {
+    failureKind='server';failureReason=error.name;
     console.error('Request failed',{name:error.name,code:error.code||'request_error'});
     return send(res,error.status||500,{error:error.status?error.message:'server_error'});
   }

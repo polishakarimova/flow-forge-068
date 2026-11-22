@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
+import { startClientDiagnostics } from "./lib/clientDiagnostics";
 import "./index.css";
 import "./telegram-viewport.css";
 import { setupTelegramViewport, type TelegramViewport } from './lib/telegramViewport';
@@ -10,6 +11,9 @@ if (sessionStorage.redirect) {
   delete sessionStorage.redirect;
   history.replaceState(null, '', redirect);
 }
+
+const stopDiagnostics = startClientDiagnostics();
+if (import.meta.hot) import.meta.hot.dispose(stopDiagnostics);
 
 createRoot(document.getElementById("root")!).render(<App />);
 const telegram = (window as Window & { Telegram?: { WebApp?: TelegramViewport } }).Telegram;

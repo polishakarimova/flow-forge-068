@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Activity, AlertCircle, Bot, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, FileText, GitBranch, Loader2, Package, RefreshCw, Search, ShieldCheck, Users, X } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { AdminNotices } from '@/components/AdminNotices';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppBackButton } from '@/components/AppBackButton';
@@ -70,7 +71,8 @@ export default function Admin() {
   const { signInMiniApp } = useAuth(), navigate = useNavigate();
   const attemptedTelegram = useRef(false);
   const [data, setData] = useState<AdminOverview | null>(null), [days, setDays] = useState(30), [refresh, setRefresh] = useState(0);
-  const [tab, setTab] = useState('overview'), [error, setError] = useState(''), [loading, setLoading] = useState(true), [authBusy, setAuthBusy] = useState(false);
+  const eventId = new URLSearchParams(window.location.search).get('event');
+  const [tab, setTab] = useState(eventId?'notices':'overview'), [error, setError] = useState(''), [loading, setLoading] = useState(true), [authBusy, setAuthBusy] = useState(false);
   useEffect(() => {
     try { localStorage.removeItem('contentmap_admin_token'); } catch { /* optional storage */ }
     const url = new URL(window.location.href);
@@ -118,15 +120,15 @@ export default function Admin() {
     try {
       const app = (window as Window & { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp;
       if (app?.initData) { await signInMiniApp(); setRefresh(v => v + 1); }
-      else navigate('/login?returnTo=%2Fadmin&reauth=1', { replace: true });
+      else navigate('/login?returnTo='+encodeURIComponent('/admin'+(eventId?'?event='+encodeURIComponent(eventId):''))+'&reauth=1', { replace: true });
     } catch { setError('Не удалось подтвердить вход. Повторите попытку.'); } finally { setAuthBusy(false); }
   };
   const attention = data ? ['uncertain', 'blocked', 'missed', 'stale', 'failed'].reduce((n, key) => n + (data.publishing.queue[key] || 0), 0) : 0;
   return <SidebarProvider><div className="flex min-h-screen w-full bg-background"><div className="hidden md:block"><AppSidebar /></div><div className="flex min-w-0 flex-1 flex-col"><header className="surface-glass sticky top-0 z-40 border-b border-border"><div className="mx-auto flex h-14 max-w-[1440px] items-center justify-between gap-2 px-4 md:px-6"><div className="flex min-w-0 items-center gap-2"><SidebarTrigger className="hidden md:flex" /><AppBackButton /><ShieldCheck className="h-4 w-4 shrink-0 text-primary" /><h1 className="kk-page-title truncate text-[15px] font-semibold">Админ-панель</h1></div><button className={button} onClick={() => setRefresh(v => v + 1)} disabled={loading} aria-label="Обновить показатели"><RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} /><span className="hidden sm:inline">Обновить</span></button></div></header>
     <main className="mx-auto w-full max-w-[1440px] space-y-4 px-4 py-5 pb-24 md:px-6 md:pb-8"><div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-lg font-semibold tracking-tight">Как растёт Карта контента</h2><p className="mt-1 text-xs text-muted-foreground">{data ? `Обновлено ${adminDate(data.generatedAt, true)} · Калининград` : 'Пользователи, контент и состояние сервиса'}</p></div><select aria-label="Период показателей" className="h-10 rounded-xl border border-border bg-card px-3 text-xs" value={days} onChange={e => setDays(Number(e.target.value))}><option value={7}>Последние 7 дней</option><option value={30}>Последние 30 дней</option><option value={90}>Последние 90 дней</option></select></div>
-      <nav aria-label="Разделы админ-панели" className="grid grid-cols-3 gap-1 rounded-xl border border-border bg-muted/40 p-1 sm:inline-flex">{[['overview', 'Обзор'], ['users', 'Пользователи'], ['system', 'Система']].map(([key, label]) => <button key={key} aria-current={tab === key ? 'page' : undefined} className={`min-h-10 rounded-lg px-2 text-xs font-medium transition-colors sm:px-5 ${tab === key ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`} onClick={() => setTab(key)}>{label}</button>)}</nav>
+      <nav aria-label="Разделы админ-панели" className="grid grid-cols-2 gap-1 rounded-xl border border-border bg-muted/40 p-1 sm:inline-flex">{[['overview', 'Обзор'], ['users', 'Пользователи'], ['system', 'Система'],['notices','Уведомления']].map(([key, label]) => <button key={key} aria-current={tab === key ? 'page' : undefined} className={`min-h-10 rounded-lg px-2 text-xs font-medium transition-colors sm:px-5 ${tab === key ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`} onClick={() => setTab(key)}>{label}</button>)}</nav>
       {loading && <div role="status" className="flex items-center justify-center py-20 text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Загружаю показатели</div>}
       {!loading && error && <div role="alert" className={panel}><div className="flex gap-3"><AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" /><div><h2 className="text-sm font-semibold">Показатели недоступны</h2><p className="mt-2 text-xs leading-relaxed text-muted-foreground">{error}</p></div></div><div className="mt-4 flex flex-wrap gap-2"><button className={button} onClick={() => void authenticate()} disabled={authBusy}>{authBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Подтвердить вход в Telegram</button><button className={button} onClick={() => setRefresh(v => v + 1)}>Повторить загрузку</button></div></div>}
-      {!loading && data && <>{attention > 0 && <button onClick={() => setTab('system')} className="flex w-full items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-left text-xs text-amber-900"><AlertCircle className="h-4 w-4 shrink-0" /><span>Нужна проверка заданий отправки: {num(attention)}</span><ChevronRight className="ml-auto h-4 w-4 shrink-0" /></button>}{tab === 'overview' ? <Overview data={data} /> : tab === 'users' ? <UserList data={data} /> : <System data={data} />}</>}
+      {!loading && data && <>{attention > 0 && <button onClick={() => setTab('system')} className="flex w-full items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-left text-xs text-amber-900"><AlertCircle className="h-4 w-4 shrink-0" /><span>Нужна проверка заданий отправки: {num(attention)}</span><ChevronRight className="ml-auto h-4 w-4 shrink-0" /></button>}{tab === 'overview' ? <Overview data={data} /> : tab === 'users' ? <UserList data={data} /> : tab==='notices' ? <AdminNotices eventId={eventId} /> : <System data={data} />}</>}
     </main></div><MobileNav /></div></SidebarProvider>;
 }

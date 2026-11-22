@@ -14,3 +14,13 @@ export function adminEntry(message, adminIds, appUrl) {
   return { chat_id: message.chat.id, text: allowed ? 'Админ-панель Карты контента. Откройте показатели кнопкой ниже.' : 'Для этого Telegram-аккаунта доступ администратора не выдан.',
     ...(allowed ? { reply_markup: { inline_keyboard: [[{ text: 'Admin панель', web_app: { url: appUrl.replace(/\/$/, '') + '/admin' } }]] } } : {}) };
 }
+
+export async function ensureOwnerCommand(api, ownerId) {
+  if (!ownerId) return;
+  const scope={type:'chat',chat_id:ownerId};
+  const personal=await api('getMyCommands',{scope});
+  if (personal.some(command=>command.command==='admin')) return;
+  const base=personal.length?personal:await api('getMyCommands',{scope:{type:'default'}});
+  const commands=base.filter(command=>command.command!=='admin');
+  await api('setMyCommands',{scope,commands:[...commands,{command:'admin',description:'Открыть админ-панель Карты контента'}]});
+}

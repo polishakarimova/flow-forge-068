@@ -30,7 +30,7 @@ export default function Welcome() {
   const { isAuthenticated, signInMiniApp, confirmBrowserLogin, entryError } = useAuth();
   const [pending, setPending] = useState(() => initialPending(params.get('telegramLoginToken')));
   const returnTo = safeAuthReturn(params.get('returnTo') || pending?.returnTo);
-  const reauthenticate = returnTo === '/admin' && params.get('reauth') === '1';
+  const reauthenticate = returnTo.split('?')[0] === '/admin' && params.get('reauth') === '1';
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const starting = useRef(false);

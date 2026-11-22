@@ -4,7 +4,7 @@ import {createHash} from 'node:crypto';
 const edition = '2026-11-22';
 const copies = new Map([
   ['terms', {fileId: '1mQdv30uZ3PebzjH7bVb5KeuEjAE01uq9jKXiDXwbxBE', digest: '9b4450b73ea6d1d4db45de6e5cfd370de1ce75c764338350b038b81f512a72c7'}],
-  ['privacy', {fileId: '1QT8LiW7AdWoyLLsLUDj4Tt7CgIIaTUteLSUMB6VeK50', digest: '165938c1ab2cbd4cca7671b4c1a58d5b1e4fb1c47a1436ecbe6c9eeed2353dc0'}],
+  ['privacy', {fileId: '1QT8LiW7AdWoyLLsLUDj4Tt7CgIIaTUteLSUMB6VeK50', digest: '1e0b8b3c7812891ec9da71701b8d55b18bc0d4d3793d6926bae6649cbfad7363'}],
   ['personal-data', {fileId: '1HqqXqL-CaLECkdQyv_jhyT2131eK0N9JY_r2j8n849A', digest: 'a3bfbaad405de857c23805e9fc1cd868dfea2a978585caf7d63c3a98bcc2a2e8'}],
   ['advertising', {fileId: '19tqlHACHxKbqJDqfvt-aGrNFS_xtnHZY2CwSAsVGxAE', digest: 'cfa0d48938bef5ec57a499ac180f4cd29dbb20236e2883b66904207f9f3df5df'}],
 ]);

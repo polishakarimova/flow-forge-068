@@ -4,7 +4,8 @@ After=network-online.target
 [Service]
 Type=oneshot
 UMask=0077
-ExecStart=/usr/bin/node /opt/kartakontenta/operations/current/health.mjs --run
+EnvironmentFile=/etc/kartakontenta/runtime.env
+ExecStart=/usr/bin/node /opt/kartakontenta/current/ops/health.mjs --run
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true

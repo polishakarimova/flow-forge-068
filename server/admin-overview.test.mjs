@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {ensureNoticeSchema,firstAuthorization,recordFault,readNotices,deliverNotice,noticeRecipient} from './admin-notices.mjs';
+import {ensureLegalSchema,saveLegalChoice,legalManifest} from './legal-consent.mjs';
+import {notifyHealth} from '../ops/health.mjs';
 import { PGlite } from '@electric-sql/pglite';
 import { buildAdminOverview, readAdminOverview } from './admin-overview.mjs';
 import { summarizeWorkspace } from './workspace-summary.mjs';
@@ -79,4 +82,51 @@ test('failed snapshot rolls back and releases its connection', async () => {
   const calls = []; let released = false;
   await assert.rejects(readAdminOverview({ connect: async () => ({ query: async sql => { calls.push(sql); if (sql.startsWith('select')) throw Error('unavailable'); }, release() { released = true; } }) }), /unavailable/);
   assert.ok(calls.includes('rollback')); assert.equal(released, true);
+});
+
+test('first accepted login and fault groups reach only the configured owner and survive a failed delivery', async () => {
+  assert.equal(noticeRecipient({ADMIN_TELEGRAM_IDS:'11,22'}),'');
+  assert.equal(noticeRecipient({ADMIN_TELEGRAM_IDS:'11',ADMIN_NOTICE_TELEGRAM_ID:'22'}),'');
+  assert.equal(noticeRecipient({ADMIN_TELEGRAM_IDS:'11'}),'11');
+  const db=new PGlite();
+  const query=async(sql,args)=>args?db.query(sql,args):(await db.exec(sql)).at(-1);
+  const pool={query,connect:async()=>({query,release(){}})};
+  try {
+    await ensureNoticeSchema(pool);await ensureLegalSchema(pool);
+    await db.exec(`create table users(id text primary key,"displayName" text);
+      create table telegram_accounts(id text,"userId" text,"telegramId" text,username text,"createdAt" timestamptz);
+      create table cm_like_transactions(user_id text,invited_user_id text);
+      insert into users values('author','Автор'),('friend','Друг');
+      insert into telegram_accounts values('t','author','123','author',now());
+      insert into cm_like_transactions values('friend','author');`);
+    const choice={version:legalManifest.version,manifestHash:legalManifest.manifestHash,terms:true,personalData:false,advertising:false};
+    const opt={onFirstAccept:firstAuthorization};
+    assert.equal((await readNotices(pool)).length,0);
+    await saveLegalChoice(pool,'author',choice,opt);await saveLegalChoice(pool,'author',choice,opt);
+    const future={...legalManifest,manifestHash:'new-edition'};
+    await saveLegalChoice(pool,'author',{...choice,manifestHash:future.manifestHash},{...opt,manifest:future});
+    const faults={kind:'api',path:'/api/auth/start?token=private-value',method:'POST',status:503,reason:'private-value'};
+    await recordFault(pool,faults,600000);await recordFault(pool,faults,601000);
+    let rows=await readNotices(pool);
+    assert.equal(rows.length,2);assert.equal(rows.find(r=>r.kind==='api').occurrences,2);
+    assert.equal(rows.find(r=>r.kind==='authorized').inviter,'Друг');
+    assert.ok(!JSON.stringify(rows).includes('private-value'));
+    await assert.rejects(deliverNotice(pool,'11','https://example.invalid',async()=>{throw Error('transport unavailable');}));
+    await db.exec("update cm_admin_notices set next_at=now()");
+    const sent=[];
+    while(await deliverNotice(pool,'11','https://example.invalid',async(method,payload)=>{sent.push(payload);})){}
+    assert.equal(sent.length,2);
+    assert.ok(sent.every(x=>x.chat_id==='11'&&x.reply_markup.inline_keyboard[0][0].web_app.url.startsWith('https://example.invalid/admin?event=')));
+    assert.ok(sent.some(x=>x.text.includes('Telegram ID 123')));assert.ok(!JSON.stringify(sent).includes('private-value'));
+    assert.ok((await readNotices(pool)).every(r=>r.delivered_at));
+  } finally {await db.close();}
+});
+
+test('system monitoring sends one alert then a recovery and retries failed notifications',async()=>{
+  const texts=[];const send=async text=>{texts.push(text);};
+  const reported=await notifyHealth(['app_down'],[],send);
+  await notifyHealth(['app_down'],reported,send);
+  assert.deepEqual(await notifyHealth([],reported,send),[]);
+  assert.equal(texts.length,2);assert.match(texts[1],/Устранено/);
+  await assert.rejects(notifyHealth(['app_down'],[],async()=>{throw Error('delivery failed');}));
 });

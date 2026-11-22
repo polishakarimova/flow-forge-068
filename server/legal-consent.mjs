@@ -52,7 +52,7 @@ export function validateLegalChoice(input,manifest=legalManifest) {
   return {terms:true,personalData:input.personalData,advertising:input.advertising};
 }
 
-export async function saveLegalChoice(pool,userId,input,{action='accept',manifest=legalManifest}={}) {
+export async function saveLegalChoice(pool,userId,input,{action='accept',manifest=legalManifest,onFirstAccept}={}) {
   // Identity comes only from the verified session, never from the submitted form.
   const choice=action==='withdraw'?null:validateLegalChoice(input,manifest);
   const client=await pool.connect();
@@ -79,6 +79,7 @@ export async function saveLegalChoice(pool,userId,input,{action='accept',manifes
       version=excluded.version,manifest_hash=excluded.manifest_hash,terms=excluded.terms,personal_data=excluded.personal_data,
       advertising=excluded.advertising,accepted_at=excluded.accepted_at,updated_at=excluded.updated_at,sequence=excluded.sequence`,
       [userId,next.version,next.manifest_hash,next.terms,next.personal_data,next.advertising,acceptedAt,at,sequence]);
+    if (!previous && action==='accept' && onFirstAccept) await onFirstAccept(client,userId);
     await client.query('commit');return legalStatus({...next,accepted_at:acceptedAt,updated_at:at},manifest);
   } catch(error) {await client.query('rollback');throw error;} finally {client.release();}
 }
@@ -90,7 +91,7 @@ export async function canSendMarketing(pool,userId) {
   return isLegalCurrent(state)&&state.personal_data===true&&state.advertising===true;
 }
 
-export async function legalApi(req,res,{path,pool,send,readBody,getUser}) {
+export async function legalApi(req,res,{path,pool,send,readBody,getUser,onFirstAccept}) {
   if (path.startsWith('/api/legal/source/') && req.method === 'GET') {
     const document = legalManifest.documents.find(doc => path === '/api/legal/source/'+legalManifest.version+'/'+doc.id);
     if (!document) return send(res,404,{message:'Редакция документа не найдена.'});
@@ -106,6 +107,6 @@ export async function legalApi(req,res,{path,pool,send,readBody,getUser}) {
   try {
     const action=path.split('/').at(-1);
     const input=await readBody(req);
-    return send(res,200,await saveLegalChoice(pool,user.id,input,{action}));
+    return send(res,200,await saveLegalChoice(pool,user.id,input,{action,onFirstAccept}));
   }catch(error){return send(res,error.status||503,{message:error.status?error.message:'Не удалось сохранить выбор. Попробуйте ещё раз.'});}
 }
