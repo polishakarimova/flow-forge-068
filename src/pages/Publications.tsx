@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/authContext';
 import { usePublications } from '@/hooks/usePublications';
 import { dayKey, validDate, mergePublications, movePublications, parsePublications, publicationFormats, uid, kaliningradTime, scheduleInKaliningrad, type Publication, type PublicationFormat, type PublicationPart, type PublicationState } from '@/lib/publications';
 import Calendar from './Calendar';
+import {useCardNavigation} from '@/lib/editorialNavigation';
 import {useEditorial} from '@/lib/editorialContext';
 import {WeeklyFocus} from '@/components/content/WeeklyFocus';
 import './editorial.css';
@@ -40,7 +41,8 @@ function Workspace({ userId }: { userId: string }) {
   const store = usePublications(userId);
   const editorial=useEditorial();
   const pendingSlots=(editorial.data?.main.editorial?.slots||[]).filter(s=>s.date&&!s.selectedId);
-  const openMaterial=(id:number)=>{const n=new URLSearchParams(entryParams);n.set('material',String(id));setEntryParams(n);};
+  const cards=useCardNavigation();
+  const openMaterial=(id:number)=>cards.open({material:id});
   const key = `karta-publications-view:${userId}`;
   const [view, setView] = useState<View>(() => readView(key));
   const viewRef = useRef(view); viewRef.current = view;
@@ -179,7 +181,7 @@ function Workspace({ userId }: { userId: string }) {
             <div className="pub-breadcrumb"><button onClick={() => navigate({ screen: view.screen === 'publication' ? 'day' : 'month' })}><ArrowLeft />{view.screen === 'publication' ? dateLabel(view.date) : 'Месяц'}</button>{view.screen === 'day' && (dayItems.length > 0||pendingSlots.some(s=>s.date===view.date)) && <button onClick={() => openMove(dayItems.map(i => i.id),true)}>Перенести день</button>}</div>
             {view.screen === 'day' ? <>
               <WeeklyFocus date={view.date}/>
-              {pendingSlots.filter(s=>s.date===view.date).map(s=><button key={s.id} className="ed-row bg-card border rounded-xl mb-2" onClick={()=>{const n=new URLSearchParams(entryParams);n.set('slot',s.id);n.set('material',String(s.recommendedId||s.variantIds[0]));setEntryParams(n);}}><span>{s.title}<small>Нужно выбрать сценарий · {s.variantIds.length} варианта</small></span></button>)}
+              {pendingSlots.filter(s=>s.date===view.date).map(s=><button key={s.id} className="ed-row bg-card border rounded-xl mb-2" onClick={()=>cards.open({slot:s.id,material:s.recommendedId||s.variantIds[0]})}><span>{s.title}<small>Нужно выбрать сценарий · {s.variantIds.length} варианта</small></span></button>)}
               <div className="pub-day-title"><h2>{dateLabel(view.date)}</h2><span>{dayDone} из {dayItems.length+pendingSlots.filter(s=>s.date===view.date).length} выложено</span></div>
               <div className="pub-day-series">{publicationFormats.filter(f => dayItems.some(i => i.format === f)).map(f => <section className="pub-series" key={f}>
                 {approvalControls(f)}

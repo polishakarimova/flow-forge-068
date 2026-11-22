@@ -1,12 +1,14 @@
 import {useState} from 'react';
 import {Link} from 'react-router-dom';
 import type {Funnel} from '@/lib/funnelData';
+import {useCardNavigation} from '@/lib/editorialNavigation';
 import {useEditorial} from '@/lib/editorialContext';
 import {formatLabel,linkedProductIds,dateLabel,weekStart,addDays,publicationProgress,type Material} from '@/lib/editorial';
 import '@/pages/editorial.css';
 import {FunnelRoute} from './FunnelRoute';
 
 export function FunnelOverview({funnel}:{funnel:Funnel}){
+ const cards=useCardNavigation();
  const {data}=useEditorial(),[period,setPeriod]=useState('all'),[status,setStatus]=useState('all');
  const materials=data?.main.topics?.flatMap(t=>t.contentItems)||[],products=data?.main.products||[];
  const ids=linkedProductIds(funnel),week=weekStart();
@@ -20,7 +22,7 @@ export function FunnelOverview({funnel}:{funnel:Funnel}){
  const support=filtered.filter(m=>m.funnelRole==='support'||m.funnelRole==='delivery');
  const potential=filtered.filter(m=>alternatives.has(m.id)||(!dated(m)&&!published(m)&&(m.funnelRole||'entry')==='entry'));
  const grouped=[...new Set(entries.map(m=>m.platformId))];
- const row=(m:Material)=><Link className="ed-row" key={m.id} to={'/content?material='+m.id}><span className="flex-1 min-w-0 break-words">{m.title}<small>{dateLabel(dated(m))} · {published(m)?'Опубликовано':dated(m)?'В плане':'Черновик'}</small></span><span>→</span></Link>;
+ const row=(m:Material)=><Link className="ed-row" key={m.id} {...cards.link({material:m.id})}><span className="flex-1 min-w-0 break-words">{m.title}<small>{dateLabel(dated(m))} · {published(m)?'Опубликовано':dated(m)?'В плане':'Черновик'}</small></span><span>→</span></Link>;
  if(!data)return null;
  return <div className="px-3 md:px-5 pb-4">
   <div className="ed-path" aria-label="Путь воронки"><Link to={'/dashboard?keyword='+encodeURIComponent(funnel.keyword)}>{funnel.keyword}</Link>{ids.map(id=>{const p=products.find(p=>p.id===id);return p?<span key={id} className="contents"><span aria-hidden="true">→</span><Link to={'/products?product='+id}>{p.name}</Link></span>:null;})}</div>
@@ -35,6 +37,7 @@ export function FunnelOverview({funnel}:{funnel:Funnel}){
 }
 
 export function ProductRelations({productId}:{productId:number}){
+ const cards=useCardNavigation();
  const {data}=useEditorial();
  const funnels=(data?.main.funnels||[]).filter(f=>linkedProductIds(f).includes(productId));
  const materials=(data?.main.topics||[]).flatMap(t=>t.contentItems).filter(m=>m.productId===productId||funnels.some(f=>m.funnelId===f.id||f.contentItemIds?.includes(m.id)));
@@ -42,7 +45,7 @@ export function ProductRelations({productId}:{productId:number}){
  if(!data)return null;
  return <section className="border-t border-border pt-3 mt-3"><h3 className="text-sm font-medium mb-2">Контент и воронки продукта</h3>
   {funnels.map(f=><Link className="block text-sm text-primary py-2" to={'/dashboard?funnel='+encodeURIComponent(f.id)} key={f.id}>{f.keyword} → {f.product}</Link>)}
-  <details className="ed-details"><summary>Связанные материалы · {materials.length}</summary>{materials.map(m=><Link className="block text-sm text-primary py-2 break-words" key={m.id} to={'/content?material='+m.id}>{formatLabel(m.platformId)} · {m.title}</Link>)}</details>
-  <details className="ed-details"><summary>Идеи · {ideas.length}</summary>{ideas.map(t=><Link className="block text-sm text-primary py-2" key={t.id} to={'/content?mode=ideas&idea='+t.id}>{t.title}</Link>)}</details>
+  <details className="ed-details"><summary>Связанные материалы · {materials.length}</summary>{materials.map(m=><Link className="block text-sm text-primary py-2 break-words" key={m.id} {...cards.link({material:m.id})}>{formatLabel(m.platformId)} · {m.title}</Link>)}</details>
+  <details className="ed-details"><summary>Идеи · {ideas.length}</summary>{ideas.map(t=><Link className="block text-sm text-primary py-2" key={t.id} {...cards.link({idea:t.id})}>{t.title}</Link>)}</details>
  </section>;
 }

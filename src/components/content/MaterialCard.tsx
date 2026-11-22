@@ -1,22 +1,25 @@
+import { CardSurface } from './CardSurface';
 import {useEffect,useRef,useState} from 'react';
 import {Link,useSearchParams} from 'react-router-dom';
-import {Copy,CalendarDays,Plus,ArrowUp,ArrowDown} from 'lucide-react';
-import {Dialog,DialogContent,DialogTitle,DialogDescription} from '@/components/ui/dialog';
+import {Copy,CalendarDays,Plus,ArrowUp,ArrowDown,FileText} from 'lucide-react';
+import {Dialog,DialogTitle,DialogDescription} from '@/components/ui/dialog';
 import {Button} from '@/components/ui/button';
 import {useEditorial} from '@/lib/editorialContext';
 import {FORMATS,formatLabel,nextAction,materialAction,dateLabel,type Material,type StoryBlock} from '@/lib/editorial';
 import '@/pages/editorial.css';
+import {useCardNavigation,useTelegramCardBack} from '@/lib/editorialNavigation';
 import {useAuth} from '@/lib/authContext';
 import {draftKey,readDraft,writeDraft,clearDraft} from '@/lib/editorialDrafts';
 import {ReadyAssets,ReadyAssetActions,ResourceText} from './ReadyAssets';
 
 export function MaterialCard(){
  const {user}=useAuth();
- const [params,setParams]=useSearchParams();
+ const [params]=useSearchParams();
+ const cards=useCardNavigation();
  const id=Number(params.get('material')), slotId=params.get('slot')||'';
  const {data,command,busy,refresh}=useEditorial();
  const topics=data?.main.topics||[],materials=topics.flatMap(t=>t.contentItems);
- const slot=data?.main.editorial?.slots.find(s=>s.id===slotId || s.variantIds.includes(id));
+ const slot=data?.main.editorial?.slots.find(s=>slotId?s.id===slotId:s.variantIds.includes(id));
  const current=materials.find(m=>m.id===id) || (slot?materials.find(m=>m.id===(slot.selectedId||slot.recommendedId||slot.variantIds[0])):undefined);
  const topic=topics.find(t=>t.contentItems.some(m=>m.id===current?.id));
  const [draft,setDraft]=useState<Material|null>(null),[editing,setEditing]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
@@ -31,8 +34,16 @@ export function MaterialCard(){
  const dirty=Boolean(draft && JSON.stringify(draft)!==base.current);
  useEffect(()=>{if(!dirty&&current&&!readDraft(recoveryKey)){setDraft(structuredClone(current));base.current=JSON.stringify(current);setDate(slot?.date||current.publishDate||'');}},[current,slot?.date,dirty,recoveryKey]);
  useEffect(()=>{const leave=(e:BeforeUnloadEvent)=>{if(dirty){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',leave);return()=>window.removeEventListener('beforeunload',leave);},[dirty]);
- function close(){if(dirty){setConfirmClose(true);return;}const next=new URLSearchParams(params);next.delete('material');next.delete('slot');setParams(next,{replace:true});}
- function choose(nextId:number){if(dirty){setError('Сначала сохрани изменения сценария.');return;}const next=new URLSearchParams(params);next.set('material',String(nextId));if(slot)next.set('slot',slot.id);setParams(next,{replace:true});}
+ function close(){
+  if(busy)return;
+  if(dirty){setConfirmClose(true);return;}
+  cards.close();
+ }
+ useTelegramCardBack(close);
+ function choose(nextId:number, variant=false){
+  if(dirty){setError('Сначала сохрани изменения сценария.');return;}
+  cards.open({material:nextId,slot:variant?slot?.id:undefined},variant);
+ }
  async function act(type:string,input:unknown,message='Сохранено'){
   setError('');
   try{const result=await command(type,input);setNotice(message);return result;}catch(e){setError((e as Error).message);return null;}
@@ -48,12 +59,12 @@ export function MaterialCard(){
  const published=publications.some(p=>p.parts.some(b=>b.published&&(b.contentItemId===current?.id||p.contentItemId===current?.id)));
  const publishedBlocks=new Set(publications.flatMap(p=>p.parts.filter(b=>b.published&&b.contentItemId===current?.id).map(b=>b.blockId)));
  const variants=slot?.variantIds.map(i=>materials.find(m=>m.id===i)).filter((m):m is Material=>Boolean(m))||[];
- return <Dialog open={open} onOpenChange={value=>{if(!value)close();}}><DialogContent overlayClassName="bg-black/20" className="ed-detail">
-  <div className="ed-detail-head"><span className="ed-badge">{current?formatLabel(current.platformId):'Материал'}</span><DialogTitle className="text-base leading-snug mt-2">{current?.title||'Загрузка материала…'}</DialogTitle><DialogDescription className="text-xs mt-1">{current?materialAction(data,current):'Общая карточка сценария'}</DialogDescription></div>
+ return <Dialog open={open} onOpenChange={value=>{if(!value)close();}}><CardSurface ready={Boolean(current && draft)} overlayClassName="bg-black/20" className="ed-detail">
+  <div className="ed-detail-head"><span className="ed-badge"><FileText size={13}/>{current?formatLabel(current.platformId):'Материал'}</span><DialogTitle>{current?.title||'Загрузка материала…'}</DialogTitle><DialogDescription className="text-xs mt-1">{current?materialAction(data,current):'Общая карточка сценария'}</DialogDescription></div>
   <div className="ed-detail-body" onClickCapture={e=>{if(dirty&&(e.target as HTMLElement).closest('a')&&!window.confirm('Несохранённый черновик останется на этом устройстве. Перейти?')){e.preventDefault();e.stopPropagation();}}}>
    {!data?<p role="status">Загружаем…</p>:!current?<p>Материал не найден. <button className="text-primary" onClick={()=>void refresh()}>Обновить</button></p>:draft&&<>
     {slot&&<div className="mb-4"><p className="ed-note">{slot.selectedId===current.id?'Выбран для этого дня':slot.recommendedId===current.id?'Рекомендуемый вариант':'Альтернативный вариант'} · {dateLabel(slot.date)}</p>{slot.recommendedId===current.id&&slot.reason&&<p className="ed-note mt-1">{slot.reason}</p>}
-     {variants.length>1&&<details className="ed-details"><summary>Другие варианты — {variants.length-1}</summary>{variants.filter(m=>m.id!==current.id).map(m=><button className="ed-row" key={m.id} onClick={()=>choose(m.id)}><span>{m.title}<small>{m.id===slot.selectedId?'Выбран':m.id===slot.recommendedId?'Рекомендуем':'Альтернатива'}</small></span></button>)}</details>}
+     {variants.length>1&&<details className="ed-details"><summary>Другие варианты — {variants.length-1}</summary>{variants.filter(m=>m.id!==current.id).map(m=><button className="ed-row" key={m.id} onClick={()=>choose(m.id,true)}><span>{m.title}<small>{m.id===slot.selectedId?'Выбран':m.id===slot.recommendedId?'Рекомендуем':'Альтернатива'}</small></span></button>)}</details>}
     </div>}
     {published&&editing&&<p className="ed-note mb-3">Опубликованные экраны зафиксированы. Можно менять остальные экраны, ссылки и подготовку.</p>}
     {editing?<div>
@@ -79,7 +90,7 @@ export function MaterialCard(){
       <label className="ed-label">Роль материала<select className="ed-input" value={draft.funnelRole||'entry'} onChange={e=>patch({funnelRole:e.target.value as Material['funnelRole']})}><option value="entry">Привлекает в воронку</option><option value="support">Раскрывает продукт</option><option value="delivery">Выдаёт материал</option></select></label>
      </details>
     </div>:<>
-     {current.blocks?.length?current.blocks.map((b,i)=><section className="ed-story" key={b.id}><h3>{i+1}. {b.label}</h3><p className="ed-copy">{b.text||'Текст ещё не написан'}</p>{(b.visual||b.motion)&&<details className="ed-details"><summary>Кадр и моушн</summary>{b.visual&&<p className="ed-copy">{b.visual}</p>}{b.motion&&<p className="ed-copy mt-2">{b.motion}</p>}</details>}</section>):<p className="ed-copy">{current.body||'Здесь будет сценарий. Начни с текста или подготовь его с агентом.'}</p>}
+     {current.blocks?.length?current.blocks.map((b,i)=><section className="ed-story" key={b.id}><h3>{i+1}. {b.label}</h3><p className="ed-copy">{b.text||'Текст ещё не написан'}</p>{(b.visual||b.motion)&&<details className="ed-details"><summary>Кадр и моушн</summary>{b.visual&&<p className="ed-copy">{b.visual}</p>}{b.motion&&<p className="ed-copy mt-2">{b.motion}</p>}</details>}</section>):<p className="ed-copy ed-script">{current.body||'Здесь будет сценарий. Начни с текста или подготовь его с агентом.'}</p>}
      {(current.visual||current.motion)&&<details className="ed-details"><summary>Что показать · графика</summary><p className="ed-copy">{current.visual}</p><p className="ed-copy mt-2">{current.motion}</p></details>}
      {current.resources&&<details className="ed-details"><summary>Материалы и ссылки</summary><ResourceText text={current.resources}/></details>}
      <details className="ed-details"><summary>Куда ведёт</summary>{current.cta&&<p className="ed-copy">{current.cta}</p>}<div className="ed-path">{funnel&&<Link to={'/dashboard?funnel='+encodeURIComponent(funnel.id)}>{funnel.keyword} → воронка</Link>}{product&&<Link to={'/products?product='+product.id}>{product.name}</Link>}{!funnel&&!product&&<p className="ed-note">Продукт и воронка не выбраны.</p>}</div></details>
@@ -91,9 +102,9 @@ export function MaterialCard(){
      {<label className="ed-label mt-3">Подготовка<select className="ed-input" value={draft.status==='ready'?'ready':'in_progress'} onChange={e=>patch({status:e.target.value as Material['status']})}><option value="in_progress">Нужно подготовить</option><option value="ready">Готово к публикации</option></select></label>}
      <p className="ed-note">Утверждение сценария сохраняет текст. Отправка Threads включается отдельно в календаре.</p>
     </details>
-    <details className="ed-details"><summary>Идея и адаптации</summary>{topic&&<Link className="text-sm text-primary" to={'/content?mode=ideas&idea='+topic.id}>{topic.title}</Link>}
+    <details className="ed-details"><summary>Идея и адаптации</summary>{topic&&<Link className="text-sm text-primary" {...cards.link({idea:topic.id})}>{topic.title}</Link>}
      {current.adaptedFromId&&<button className="block text-xs text-primary py-3" onClick={()=>choose(current.adaptedFromId!)}>Открыть исходный материал</button>}
-     <div className="flex gap-2 mt-3"><select aria-label="Формат адаптации" className="ed-input" value={adaptFormat} onChange={e=>setAdaptFormat(e.target.value)}>{FORMATS.map(f=><option key={f.id} value={f.id}>{f.label}</option>)}</select><Button variant="outline" disabled={busy||dirty} onClick={async()=>{const result=await act('material.create',{ideaId:topic?.id,platformId:adaptFormat,fromId:current.id},'Создан связанный черновик');if(result?.id){const n=new URLSearchParams(params);n.delete('slot');n.set('material',String(result.id));setParams(n,{replace:true});}}}>Создать черновик</Button></div>
+     <div className="flex gap-2 mt-3"><select aria-label="Формат адаптации" className="ed-input" value={adaptFormat} onChange={e=>setAdaptFormat(e.target.value)}>{FORMATS.map(f=><option key={f.id} value={f.id}>{f.label}</option>)}</select><Button variant="outline" disabled={busy||dirty} onClick={async()=>{const result=await act('material.create',{ideaId:topic?.id,platformId:adaptFormat,fromId:current.id},'Создан связанный черновик');if(result?.id){cards.open({material:result.id});}}}>Создать черновик</Button></div>
      <p className="ed-note mt-2">Создаётся пустой связанный черновик. Напиши сценарий для нового формата; исходная идея сохранится.</p>
     </details>
     <details className="ed-details"><summary>Результаты публикации</summary><p className="ed-note mb-3">Заполняются вручную после выхода.</p>{([['reach','Охват'],['responses','Отклики на кодовое слово'],['leads','Заявки'],['sales','Продажи']] as const).map(([key,label])=><label className="ed-label" key={key}>{label}<input type="number" min="0" step="1" className="ed-input" value={draft.metrics?.[key]??''} onChange={e=>patch({metrics:{...draft.metrics,[key]:e.target.value===''?undefined:Number(e.target.value)}})}/></label>)}<label className="ed-label">Дата выхода<input type="date" className="ed-input" value={draft.metrics?.publishedDate||''} onChange={e=>patch({metrics:{...draft.metrics,publishedDate:e.target.value}})}/></label><label className="ed-label">Ссылка на опубликованный пост<input type="url" className="ed-input" value={draft.metrics?.url||''} onChange={e=>patch({metrics:{...draft.metrics,url:e.target.value}})}/></label><p className="ed-note">Нажми «Сохранить изменения» внизу карточки.</p></details>
@@ -101,14 +112,14 @@ export function MaterialCard(){
     {editing&&['reels','carousel'].includes(current.platformId)&&<ReadyAssets assets={draft.assets} onChange={assets=>patch({assets})}/>}
    </>}
    {notice&&<p role="status" className="ed-note mt-3">{notice}</p>}
-   {error&&<div role="alert" className="ed-error">{error}{dirty&&current&&<details className="mt-2"><summary>Текущая версия с сервера</summary><p className="ed-copy">{current.body}</p><Button variant="outline" disabled={busy} onClick={async()=>{const r=await act('material.fork',draft,'Твоя версия сохранена отдельным черновиком');if(r?.id){clearDraft(recoveryKey);base.current=JSON.stringify(draft);const n=new URLSearchParams(params);n.delete('slot');n.set('material',String(r.id));setParams(n,{replace:true});}}}>Сохранить мою версию отдельно</Button></details>}<button className="block underline mt-2" onClick={()=>void refresh()}>Обновить список, сохранив мой текст</button></div>}
-   {confirmClose&&<div className="ed-error" role="alert">Есть несохранённый текст.<div className="flex gap-2 mt-2"><Button variant="outline" onClick={()=>setConfirmClose(false)}>Продолжить</Button><Button variant="outline" onClick={()=>{clearDraft(recoveryKey);setDraft(null);setConfirmClose(false);const n=new URLSearchParams(params);n.delete('material');n.delete('slot');setParams(n,{replace:true});}}>Закрыть без сохранения</Button></div></div>}
+   {error&&<div role="alert" className="ed-error">{error}{dirty&&current&&<details className="mt-2"><summary>Текущая версия с сервера</summary><p className="ed-copy">{current.body}</p><Button variant="outline" disabled={busy} onClick={async()=>{const r=await act('material.fork',draft,'Твоя версия сохранена отдельным черновиком');if(r?.id){clearDraft(recoveryKey);base.current=JSON.stringify(draft);cards.open({material:r.id});}}}>Сохранить мою версию отдельно</Button></details>}<button className="block underline mt-2" onClick={()=>void refresh()}>Обновить список, сохранив мой текст</button></div>}
+
   </div>
-  {current&&<div className="ed-detail-footer">
+  {confirmClose?<div className="ed-detail-footer"><div className="ed-error" role="alert">Есть несохранённый текст.<div className="flex gap-2 mt-2"><Button variant="outline" onClick={()=>setConfirmClose(false)}>Продолжить</Button><Button variant="outline" onClick={()=>{clearDraft(recoveryKey);setDraft(null);setConfirmClose(false);cards.close();}}>Закрыть без сохранения</Button></div></div></div>:current&&<div className="ed-detail-footer">
    {dirty||editing?<Button disabled={busy} onClick={()=>void save()}>Сохранить изменения</Button>:<Button disabled={busy||!current.body?.trim()||(current.scriptApproval==='approved'&&(!slot||slot.selectedId===current.id))} onClick={()=>void act('material.approve',{id:current.id,slotId:slot?.id,revision:current.revision||1},'Сценарий утверждён')}>{current.scriptApproval==='approved'&&(!slot||slot.selectedId===current.id)?'Сценарий утверждён':'Утвердить сценарий'}</Button>}
    {!editing&&<Button variant="outline" onClick={()=>setEditing(true)}>Изменить</Button>}
    <Button variant="ghost" className="px-2" aria-label="Копировать сценарий" onClick={()=>void copy()}><Copy size={16}/></Button>
    {!editing&&['reels','carousel'].includes(current.platformId)&&<ReadyAssetActions assets={current.assets}/>}
   </div>}
- </DialogContent></Dialog>;
+ </CardSurface></Dialog>;
 }

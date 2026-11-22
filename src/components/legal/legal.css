@@ -31,7 +31,26 @@ html[data-telegram-app] .legal-entry {
 .legal-mailing legend { width: 100%; font-size: 13px; font-weight: 600; }
 .legal-mailing legend span { display: inline-block; margin-left: 4px; color: hsl(var(--muted-foreground)); font-size: 12px; font-weight: 400; }
 .legal-choice { display: flex; align-items: flex-start; gap: 12px; padding: 7px 0; font-size: 14px; line-height: 1.5; }
-.legal-choice > [role=checkbox] { margin-top: 1px; flex: none; width: 21px; height: 21px; border-radius: 6px; }
+.legal-choice > [role=checkbox] {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  padding: 0;
+  border-width: 1.5px;
+  border-radius: 6px;
+}
+.legal-choice > [role=checkbox]::before {
+  content: "";
+  position: absolute;
+  inset: -9px -10px;
+}
+.legal-choice { min-height: 44px; }
+.legal-choice label { flex: 1; }
+.legal-choice svg { width: 15px; height: 15px; stroke-width: 2.5; }
 .legal-choice label { cursor: pointer; min-width: 0; }
 .legal-choice a { position: relative; }
 .legal-entry .legal-choice a { color: #654387; text-decoration-color: #a897b7; }

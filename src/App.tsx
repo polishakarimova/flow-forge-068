@@ -18,7 +18,7 @@ import Publications from "./pages/Publications.tsx";
 import Welcome from "./pages/Welcome.tsx";
 import Home from "./pages/Home.tsx";
 import { EditorialProvider } from "./lib/editorialContext";
-import { MaterialCard } from "./components/content/MaterialCard";
+import { EditorialCards } from "./components/content/EditorialCards";
 import Profile from "./pages/Profile.tsx";
 import Agents from "./pages/Agents.tsx";
 import Register from "./pages/Register.tsx";
@@ -101,7 +101,7 @@ function AppWorkspace(){
   }
   return <>
     {isAuthenticated&&error&&<div role="status" className="px-4 py-2 text-sm bg-muted">Не удалось обновить статус документов. <button className="text-primary underline" onClick={()=>void refresh()}>Повторить</button></div>}
-    <DataStoreProvider><ContextProvider><EditorialProvider><BackNavigationProvider><AppRoutes /><MaterialCard /></BackNavigationProvider></EditorialProvider></ContextProvider></DataStoreProvider>
+    <DataStoreProvider><ContextProvider><EditorialProvider><BackNavigationProvider><AppRoutes /><EditorialCards /></BackNavigationProvider></EditorialProvider></ContextProvider></DataStoreProvider>
   </>;
 }
 function LegalSession(){const {user}=useAuth();return <LegalProvider key={user?.id||'guest'}><AppWorkspace /></LegalProvider>;}
