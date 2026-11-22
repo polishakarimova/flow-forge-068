@@ -5,6 +5,8 @@ import { MobileNav } from "@/components/MobileNav";
 import { AppBackButton } from "@/components/AppBackButton";
 import type { BadgeColor, Funnel } from "@/lib/funnelData";
 import { resolveFunnelContent } from "@/lib/funnelData";
+import { useAuth } from "@/lib/authContext";
+import { funnelMapLayout } from "@/lib/funnelMapLayout";
 import { useDataStore } from "@/lib/dataStore";
 import { PlatformIcon } from "@/components/content/PlatformIcon";
 import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
@@ -596,40 +598,19 @@ function ContentPickerModalMap({
 
 /* ── main component ─────────────────────────────────── */
 
-const STORAGE_KEY_POSITIONS = "funnel-map-positions";
-const STORAGE_KEY_VIEW = "funnel-map-view";
-
-function loadSavedPositions(): Record<string, { x: number; y: number }> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_POSITIONS);
-    return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
-}
-
-function savePositions(nodes: MapNode[]) {
-  const map: Record<string, { x: number; y: number }> = {};
-  nodes.forEach((n) => { map[n.id] = { x: n.x, y: n.y }; });
-  localStorage.setItem(STORAGE_KEY_POSITIONS, JSON.stringify(map));
-}
-
-function loadSavedView(): { pan: { x: number; y: number }; zoom: number } | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_VIEW);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
-
 function applyCustomPositions(nodes: MapNode[], saved: Record<string, { x: number; y: number }>): MapNode[] {
   if (Object.keys(saved).length === 0) return nodes;
-  return nodes.map((n) => saved[n.id] ? { ...n, x: saved[n.id].x, y: saved[n.id].y } : n);
+  return nodes.map((n) => Object.prototype.hasOwnProperty.call(saved, n.id) ? { ...n, x: saved[n.id].x, y: saved[n.id].y } : n);
 }
 
 const FunnelMapPage = () => {
   const { funnels, allContentItems, products, topics, updateContentItem, updateProduct, updateTopic, productTypes, addProductType, deleteProductType, formats, addFormat, deleteFormat, setFunnels } = useDataStore();
   const svgRef = useRef<SVGSVGElement>(null);
-  const savedView = useRef(loadSavedView());
-  const [pan, setPan] = useState(savedView.current?.pan ?? { x: 20, y: 10 });
-  const [zoom, setZoom] = useState(savedView.current?.zoom ?? 1);
+  const { user } = useAuth();
+  const layout = useMemo(() => funnelMapLayout(user?.id), [user?.id]);
+  const [savedView] = useState(() => layout.view());
+  const [pan, setPan] = useState(savedView?.pan ?? { x: 20, y: 10 });
+  const [zoom, setZoom] = useState(savedView?.zoom ?? 1);
   const [dragging, setDragging] = useState<{ type: "pan" | "node"; startX: number; startY: number; nodeId?: string; orig?: MapNode[] } | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [showHint, setShowHint] = useState(true);
@@ -652,17 +633,17 @@ const FunnelMapPage = () => {
 
   // Sync nodes when graph changes, preserving user-positioned nodes
   useEffect(() => {
-    const saved = loadSavedPositions();
+    const saved = layout.positions();
     setNodes(applyCustomPositions(initialNodes, saved));
-  }, [initialNodes]);
+  }, [initialNodes, layout]);
 
   // Persist pan/zoom
   useEffect(() => {
     const t = setTimeout(() => {
-      localStorage.setItem(STORAGE_KEY_VIEW, JSON.stringify({ pan, zoom }));
+      layout.saveView({ pan, zoom });
     }, 300);
     return () => clearTimeout(t);
-  }, [pan, zoom]);
+  }, [pan, zoom, layout]);
 
   useEffect(() => {
     const t = setTimeout(() => setShowHint(false), 4000);
@@ -722,10 +703,10 @@ const FunnelMapPage = () => {
 
   const handleMouseUp = useCallback(() => {
     if (dragging?.type === "node" && dragMovedRef.current) {
-      setNodes((cur) => { savePositions(cur); return cur; });
+      layout.savePositions(nodes);
     }
     setDragging(null);
-  }, [dragging]);
+  }, [dragging, layout, nodes]);
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent, nodeId?: string) => {
@@ -772,10 +753,10 @@ const FunnelMapPage = () => {
 
   const handleTouchEnd = useCallback(() => {
     if (touchRef.current.nodeId && touchRef.current.moved) {
-      setNodes((cur) => { savePositions(cur); return cur; });
+      layout.savePositions(nodes);
     }
     touchRef.current.nodeId = null;
-  }, []);
+  }, [layout, nodes]);
 
   const handleTap = useCallback((nodeId: string) => {
     if (!touchRef.current.moved) setSelected((s) => (s === nodeId ? null : nodeId));
@@ -844,9 +825,9 @@ const FunnelMapPage = () => {
                 <div className="flex items-center gap-3">
                   <SidebarTrigger className="hidden md:flex" />
                   <AppBackButton />
-                  <span className="kk-page-title text-[12px] font-extrabold text-foreground tracking-[0.08em]">
+                  <h1 className="kk-page-title text-[12px] font-extrabold text-foreground tracking-[0.08em]">
                     КАРТА ВОРОНОК
-                  </span>
+                  </h1>
                 </div>
 
                 <div className="flex items-center gap-1.5">
@@ -857,6 +838,7 @@ const FunnelMapPage = () => {
                     {Math.round(zoom * 100)}%
                   </span>
                   <button
+                    aria-label="Увеличить масштаб"
                     onClick={() => setZoom((z) => Math.min(2.5, z * 1.25))}
                     className="kk-compact-control h-5 min-h-0 w-5 rounded-[7px] bg-muted p-0 text-[11px] font-light leading-none text-muted-foreground hover:bg-muted/80 transition-colors"
                     style={{ height: 20, minHeight: 0, width: 20, padding: 0, fontSize: 11, lineHeight: "11px" }}
@@ -864,6 +846,7 @@ const FunnelMapPage = () => {
                     +
                   </button>
                   <button
+                    aria-label="Уменьшить масштаб"
                     onClick={() => setZoom((z) => Math.max(0.2, z * 0.8))}
                     className="kk-compact-control h-5 min-h-0 w-5 rounded-[7px] bg-muted p-0 text-[11px] font-light leading-none text-muted-foreground hover:bg-muted/80 transition-colors"
                     style={{ height: 20, minHeight: 0, width: 20, padding: 0, fontSize: 11, lineHeight: "11px" }}
@@ -874,8 +857,7 @@ const FunnelMapPage = () => {
                     onClick={() => {
                       setPan({ x: 20, y: 10 });
                       setZoom(1);
-                      localStorage.removeItem(STORAGE_KEY_POSITIONS);
-                      localStorage.removeItem(STORAGE_KEY_VIEW);
+                      layout.reset();
                       setNodes(initialNodes);
                     }}
                     className="kk-compact-control h-5 min-h-0 rounded-[7px] bg-muted px-1.5 py-0 text-[11px] font-light leading-none tracking-wide text-muted-foreground hover:bg-muted/80 transition-colors"

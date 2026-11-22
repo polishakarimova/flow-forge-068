@@ -17,6 +17,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
+    "posttest": "node --test src/test/editorial.node-test.mjs src/test/editorial-integrity.node-test.mjs src/test/editorial-api.node-test.mjs src/test/publications.node-test.mjs src/test/telegram-polling.node-test.mjs src/test/telegram-viewport.node-test.mjs",
     "test:watch": "vitest"
   },
   "dependencies": {
