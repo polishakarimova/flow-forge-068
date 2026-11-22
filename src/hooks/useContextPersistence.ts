@@ -20,7 +20,7 @@ export function useContextPersistence<T>(userId:string,empty:T){
   try{
    while(s.active&&s.dirty){
     const snapshot=s.data;
-    const response=await fetch('/api/state/context',{method:'PUT',credentials:'include',signal:AbortSignal.timeout(20000),headers:{'Content-Type':'application/json','If-Match':s.revision},body:JSON.stringify({data:snapshot})});
+    const response=await fetch('/api/state/context',{method:'PUT',credentials:'include',signal:AbortSignal.timeout(20000),headers:{'Content-Type':'application/json','If-Match':s.revision,'X-Karta-Account':s.userId},body:JSON.stringify({data:snapshot})});
     const result=await response.json();if(!s.active)return;
     if(response.status===409){s.conflict=true;backup(s);conflict(s);return;}
     if(!response.ok||typeof result.revision!=='string')throw new Error('context_save_failed');

@@ -7,8 +7,9 @@ export function safeAuthReturn(value: string | null | undefined, fallback = '/ho
   return fallback;
 }
 export function authErrorMessage(code: string) {
-  if(code==='telegram_browser_mismatch')return 'Ссылка для входа создана в другом браузере. Нажмите «Начать» для своего входа.';
+  if(code==='telegram_browser_mismatch')return 'Ссылка для входа создана в другом браузере. Вернитесь в исходную вкладку или начните новый вход.';
   if (['telegram_auth_expired', 'telegram_invalid_hash', 'telegram_user_missing'].includes(code)) return 'Не удалось подтвердить Telegram. Закройте мини-приложение и откройте его снова.';
-  if (['login_token_expired', 'login_token_not_found'].includes(code)) return 'Ссылка для входа устарела. Нажмите «Начать» ещё раз.';
+  if (code === 'login_token_cancelled') return 'Вы отменили вход в Telegram. Можно начать заново.';
+  if (['login_token_expired', 'login_token_not_found'].includes(code)) return 'Ссылка для входа устарела. Начните вход через Telegram ещё раз.';
   return 'Не удалось войти. Попробуйте ещё раз через несколько секунд.';
 }

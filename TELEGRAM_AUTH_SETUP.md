@@ -8,6 +8,10 @@ When incoming webhook connections time out, set `TELEGRAM_UPDATES_MODE=polling` 
 
 The browser stores only its own pending, short-lived request in sessionStorage and resumes it after a blocked popup. A second click must not create a different login request. Login expiry remains ten minutes; no auth validation is bypassed.
 
+В Telegram Карта открывает кабинет текущего аккаунта автоматически. После явного выхода повторный вход в этой вкладке запускается кнопкой. В браузере пользователь подтверждает запрос в личном чате бота и возвращается в исходную вкладку. Она проверяет подтверждение автоматически, в том числе после перезагрузки, и открывает запрошенный раздел. При сетевой ошибке на этапе проверки сессии можно повторить проверку.
+
+В личном кабинете показаны имя и привязанный Telegram-профиль. Изменённое имя сохраняется при следующем входе с тем же Telegram ID. Подтверждение для админки отдельно проверяется сервером.
+
 References: https://core.telegram.org/bots/api#getupdates and https://core.telegram.org/bots/webapps#initializing-mini-apps.
 
 Проект использует только Telegram-авторизацию:

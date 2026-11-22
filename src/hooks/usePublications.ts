@@ -29,7 +29,7 @@ export function usePublications(userId: string) {
       while (s.dirty && !s.conflict) {
         const snapshot = s.data;
         setStatus('saving');
-        const response = await fetch('/api/content-workspace', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'If-Match': s.revision }, body: JSON.stringify({type:"publications.replace",input:{data:snapshot},revisions:{publications:s.revision}}) });
+        const response = await fetch('/api/content-workspace', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'If-Match': s.revision, 'X-Karta-Account': userId }, body: JSON.stringify({type:"publications.replace",input:{data:snapshot},revisions:{publications:s.revision}}) });
         if(!mounted.current)return;
         if (response.status === 409) { s.conflict = true; setStatus('conflict'); setMessage('Календарь изменился на другом устройстве. Ваши правки сохранены на этом устройстве.'); break; }
         if (!response.ok) throw new Error(response.status === 401 ? 'Войдите снова: сессия закончилась.' : 'Не удалось сохранить на сервере. Правки остаются на этом устройстве.');
@@ -125,7 +125,7 @@ export function usePublications(userId: string) {
       await flush();
       if (s.dirty || s.running || s.conflict || !s.ready) throw new Error('Сначала дождитесь сохранения правок или загрузите актуальную версию календаря.');
       s.running = true; ownsRequest = true;
-      const response = await fetch('/api/publications/approval', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'If-Match': s.revision }, body: JSON.stringify({ date, format, action }) });
+      const response = await fetch('/api/publications/approval', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'If-Match': s.revision, 'X-Karta-Account': userId }, body: JSON.stringify({ date, format, action }) });
       const result = await response.json();
       if (!response.ok) {
         if (response.status === 409) { s.conflict = true; setStatus('conflict'); setMessage(result.message || 'Календарь обновился. Загрузите актуальную версию.'); }

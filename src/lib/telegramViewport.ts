@@ -33,8 +33,11 @@ export function setupTelegramViewport(app: TelegramViewport | undefined, root: H
     const height = app.viewportStableHeight;
     if (typeof height === 'number' && Number.isFinite(height) && height > 0) root.style.setProperty('--app-viewport-height', `${height}px`);
   };
-  const events = ['viewportChanged', 'safeAreaChanged', 'contentSafeAreaChanged', 'fullscreenChanged', 'fullscreenFailed'];
+  const events = ['viewportChanged', 'safeAreaChanged', 'contentSafeAreaChanged', 'fullscreenChanged'];
   for (const event of events) attempt(() => app.onEvent?.(event, sync));
+  const expandAfterFailure = () => { attempt(() => app.expand?.()); sync(); };
+  attempt(() => app.onEvent?.('fullscreenFailed', expandAfterFailure));
+  if (typeof window !== 'undefined') window.addEventListener('orientationchange', sync);
   sync();
   attempt(() => app.ready?.());
   attempt(() => app.setHeaderColor?.('#fafafb'));
@@ -44,6 +47,8 @@ export function setupTelegramViewport(app: TelegramViewport | undefined, root: H
   sync();
   return () => {
     for (const event of events) attempt(() => app.offEvent?.(event, sync));
+    attempt(() => app.offEvent?.('fullscreenFailed', expandAfterFailure));
+    if (typeof window !== 'undefined') window.removeEventListener('orientationchange', sync);
     delete root.dataset.telegramApp;
     delete root.dataset.telegramFullscreen;
   };

@@ -38,7 +38,7 @@ export function useMainState(userId:string){
   try{
    while(s.active&&s.dirty){
     const snapshot=s.data;
-    const response=await fetch('/api/content-workspace',{method:'POST',credentials:'include',signal:AbortSignal.timeout(20000),headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'main.replace',input:{data:snapshot},revisions:{main:s.revision}})});
+    const response=await fetch('/api/content-workspace',{method:'POST',credentials:'include',signal:AbortSignal.timeout(20000),headers:{'Content-Type':'application/json','X-Karta-Account':s.userId},body:JSON.stringify({type:'main.replace',input:{data:snapshot},revisions:{main:s.revision}})});
     const saved=await response.json();
     if(!s.active)return;
     if(response.status===409){s.conflict=true;backup(s);warnConflict(s);return;}

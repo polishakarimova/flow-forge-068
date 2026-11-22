@@ -114,11 +114,6 @@ function publicUser(user) {
   };
 }
 
-async function readUsers() {
-  const { rows } = await pgPool.query("select data from cm_users");
-  return rows.map((row) => row.data);
-}
-
 function isAdminUser(user) {
   if (!user) return false;
   if (ADMIN_TELEGRAM_IDS.size === 0) return false;
@@ -271,6 +266,11 @@ function methodNotAllowed(res) {
 async function requireUser(req, res) {
   const user = await getUserBySession(parseCookies(req)[cookieName]);
   if (!user) {send(res, 401, { error: "unauthorized" });return null;}
+  const expectedAccount = req.headers['x-karta-account'];
+  if (expectedAccount && expectedAccount !== user.id) {
+    send(res, 409, { error: 'account_changed', message: 'В этой вкладке сменился аккаунт. Откройте Карту заново.' });
+    return null;
+  }
   try {await requireLegal(pgPool,user.id);} catch(error){send(res,error.status||503,{error:'legal_required',message:error.message});return null;}
   return user;
 }
@@ -315,10 +315,7 @@ function validateTelegramInitData(initData) {
 }
 
 async function upsertTelegramUser(telegramUser) {
-  const legacyUsers = await readUsers().catch(() => []);
-  const telegramId = String(telegramUser.id);
-  const legacy = legacyUsers.find((item) => String(item.telegramId || "") === telegramId || item.email === `telegram:${telegramId}`);
-  const user = await prisma.$transaction(tx => saveTelegramAccount(tx, telegramUser, legacy?.id), { timeout: 15000 });
+  const user = await prisma.$transaction(tx => saveTelegramAccount(tx, telegramUser), { timeout: 15000 });
   return publicUser(user);
 }
 
@@ -360,20 +357,6 @@ async function readLoginToken(token) {
   return await prisma.telegramLoginRequest.findUnique({ where: { tokenHash: tokenHash(token) } });
 }
 
-async function saveLoginToken(loginToken) {
-  return await prisma.telegramLoginRequest.update({
-    where: { id: loginToken.id },
-    data: {
-      status: loginToken.status,
-      userId: loginToken.userId,
-      telegramId: loginToken.telegramId,
-      chatId: loginToken.chatId,
-      confirmedAt: loginToken.confirmedAt,
-      usedAt: loginToken.usedAt,
-    },
-  });
-}
-
 async function deleteLoginToken(token) {
   await prisma.telegramLoginRequest.delete({ where: { tokenHash: tokenHash(token) } }).catch(() => null);
 }
@@ -391,14 +374,10 @@ async function sendTelegramStart(chatId, message) {
   });
 }
 
-async function sendTelegramLoginConfirmed(chatId, token = "") {
-  const returnUrl = token ? `${APP_URL}/login?telegramLoginToken=${encodeURIComponent(token)}` : `${APP_URL}/login`;
+async function sendTelegramLoginConfirmed(chatId) {
   await telegramApi("sendMessage", {
     chat_id: chatId,
-    text: "Готово, вы авторизованы. Вернитесь на сайт — вход завершится автоматически.",
-    reply_markup: {
-      inline_keyboard: [[{ text: "Вернуться в приложение", web_app: { url: returnUrl } }]],
-    },
+    text: "Вход подтверждён. Вернитесь во вкладку браузера, где вы начали вход. Кабинет откроется автоматически.",
   });
 }
 
@@ -426,7 +405,7 @@ async function handleTelegramUpdate(update) {
     }
     const user=await upsertTelegramUser(callback.from);
     const saved=await prisma.telegramLoginRequest.updateMany({where:{id:login.id,status:'PENDING',telegramId:String(callback.from.id),expiresAt:{gt:new Date()}},data:{status:'CONFIRMED',userId:user.id,confirmedAt:new Date()}});
-    if(saved.count===1){await telegramApi('answerCallbackQuery',{callback_query_id:callback.id,text:'Вход подтверждён.'}).catch(()=>{});await sendTelegramLoginConfirmed(login.chatId,callbackMatch[2]).catch(()=>{});}
+    if(saved.count===1){await telegramApi('answerCallbackQuery',{callback_query_id:callback.id,text:'Вход подтверждён.'}).catch(()=>{});await sendTelegramLoginConfirmed(login.chatId).catch(()=>{});}
     return;
   }
   const message = update.message || update.edited_message;
@@ -459,14 +438,12 @@ async function handleTelegramUpdate(update) {
         return;
       }
       if(loginToken.status!=='PENDING')return;
-      Object.assign(loginToken, {
-        status: "PENDING",
-        userId: null,
-        telegramId: String(message.from.id),
-        chatId: String(chatId),
-        confirmedAt: null,
+      const telegramId = String(message.from.id);
+      const bound = await prisma.telegramLoginRequest.updateMany({
+        where: { id: loginToken.id, status: 'PENDING', usedAt: null, expiresAt: { gt: new Date() }, OR: [{ telegramId: null }, { telegramId }] },
+        data: { telegramId, chatId: String(chatId) },
       });
-      await saveLoginToken(loginToken);
+      if (!bound.count) return;
       await telegramApi('sendMessage',{chat_id:chatId,text:'Подтвердить вход в «Карту контента»?\n\nЕсли вы не начинали вход на сайте, нажмите «Отменить».',reply_markup:{inline_keyboard:[[{text:'Подтвердить вход',callback_data:'cm_auth_yes_'+token},{text:'Отменить',callback_data:'cm_auth_no_'+token}]]}}).catch(()=>{});
       return;
     }
@@ -489,6 +466,18 @@ async function api(req, res, url) {
   if (path === "/api/auth/me") {
     if (req.method !== "GET") return methodNotAllowed(res);
     return send(res, 200, { user: publicUser(await getUserBySession(parseCookies(req)[cookieName])) });
+  }
+
+  if (path === '/api/account/profile') {
+    if (req.method !== 'POST') return methodNotAllowed(res);
+    const user = await requireUser(req, res);
+    if (!user) return;
+    const input = await body(req);
+    if (input?.accountId !== user.id) return send(res, 409, { error: 'account_changed' });
+    const name = typeof input.name === 'string' ? input.name.trim() : '';
+    if (!name || name.length > 80 || /[\u0000-\u001f\u007f]/.test(name)) return send(res, 400, { error: 'invalid_name' });
+    await prisma.user.update({ where: { id: user.id }, data: { displayName: name } });
+    return send(res, 200, { user: publicUser({ ...user, name }) });
   }
 
   if (path === '/api/account/referral') {
@@ -559,6 +548,7 @@ async function api(req, res, url) {
     if (req.method !== "GET") return methodNotAllowed(res);
     const token = tokenMatch?.[1] || url.searchParams.get("token") || "";
     const loginToken = await readLoginToken(token);
+    if (loginToken?.status === 'EXPIRED' && loginToken.usedAt) return send(res, 410, { error: 'login_token_cancelled' });
     if (!loginToken || loginToken.usedAt || loginToken.status === "USED") return send(res, 404, { error: "login_token_not_found", status: "missing" });
     if (loginToken.expiresAt.getTime() <= Date.now()) {
       await prisma.telegramLoginRequest.update({ where: { id: loginToken.id }, data: { status: "EXPIRED" } }).catch(() => null);

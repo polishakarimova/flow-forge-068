@@ -14,7 +14,7 @@ async function request(path:string,options?:RequestInit):Promise<LegalStatus>{
   return data;
 }
 export function LegalProvider({children}:{children:ReactNode}){
-  const {isAuthenticated,isLoading}=useAuth();
+  const {isAuthenticated,isLoading,sessionExpired}=useAuth();
   const [status,setStatus]=useState<LegalStatus|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
   const generation=useRef(0),mounted=useRef(true),mutating=useRef(false);
   useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
@@ -22,9 +22,14 @@ export function LegalProvider({children}:{children:ReactNode}){
     if(isLoading||mutating.current)return;
     const current=++generation.current;
     try{const value=await request(isAuthenticated?'/api/legal/status':'/api/legal');if(mounted.current&&current===generation.current){setStatus(value);setError('');}}
-    catch(e){if(mounted.current&&current===generation.current)setError(e instanceof Error?e.message:'Не удалось загрузить документы.');}
+    catch(e){
+      if(mounted.current && current===generation.current){
+        if(isAuthenticated && (e as {status?:number}).status===401) sessionExpired();
+        else setError(e instanceof Error?e.message:'Не удалось загрузить документы.');
+      }
+    }
     finally{if(mounted.current&&current===generation.current)setLoading(false);}
-  },[isAuthenticated,isLoading]);
+  },[isAuthenticated,isLoading,sessionExpired]);
   useEffect(()=>{void refresh();const onVisible=()=>{if(document.visibilityState==='visible')void refresh();};window.addEventListener('focus',onVisible);document.addEventListener('visibilitychange',onVisible);return()=>{window.removeEventListener('focus',onVisible);document.removeEventListener('visibilitychange',onVisible);};},[refresh]);
   async function mutate(path:string,body:unknown){
     if(mutating.current)throw Error('Дождитесь сохранения выбора.');

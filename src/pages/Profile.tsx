@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { UserRound, LogOut, Package, FileText, Network, GraduationCap, Bot, ChevronRight, Heart, UsersRound, Copy, Check, Share2, History, ChartNoAxesCombined } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { MobileNav } from '@/components/MobileNav';
@@ -23,10 +23,20 @@ export default function Profile() {
 
 function ProfileAccount() {
   const { startTour } = useTour();
-  const { user, logout } = useAuth();
-  const { products, allContentItems, funnels } = useDataStore();
-  const navigate = useNavigate();
+  const { user, logout, saveName } = useAuth();
+  const { products, allContentItems, funnels, stateReady } = useDataStore();
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const [editingName, setEditingName] = useState(false), [name, setName] = useState('');
+  const [savingName, setSavingName] = useState(false), [nameError, setNameError] = useState('');
+  async function submitName(event: React.FormEvent) {
+    event.preventDefault();
+    if (savingName || !name.trim()) return;
+    setSavingName(true);
+    setNameError('');
+    try { await saveName(name.trim()); setEditingName(false); }
+    catch { setNameError('Не удалось сохранить имя. Проверьте соединение и попробуйте ещё раз.'); }
+    finally { setSavingName(false); }
+  }
   const [wallet, setWallet] = useState<Wallet | null>(null), [loading, setLoading] = useState(true), [walletError, setWalletError] = useState('');
   const [agentCount, setAgentCount] = useState<number | null>(null);
   const [dialog, setDialog] = useState<'invite' | 'history' | null>(null), [copied, setCopied] = useState(false), [shareError, setShareError] = useState('');
@@ -55,7 +65,7 @@ function ProfileAccount() {
   }, [loadWallet]);
   async function signOut() {
     setBusy(true); setError('');
-    try { await logout(); navigate('/', { replace: true }); }
+    try { await logout(); }
     catch { setError('Не удалось выйти. Проверьте интернет и попробуйте ещё раз.'); }
     finally { setBusy(false); }
   }
@@ -77,13 +87,23 @@ function ProfileAccount() {
   return <SidebarProvider><div className="min-h-screen flex w-full bg-background">
     <div className="hidden md:block"><AppSidebar /></div>
     <main className="flex-1 min-w-0 px-4 pt-1 md:pt-6 pb-24"><div className="max-w-lg mx-auto">
-      <div className="flex items-center gap-2 mb-5"><AppBackButton /><h1 className="kk-page-title text-lg font-semibold">Профиль</h1></div>
+      <div className="flex items-center gap-2 mb-5"><AppBackButton /><h1 className="kk-page-title text-lg font-semibold">Личный кабинет</h1></div>
       <section aria-label="Аккаунт" className="flex items-center gap-3 pb-5">
         <div className="w-14 h-14 shrink-0 rounded-2xl bg-primary/10 text-primary flex items-center justify-center overflow-hidden">
           {user?.avatar ? <img src={user.avatar} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" /> : <UserRound size={27} />}
         </div>
-        <div className="min-w-0"><h2 className="text-xl font-semibold break-words">{user?.name}</h2><p className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1"><Check size={13} />Telegram подключён</p></div>
+        <div className="min-w-0"><h2 className="text-xl font-semibold break-words">{user?.name}</h2><p className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1"><Check size={13} />{user?.telegramUsername || 'Telegram подключён'}</p>
+          {!editingName && <button type="button" className="min-h-11 text-xs text-primary underline" onClick={() => { setName(user?.name || ''); setNameError(''); setEditingName(true); }}>Изменить имя</button>}
+        </div>
       </section>
+      {editingName && <form onSubmit={submitName} className="mb-5 space-y-2">
+        <label htmlFor="account-name" className="block text-sm font-medium">Имя в Карте</label>
+        <input id="account-name" value={name} maxLength={80} required autoFocus autoComplete="name" disabled={savingName}
+          onChange={e => setName(e.target.value)} className="min-h-11 w-full rounded-xl border border-border bg-card px-3 text-base" />
+        <div className="flex gap-2"><Button type="submit" disabled={savingName || !name.trim()}>{savingName ? 'Сохраняем…' : 'Сохранить'}</Button>
+          <Button type="button" variant="ghost" disabled={savingName} onClick={() => setEditingName(false)}>Отмена</Button></div>
+        {nameError && <p role="alert" className="text-xs text-destructive">{nameError}</p>}
+      </form>}
       <Link to="/profile/dashboard" className="mb-4 flex min-h-20 items-center gap-3 rounded-2xl border border-primary/20 bg-card p-4 transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><ChartNoAxesCombined size={21} /></span>
         <span className="min-w-0 flex-1"><strong className="block text-sm font-semibold">Мой дашборд</strong><span className="mt-1 block text-xs text-muted-foreground">Контент, публикации и результаты</span></span><ChevronRight size={17} className="shrink-0 text-muted-foreground" />
@@ -105,7 +125,7 @@ function ProfileAccount() {
       <section aria-labelledby="profile-workspace" className="mb-5">
         <h2 id="profile-workspace" className="text-xs font-medium text-muted-foreground mb-2 px-1">Моё пространство</h2>
         <div className="bg-card border border-border rounded-2xl divide-y divide-border overflow-hidden">
-          {[{ to: '/products', label: 'Продукты', value: products.length, icon: Package }, { to: '/content', label: 'Материалы', value: allContentItems.length, icon: FileText }, { to: '/dashboard', label: 'Активные воронки', value: funnels.filter(f => f.active).length, icon: Network }].map(({ to, label, value, icon: Icon }) => <Link key={to} to={to} className="flex items-center gap-3 px-4 py-3 min-h-12 text-sm hover:bg-muted/40"><Icon size={17} className="text-muted-foreground shrink-0" /><span className="flex-1">{label}</span><span className="text-muted-foreground tabular-nums">{value}</span><ChevronRight size={15} className="text-muted-foreground" /></Link>)}
+          {[{ to: '/products', label: 'Продукты', value: products.length, icon: Package }, { to: '/content', label: 'Материалы', value: allContentItems.length, icon: FileText }, { to: '/dashboard', label: 'Активные воронки', value: funnels.filter(f => f.active).length, icon: Network }].map(({ to, label, value, icon: Icon }) => <Link key={to} to={to} className="flex items-center gap-3 px-4 py-3 min-h-12 text-sm hover:bg-muted/40"><Icon size={17} className="text-muted-foreground shrink-0" /><span className="flex-1">{label}</span><span className="text-muted-foreground tabular-nums">{stateReady ? value : '—'}</span><ChevronRight size={15} className="text-muted-foreground" /></Link>)}
         </div>
       </section>
       <button type="button" className="flex items-center gap-3 min-h-12 w-full px-3 text-sm text-left hover:bg-muted/40 rounded-xl" onClick={() => { resetTour(); startTour(); }}><GraduationCap size={18} className="text-muted-foreground" /><span className="flex-1">Как пользоваться картой</span><ChevronRight size={15} className="text-muted-foreground" /></button>

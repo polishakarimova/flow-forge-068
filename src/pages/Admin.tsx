@@ -67,7 +67,7 @@ function System({ data }: { data: AdminOverview }) {
   </div>;
 }
 export default function Admin() {
-  const { logout, loginWithTelegram } = useAuth(), navigate = useNavigate();
+  const { signInMiniApp } = useAuth(), navigate = useNavigate();
   const attemptedTelegram = useRef(false);
   const [data, setData] = useState<AdminOverview | null>(null), [days, setDays] = useState(30), [refresh, setRefresh] = useState(0);
   const [tab, setTab] = useState('overview'), [error, setError] = useState(''), [loading, setLoading] = useState(true), [authBusy, setAuthBusy] = useState(false);
@@ -87,8 +87,8 @@ export default function Admin() {
         const app = (window as Window & { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp;
         if (!controller.signal.aborted && err instanceof Error && ['unauthorized', 'admin_reauthentication_required'].includes(err.message) && app?.initData && !attemptedTelegram.current) {
           attemptedTelegram.current = true;
-          const result = await loginWithTelegram('/admin');
-          if (result.success && !controller.signal.aborted) return request();
+          await signInMiniApp();
+          if (!controller.signal.aborted) return request();
         }
         throw err;
       }
@@ -97,7 +97,7 @@ export default function Admin() {
       if (!controller.signal.aborted || controller.signal.reason === 'timeout') setError(errorMessages[err.message] || 'Не удалось загрузить показатели. Проверьте интернет и повторите.');
     }).finally(() => { clearTimeout(timeout); if (!controller.signal.aborted || controller.signal.reason === 'timeout') setLoading(false); });
     return () => { clearTimeout(timeout); controller.abort(); };
-  }, [days, refresh, loginWithTelegram]);
+  }, [days, refresh, signInMiniApp]);
   useEffect(() => {
     if (!data) return;
     let seen = Date.now();
@@ -117,8 +117,8 @@ export default function Admin() {
     setAuthBusy(true);
     try {
       const app = (window as Window & { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp;
-      if (app?.initData) { const result = await loginWithTelegram('/admin'); if (!result.success) throw new Error(result.message); setRefresh(v => v + 1); }
-      else { await logout(); navigate('/?returnTo=%2Fadmin', { replace: true }); }
+      if (app?.initData) { await signInMiniApp(); setRefresh(v => v + 1); }
+      else navigate('/login?returnTo=%2Fadmin&reauth=1', { replace: true });
     } catch { setError('Не удалось подтвердить вход. Повторите попытку.'); } finally { setAuthBusy(false); }
   };
   const attention = data ? ['uncertain', 'blocked', 'missed', 'stale', 'failed'].reduce((n, key) => n + (data.publishing.queue[key] || 0), 0) : 0;

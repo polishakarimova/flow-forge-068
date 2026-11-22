@@ -25,7 +25,7 @@ export function EditorialProvider({children}:{children:ReactNode}) {
   locked.current=true;sequence.current++;setBusy(true);
   const token=generation.current;
   try {
-   const r=await fetch('/api/content-workspace',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({type,input,revisions:current.current.revisions}),signal:AbortSignal.timeout(20000)});
+   const r=await fetch('/api/content-workspace',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json','X-Karta-Account':user.id},body:JSON.stringify({type,input,revisions:current.current.revisions}),signal:AbortSignal.timeout(20000)});
    const next=await r.json();
    if(!r.ok) throw new Error(next.message || 'Не удалось сохранить. Ваш текст остаётся в редакторе.');
    if(token!==generation.current) throw new Error('Аккаунт изменился. Обновите страницу.');

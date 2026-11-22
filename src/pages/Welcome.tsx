@@ -1,72 +1,111 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowRight, Loader2 } from 'lucide-react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/lib/authContext';
-import { safeAuthReturn } from '@/lib/authNavigation';
+import { authRequest, miniAppData } from '@/lib/authRequest';
+import { authErrorMessage, safeAuthReturn } from '@/lib/authNavigation';
+import { pendingReferral } from '@/lib/referral';
 import { EntryWordmark } from '@/components/EntryWordmark';
 import './welcome.css';
 
+type PendingLogin = { token: string; expiresAt: string; botLink?: string; returnTo?: string };
+const pendingKey = 'contentmap_pending_login';
+function remember(pending: PendingLogin | null) {
+  try {
+    if (pending) sessionStorage.setItem(pendingKey, JSON.stringify(pending));
+    else sessionStorage.removeItem(pendingKey);
+  } catch { /* In-memory polling still works. */ }
+}
+function initialPending(queryToken: string | null): PendingLogin | null {
+  if (miniAppData()) return null;
+  try {
+    const stored: PendingLogin | null = JSON.parse(sessionStorage.getItem(pendingKey) || 'null');
+    if (stored?.token && (!queryToken || queryToken === stored.token)) return stored;
+  } catch { /* A callback can resume without storage. */ }
+  return queryToken ? { token: queryToken, expiresAt: new Date(Date.now() + 600000).toISOString() } : null;
+}
 export default function Welcome() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const returnTo = safeAuthReturn(params.get('returnTo'));
-  const { isAuthenticated, isLoading, loginWithTelegram, completeTelegramLogin } = useAuth();
+  const { isAuthenticated, signInMiniApp, confirmBrowserLogin, entryError } = useAuth();
+  const [pending, setPending] = useState(() => initialPending(params.get('telegramLoginToken')));
+  const returnTo = safeAuthReturn(params.get('returnTo') || pending?.returnTo);
+  const reauthenticate = returnTo === '/admin' && params.get('reauth') === '1';
   const [message, setMessage] = useState('');
-  const [botLink, setBotLink] = useState('');
-  const [attempted, setAttempted] = useState(false);
-  const completedToken = useRef('');
-  const token = params.get('telegramLoginToken');
+  const [busy, setBusy] = useState(false);
+  const starting = useRef(false);
+  const checking = useRef(false);
+  const redirect = isAuthenticated && !reauthenticate;
+  useEffect(() => {
+    if (!params.has('telegramLoginToken')) return;
+    if (pending) remember(pending);
+    const clean = new URLSearchParams(params);
+    clean.delete('telegramLoginToken');
+    setParams(clean, { replace: true });
+  }, [params, setParams, pending]);
 
+  const check = useCallback(async () => {
+    if (!pending || checking.current || document.visibilityState === 'hidden') return;
+    checking.current = true;
+    try {
+      if (!(Date.parse(pending.expiresAt) > Date.now())) throw new Error('login_token_expired');
+      if (await confirmBrowserLogin(pending.token, returnTo)) remember(null);
+      else setMessage('');
+    } catch (e) {
+      const err = e as Error & { status?: number };
+      if ([403, 404, 410].includes(err.status || 0) || err.message === 'login_token_expired') {
+        remember(null);
+        setPending(null);
+        setMessage(authErrorMessage(err.message));
+      } else setMessage('Пока нет связи с сайтом. Проверим подтверждение ещё раз.');
+    } finally { checking.current = false; }
+  }, [pending, confirmBrowserLogin, returnTo]);
   useEffect(() => {
-    if (isAuthenticated) navigate(returnTo, { replace: true });
-  }, [isAuthenticated, navigate, returnTo]);
-  useEffect(() => {
-    if (!token || completedToken.current === token) return;
-    completedToken.current = token;
-    void completeTelegramLogin(token).then(result => {
-      setMessage(result.message);
-      if (!result.success && result.message.startsWith('Ссылка для входа')) setParams({ returnTo }, { replace: true });
-    });
-  }, [token, completeTelegramLogin, setParams, returnTo]);
+    if (!pending || redirect) return;
+    void check();
+    const timer = window.setInterval(check, 3000);
+    window.addEventListener('focus', check);
+    document.addEventListener('visibilitychange', check);
+    return () => { clearInterval(timer); window.removeEventListener('focus', check); document.removeEventListener('visibilitychange', check); };
+  }, [check, pending, redirect]);
 
   async function enter() {
-    if (isLoading) return;
-    if (isAuthenticated) { navigate(returnTo); return; }
-    setAttempted(true); setMessage('');
-    const result = token ? await completeTelegramLogin(token) : await loginWithTelegram(returnTo);
-    setBotLink(result.botLink || ''); setMessage(result.message);
-    if (result.success) navigate(returnTo, { replace: true });
+    if (starting.current) return;
+    starting.current = true;
+    setBusy(true);
+    setMessage('');
+    let popup: Window | null = null;
+    try {
+      if (miniAppData()) {
+        await signInMiniApp();
+        navigate(returnTo, { replace: true });
+      } else {
+        popup = window.open('about:blank', '_blank');
+        if (popup) popup.opener = null;
+        const start: PendingLogin = await authRequest('/api/auth/telegram-login-token', { returnTo, referralCode: pendingReferral() });
+        if (!start.token || !start.botLink || !Date.parse(start.expiresAt)) throw Error('request_failed');
+        remember(start);
+        setPending(start);
+        if (popup) popup.location.href = start.botLink;
+      }
+    } catch (e) { popup?.close(); setMessage(authErrorMessage((e as Error).message)); }
+    finally { starting.current = false; setBusy(false); }
   }
-  useEffect(() => {
-    if (!botLink) return;
-    let active = true;
-    const resume = async () => {
-      if (document.visibilityState !== 'visible') return;
-      const result = await loginWithTelegram(returnTo);
-      if (!active) return;
-      if (result.success) navigate(returnTo, { replace: true });
-      else setMessage(result.message);
-    };
-    window.addEventListener('focus', resume);
-    document.addEventListener('visibilitychange', resume);
-    return () => { active = false; window.removeEventListener('focus', resume); document.removeEventListener('visibilitychange', resume); };
-  }, [botLink, loginWithTelegram, navigate, returnTo]);
-
-  if (isAuthenticated || (isLoading && !attempted && !token)) return <div className="min-h-screen bg-background flex items-center justify-center"><p role="status" className="text-sm text-muted-foreground">Открываем пространство…</p></div>;
-
+  if (redirect) return <Navigate to={returnTo} replace />;
   return <div className="entry-page">
     <main className="entry-main">
       <EntryWordmark />
       <p className="entry-intro">Идеи, тексты и публикации —<br />в одном пространстве.</p>
-      <button type="button" onClick={enter} disabled={isLoading} className="entry-primary">
-        {isLoading ? <><Loader2 className="animate-spin" />{attempted || token ? 'Входим…' : 'Проверяем вход…'}</> : botLink ? 'Я подтвердил(а)' : <>Начать<ArrowRight /></>}
-      </button>
-      <p className="entry-footnote">Вход через Telegram</p>
+      {pending ? <div className="entry-feedback" role="status">
+        <p>{message || 'Подтвердите вход в боте и вернитесь в эту вкладку. Кабинет откроется автоматически.'}</p>
+        {pending.botLink && <a href={pending.botLink} target="_blank" rel="noopener noreferrer">Открыть Telegram</a>}
+      </div> : <>
+        <button type="button" onClick={enter} disabled={busy} className="entry-primary">
+          {busy ? <><Loader2 className="animate-spin" />Входим…</> : <>Войти через Telegram<ArrowRight /></>}
+        </button>
+        {(message || entryError) && <p role="alert" className="entry-feedback">{message || entryError}</p>}
+      </>}
       <a href="/legal" className="text-xs text-muted-foreground underline underline-offset-4 inline-flex items-center min-h-11">Документы сервиса</a>
-      {(message || botLink) && <div role={botLink ? 'status' : 'alert'} className="entry-feedback">
-        <p>{message}</p>
-        {botLink && <a href={botLink} target="_blank" rel="noopener noreferrer" className="inline-flex py-2 text-primary underline underline-offset-4">Открыть Telegram</a>}
-      </div>}
     </main>
   </div>;
 }

@@ -23,7 +23,8 @@ html[data-telegram-app] #root {
   padding: var(--app-safe-top) var(--app-safe-right) 0 var(--app-safe-left);
 }
 html[data-telegram-app] #root .min-h-screen,
-html[data-telegram-app] #root .min-h-svh {
+html[data-telegram-app] #root .min-h-svh,
+html[data-telegram-app] #root .entry-page {
   min-height: calc(var(--app-viewport-height, 100dvh) - var(--app-safe-top));
 }
 html[data-telegram-app] header.sticky,
