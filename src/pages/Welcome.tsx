@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowRight, Loader2 } from 'lucide-react';
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/lib/authContext';
 import { authRequest, miniAppData } from '@/lib/authRequest';
 import { authErrorMessage, safeAuthReturn } from '@/lib/authNavigation';
@@ -105,7 +105,7 @@ export default function Welcome() {
         </button>
         {(message || entryError) && <p role="alert" className="entry-feedback">{message || entryError}</p>}
       </>}
-      <a href="/legal" className="text-xs text-muted-foreground underline underline-offset-4 inline-flex items-center min-h-11">Документы сервиса</a>
+      <Link to="/legal" className="text-xs text-muted-foreground underline underline-offset-4 inline-flex items-center min-h-11">Документы сервиса</Link>
     </main>
   </div>;
 }

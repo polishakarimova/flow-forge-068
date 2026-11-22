@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {documentSource} from './legal-document-source.mjs';
 import {PGlite} from '@electric-sql/pglite';
 import {mkdtempSync,cpSync,readFileSync,writeFileSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
@@ -72,4 +73,20 @@ test('startup rejects changed or missing public documents before accepting any c
     const file=join(dir,legalManifest.documents[0].href.slice(1));writeFileSync(file,readFileSync(file,'utf8')+'modified');
     assert.throws(()=>loadLegalManifest(pathToFileURL(dir+'/')),/hash_mismatch/);
   }finally{assert.ok(dir.startsWith(join(tmpdir(),'karta-legal-')));rmSync(dir,{recursive:true,force:true});}
+});
+
+test('document copies open only when public and identical to the archived edition', async () => {
+  const archived = id => ({id, href:'/legal/2026-11-22/'+id+'.html'});
+  const terms = archived('terms');
+  const html = readFileSync(new URL('../public'+terms.href,import.meta.url),'utf8');
+  const paragraphs = [...html.matchAll(/<(h1|h2|p)(?: [^>]*)?>(.*?)<\/\1>/gs)].map(match=>match[2]);
+  const same = new Response(paragraphs.join('\r\n'), {headers:{'Content-Type':'text/plain; charset=utf-8'}});
+  const remote = await documentSource(terms,'2026-11-22',async()=>same);
+  assert.match(remote,/^https:\/\/docs\.google\.com\/document\/d\/[a-zA-Z0-9_-]+\/preview$/);
+  assert.equal(await documentSource(terms,'2026-11-22',()=>{throw Error('unexpected repeated fetch');}),remote);
+  for (const [slug,response] of [['privacy',new Response('sign in',{status:403})],['advertising',new Response('edited',{headers:{'Content-Type':'text/plain'}})]]) {
+    const doc = archived(slug);
+    assert.equal(await documentSource(doc,'2026-11-22',async()=>response),doc.href);
+  }
+  assert.equal(await documentSource(terms,'another-edition',async()=>same),terms.href);
 });

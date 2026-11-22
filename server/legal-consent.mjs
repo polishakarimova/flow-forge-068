@@ -1,5 +1,6 @@
 import {createHash, randomUUID} from 'node:crypto';
 import {readFileSync} from 'node:fs';
+import {documentSource} from './legal-document-source.mjs';
 const hash = value => createHash('sha256').update(value).digest('hex');
 const failure = (message, status=400) => Object.assign(new Error(message), {status});
 
@@ -90,6 +91,13 @@ export async function canSendMarketing(pool,userId) {
 }
 
 export async function legalApi(req,res,{path,pool,send,readBody,getUser}) {
+  if (path.startsWith('/api/legal/source/') && req.method === 'GET') {
+    const document = legalManifest.documents.find(doc => path === '/api/legal/source/'+legalManifest.version+'/'+doc.id);
+    if (!document) return send(res,404,{message:'Редакция документа не найдена.'});
+    const location = await documentSource(document,legalManifest.version);
+    res.writeHead(302, {Location:location, 'Cache-Control':'no-store', 'Referrer-Policy':'no-referrer'});
+    return res.end();
+  }
   if(path==='/api/legal'&&req.method==='GET')return send(res,200,legalManifest);
   if(!['/api/legal/status','/api/legal/accept','/api/legal/preferences','/api/legal/withdraw'].includes(path))return send(res,404,{message:'Страница не найдена.'});
   const user=await getUser();if(!user)return send(res,401,{error:'unauthorized'});

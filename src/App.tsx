@@ -91,7 +91,7 @@ function AppRoutes() {
 
 function AppWorkspace(){
   const {isAuthenticated,isLoading,sessionError,restore}=useAuth(),{status,loading,error,refresh}=useLegal(),location=useLocation();
-  if(location.pathname==='/legal')return <LegalCentre />;
+  if(location.pathname==='/legal'||location.pathname==='/legal/')return <LegalCentre />;
   if(isLoading)return <div role="status" className="p-6 text-sm text-muted-foreground">Проверяем вход…</div>;
   if(sessionError)return <div role="alert" className="mx-auto max-w-sm space-y-3 p-6 text-sm"><p>Не удалось проверить вход. Проверьте соединение и попробуйте ещё раз.</p><button className="min-h-11 text-primary underline" onClick={()=>void restore()}>Повторить проверку</button></div>;
   if(isAuthenticated){

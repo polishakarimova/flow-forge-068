@@ -1,9 +1,49 @@
-.legal-entry{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:max(20px,env(safe-area-inset-top)) 16px max(20px,env(safe-area-inset-bottom));background:hsl(var(--background))}
-.legal-entry-card{width:100%;max-width:430px;padding:24px;background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:20px;box-shadow:0 12px 48px -24px #54487538}
-.legal-choice{display:flex;gap:12px;align-items:flex-start;font-size:14px;line-height:1.6}
-.legal-choice>[role=checkbox]{margin-top:4px;flex:none;width:19px;height:19px;border-radius:5px}
-.legal-choice label{cursor:pointer;min-width:0}
-.legal-choice a{position:relative}
-.legal-reader.legal-reader{width:calc(100% - 24px);max-width:800px;height:min(88dvh,900px);max-height:calc(100dvh - 24px);display:flex;flex-direction:column;border-radius:16px;overflow:hidden}
-@media(max-width:480px){.legal-entry{align-items:flex-end}.legal-entry-card{padding:21px 19px}.legal-reader.legal-reader{height:calc(100dvh - 24px)}}
-@media(prefers-reduced-motion:reduce){.legal-reader{animation:none!important;transition:none!important}}
+.legal-entry {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: linear-gradient(125deg, #ebe7ed 0%, #fbf8f2 38%, #f0eaf4 72%, #e6e0ed 100%);
+  color: #332a3d;
+}
+
+html[data-telegram-app] .legal-entry {
+  min-height: calc(var(--app-viewport-height, 100dvh) - var(--app-safe-top));
+  padding: 16px 16px max(16px, var(--app-safe-bottom));
+}
+
+.legal-entry-card {
+  width: min(100%, 444px);
+  padding: clamp(20px, 5vw, 32px);
+  border: 1px solid rgba(255, 255, 255, .94);
+  border-radius: 28px;
+  background: linear-gradient(145deg, #ffffffda, #fcf9fdad 63%, #f9f5fcce);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  box-shadow: inset 0 1px 1px #fff, inset 0 -1px 2px #c9bcd03d, 0 16px 48px -20px #49364b56;
+}
+
+.legal-signature { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; color: #664585; font-size: 13px; font-weight: 600; }
+.legal-signature svg { width: 28px; height: 28px; padding: 5px; border-radius: 9px; background: #eee6f4; }
+.legal-heading { margin: 0; font-size: clamp(22px, 5vw, 27px); line-height: 1.2; font-weight: 650; letter-spacing: -.025em; }
+.legal-form { display: grid; gap: 14px; }
+.legal-mailing { min-width: 0; margin: 0; padding: 8px 0 0; border: 0; }
+.legal-mailing legend { width: 100%; font-size: 13px; font-weight: 600; }
+.legal-mailing legend span { display: inline-block; margin-left: 4px; color: hsl(var(--muted-foreground)); font-size: 12px; font-weight: 400; }
+.legal-choice { display: flex; align-items: flex-start; gap: 12px; padding: 7px 0; font-size: 14px; line-height: 1.5; }
+.legal-choice > [role=checkbox] { margin-top: 1px; flex: none; width: 21px; height: 21px; border-radius: 6px; }
+.legal-choice label { cursor: pointer; min-width: 0; }
+.legal-choice a { position: relative; }
+.legal-entry .legal-choice a { color: #654387; text-decoration-color: #a897b7; }
+.legal-entry .legal-choice > [role=checkbox] { border-color: #897498; }
+.legal-entry .legal-choice > [data-state=checked] { color: white; background: #704b8e; border-color: #704b8e; }
+.legal-entry .legal-form { padding-top: 12px; border-top: 1px solid #bbaac342; }
+.legal-entry .legal-submit { border-radius: 16px; background: #6a4789; color: white; box-shadow: inset 0 1px 0 #ffffff2b; }
+.legal-entry .legal-submit:hover:enabled { background: #563475; }
+.legal-entry .legal-submit:disabled { opacity: 1; background: #e6dfea; color: #68596f; }
+.legal-entry :focus-visible { outline: 2px solid #654387; outline-offset: 3px; }
+
+.legal-reader.legal-reader { width: calc(100% - 24px); max-width: 800px; height: min(88dvh, 900px); max-height: calc(100dvh - 24px); display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; }
+@media (max-width: 480px) { .legal-reader.legal-reader { height: calc(100dvh - 24px); } }
+@media (prefers-reduced-motion: reduce) { .legal-reader { animation: none !important; transition: none !important; } }
+@media (prefers-reduced-transparency: reduce) { .legal-entry-card { background: #fbf9fc; backdrop-filter: none; -webkit-backdrop-filter: none; } }

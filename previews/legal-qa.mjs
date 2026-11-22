@@ -6,7 +6,7 @@ import {legalApi,legalManifest,ensureLegalSchema,requireLegal} from '../server/l
 import {readJsonBody} from '../server/request-security.mjs';
 process.env.PLAYWRIGHT_BROWSERS_PATH='C:/Users/polin/AppData/Local/CodexWork/browser-engines';
 const {chromium,webkit,expect}=await import('@playwright/test');
-const out='C:/Users/polin/AppData/Local/CodexWork/karta-legal-20261015/browser-qa';mkdirSync(out,{recursive:true});
+const out=process.env.KARTA_LEGAL_QA_DIR || 'C:/Users/polin/AppData/Local/CodexWork/karta-legal-20261015/browser-qa';mkdirSync(out,{recursive:true});
 const db=new PGlite(),query=async(sql,args)=>args?db.query(sql,args):(await db.exec(sql)).at(-1),pool={query,connect:async()=>({query,release(){}})};
 await ensureLegalSchema(pool);
 let workspaceReads=0;
@@ -28,6 +28,9 @@ const fixture=createServer(async(req,res)=>{
   }catch(e){send(res,e.status||500,{error:e.status===428?'legal_required':'test_failure',message:e.message});}
 });
 await new Promise(r=>fixture.listen(3001,'127.0.0.1',r));
+async function isolateBrowser(context) {
+  await context.route(/^https?:\/\/(?!127\.0\.0\.1:8087(?:\/|$))/, route => route.abort());
+}
 const cases=[],errors=[];
 try{
   for(const engine of ['edge','webkit']){
@@ -36,6 +39,13 @@ try{
       for(const width of [320,390,430,1280]){
         await query('truncate cm_legal_state,cm_legal_events');workspaceReads=0;
         const context=await browser.newContext({viewport:{width,height:width===1280?900:844}});
+        await isolateBrowser(context);
+        if (width === 430) {
+          await context.addInitScript(() => {
+            window.Telegram = {WebApp:{platform:'ios',isFullscreen:true,viewportStableHeight:844,
+              safeAreaInset:{top:47,bottom:34},contentSafeAreaInset:{top:56}}};
+          });
+        }
         await context.addCookies([{name:'fixture_account',value:'owner',url:'http://127.0.0.1:8087'}]);
         const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
         await page.goto('http://127.0.0.1:8087/home');
@@ -44,6 +54,11 @@ try{
         await expect(page.locator('#legal-terms')).not.toBeChecked();
         await expect(page.locator('#legal-personal-data')).not.toBeChecked();
         await expect(page.locator('#legal-advertising')).not.toBeChecked();
+        if (width === 430) {
+          await expect(page.locator('html')).toHaveAttribute('data-telegram-fullscreen','true');
+          const box = await page.locator('.legal-entry-card').boundingBox();
+          if (!box || box.y < 84 || box.y + box.height > 810) throw Error('Telegram controls overlap consent card');
+        }
         if(workspaceReads)throw Error('Workspace loaded before acceptance');
         const denied=await page.request.get('http://127.0.0.1:8087/api/state/main');if(denied.status()!==428)throw Error('Direct API consent bypass');
         await page.screenshot({path:`${out}/${engine}-${width}-entry.png`,fullPage:true});
@@ -82,10 +97,14 @@ try{
         cases.push({engine,width,passed:true,checks:17});await context.close();
       }
       const anonymous=await browser.newContext({viewport:{width:390,height:844}}),page=await anonymous.newPage();
+      await isolateBrowser(anonymous);
       await page.goto('http://127.0.0.1:8087/');await expect(page.getByRole('link',{name:'Документы сервиса'})).toBeVisible();
       await page.getByRole('link',{name:'Документы сервиса'}).click();await expect(page.getByRole('heading',{name:'Документы и согласия'})).toBeVisible();
       await expect(page.getByRole('button',{name:legalManifest.documents[1].title,exact:true})).toBeVisible();
-      await expect(page.locator('#legal-terms')).toHaveCount(0);cases.push({engine,anonymous:true,passed:true,checks:4});await anonymous.close();
+      await expect(page.locator('#legal-terms')).toHaveCount(0);
+      await page.goto('http://127.0.0.1:8087/legal/', {waitUntil:'domcontentloaded'});
+      await expect(page.getByRole('button',{name:legalManifest.documents[1].title,exact:true})).toBeVisible();
+      cases.push({engine,anonymous:true,passed:true,checks:5});await anonymous.close();
     }finally{await browser.close();}
   }
   if(errors.length)throw Error(errors.join('\n'));
