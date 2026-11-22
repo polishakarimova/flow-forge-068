@@ -789,11 +789,13 @@ const FunnelMapPage = () => {
           handleTouchStart(e, node.id);
           handleTap(node.id);
         }}
-        onTouchEnd={() => {
+        onTouchEnd={(event) => {
           if (!touchRef.current.moved && isClickable) {
             const now = Date.now();
             const last = lastTapRef.current;
             if (last.nodeId === node.id && now - last.time < 350) {
+              // Suppress the compatibility click on the editor that this tap opens.
+              event.preventDefault();
               handleNodeClick(node);
               lastTapRef.current = { nodeId: "", time: 0 };
             } else {
