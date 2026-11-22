@@ -7,7 +7,7 @@ const labels = {
 const pages = new Set(['home','profile','legal','admin','calendar','context','products','map','dashboard','ideas','funnels','agents','content','publications','stories','settings']);
 const services = new Set(['auth','legal','account','admin','agent','state','threads','telegram','internal','publications','context']);
 const endpoints = new Set(['me','logout','profile','dashboard','referral','status','start','accept','withdraw','preferences','overview','notices','main','publications','connections','actions','approve','telegram-mini-app','telegram-login-token','telegram','miniapp','tools','connect','refresh']);
-const causes = new Set(['Error','TypeError','ReferenceError','RangeError','SyntaxError','ChunkLoadError','network','request_failed','telegram_setup','telegram_updates','threads_scheduler']);
+const causes = new Set(['Error','TypeError','ReferenceError','RangeError','SyntaxError','ChunkLoadError','network','request_failed','telegram_setup','telegram_updates','telegram_webhook','telegram_confirmation','threads_scheduler']);
 
 export function noticeRecipient(env) {
   const allowed = [...new Set(String(env.ADMIN_TELEGRAM_IDS || '').split(',').map(id=>id.trim()).filter(id=>/^[1-9]\d{0,18}$/.test(id)))];
@@ -59,6 +59,12 @@ const details = `select n.id,n.kind,n.route,n.reason,n.method,n.status,n.source_
   left join lateral(select "telegramId",username from telegram_accounts where "userId"=n.user_id order by "createdAt",id limit 1) t on true
   left join cm_like_transactions reward on n.kind='authorized' and reward.invited_user_id=n.user_id
   left join users ref on ref.id=reward.user_id`;
+export async function noticeQueueStatus(pool) {
+  const {rows:[summary]}=await pool.query(`select count(*) filter (where delivered_at is null)::integer as pending,
+    min(created_at) filter (where delivered_at is null) as oldest_pending_at,
+    max(delivered_at) as last_delivered_at from cm_admin_notices`);
+  return summary;
+}
 export async function readNotices(pool,id=null) {
   const {rows}=await pool.query(details+(id?' where n.id=$1':'')+' order by n.last_at desc limit 60',id?[id]:[]);
   return rows.map(row=>({...row,title:labels[row.kind]}));

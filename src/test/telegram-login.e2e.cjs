@@ -9,7 +9,7 @@ const path = require('node:path');
  async function setup({mini=true,failLogin=false,failLoad=false,authenticated=false,wrongSession=false,failRestoreOnce=false,accepted=true}={}) {
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
   const page=await context.newPage();page.setDefaultTimeout(12000);
-  let signedIn=authenticated,starts=0,miniCalls=0,mainWrites=0,confirmed=false;const errors=[];
+  let signedIn=authenticated,starts=0,miniCalls=0,mainWrites=0,confirmed=false,legalUnavailable=false;const errors=[];
   let destination='/home',logouts=0;
   const initData=new URLSearchParams({user:JSON.stringify({id:101})}).toString();
   const user={id:'test-only',telegramId:'101',telegramUsername:'@fixture',name:'Проверка аккаунта',authProvider:'telegram'};
@@ -20,8 +20,12 @@ const path = require('node:path');
   await page.route('**/api/**',async r=>{
    const p=new URL(r.request().url()).pathname;
    const reply=(data,status=200)=>r.fulfill({status,contentType:'application/json',body:JSON.stringify(data)});
-   if(p==='/api/legal/accept'){assert.equal(r.request().postDataJSON().advertising,false);accepted=true;}
-   if(['/api/legal','/api/legal/status','/api/legal/accept'].includes(p))return reply({version:'fixture',manifestHash:'hash',documents:['terms','privacy','personal-data','advertising'].map(id=>({id})),accepted:signedIn && accepted});
+   if(p==='/api/legal/status'&&legalUnavailable)return reply({message:'Сервис временно недоступен.'},503);
+   if(p==='/api/legal/accept'){
+    const form=r.request().postDataJSON();assert.equal(form.accountId,user.id);assert.equal(form.expectedSequence,0);
+    assert.equal(form.advertising,false);accepted=true;
+   }
+   if(['/api/legal','/api/legal/status','/api/legal/accept'].includes(p))return reply({version:'fixture',manifestHash:'hash',documents:['terms','privacy','personal-data','advertising'].map(id=>({id})),...(p==='/api/legal'?{}:{accountId:user.id,sequence:accepted?1:0,accepted:signedIn&&accepted})});
    if(p==='/api/account/profile'){assert.equal(r.request().postDataJSON().accountId,user.id);user.name=r.request().postDataJSON().name;return reply({user});}
    if(p==='/api/account/referral')return reply({balance:0,invited:0,reward:50,url:base,transactions:[]});
    if(p==='/api/agent/connections')return reply({agents:[]});
@@ -38,7 +42,7 @@ const path = require('node:path');
    if(p==='/api/state/main'){if(r.request().method()==='PUT')mainWrites++;if(failLoad)return reply({error:'unavailable'},503);}
    return reply({data:null,revision:'new'});
   });
-  return {page,context,errors,confirm:()=>{confirmed=true;},stats:()=>({starts,miniCalls,mainWrites,logouts})};
+  return {page,context,errors,confirm:()=>{confirmed=true;},failLegal:value=>{legalUnavailable=value;},stats:()=>({starts,miniCalls,mainWrites,logouts,destination})};
  }
  try {
   {
@@ -62,6 +66,17 @@ const path = require('node:path');
   await restore.page.getByRole('heading',{name:'Проверка аккаунта'}).waitFor();
   assert.equal(restore.stats().miniCalls,0);
   await restore.context.close();console.log('PASS transient connection failure restores the existing session');
+  const editor=await setup({authenticated:true});
+  await editor.page.goto(base+'/calendar?action=add&date=2026-11-22');
+  const title=editor.page.getByPlaceholder('О чём публикация?');
+  await title.fill('Черновик в открытом диалоге');
+  editor.failLegal(true);await editor.page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+  await editor.page.getByText('Не удалось обновить статус документов.',{exact:false}).waitFor({state:'attached'});
+  assert.equal(await title.inputValue(),'Черновик в открытом диалоге');
+  editor.failLegal(false);await editor.page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+  await editor.page.getByText('Не удалось обновить статус документов.',{exact:false}).waitFor({state:'detached'});
+  assert.equal(await title.inputValue(),'Черновик в открытом диалоге');
+  await editor.context.close();console.log('PASS background consent outage preserves the open publication editor');
   const newcomer=await setup({accepted:false});
   await newcomer.page.goto(base+'/profile');
   await newcomer.page.getByRole('heading',{name:'Перед началом работы'}).waitFor();
@@ -85,13 +100,18 @@ const path = require('node:path');
   await anonymous.page.goto(base+'/admin');
   await anonymous.page.getByText('Войдите через Telegram под аккаунтом администратора.').waitFor();
   await anonymous.context.close();console.log('PASS all workspace routes protected');
-  const b=await setup({mini:false});await b.page.goto(base+'/?returnTo=%2Fcalendar');
+  const b=await setup({mini:false});const deepLink='/calendar?view=legacy';
+  await b.page.goto(base+deepLink);
+  await b.page.getByRole('link',{name:'Документы сервиса'}).click();
+  await b.page.getByRole('link',{name:'К началу'}).click();
+  assert.equal(new URL(b.page.url()).searchParams.get('returnTo'),deepLink);
   await b.page.getByRole('button',{name:'Войти через Telegram',exact:true}).click();
   await b.page.getByRole('link',{name:'Открыть Telegram'}).waitFor();
   await b.page.reload();
   await b.page.getByRole('link',{name:'Открыть Telegram'}).waitFor();
   b.confirm();
-  await b.page.waitForURL('**/calendar');
+  await b.page.waitForURL(url=>url.pathname+url.search===deepLink);
+  assert.equal(b.stats().destination,deepLink);
   assert.equal(b.stats().starts,1);await b.context.close();console.log('PASS blocked popup and resumed token');
   const admin=await setup({authenticated:true,mini:false});
   await admin.page.goto(base+'/admin');

@@ -47,6 +47,7 @@ test('real SQL: changed document hash invalidates old consent and rejects stale 
     await saveLegalChoice(pool,'owner',choice({personalData:true,advertising:true}));
     const changed={...legalManifest,manifestHash:'f'.repeat(64)};
     assert.equal(legalStatus(await legalState(pool,'owner'),changed).accepted,false);
+    assert.equal(legalStatus(await legalState(pool,'owner'),changed).acceptedAt,null);
     assert.equal(legalStatus(await legalState(pool,'owner'),changed).advertising,false);
     await assert.rejects(saveLegalChoice(pool,'owner',choice(),{manifest:changed}),e=>e.status===409);
     const state=await saveLegalChoice(pool,'owner',choice({manifestHash:changed.manifestHash}),{manifest:changed});
@@ -60,9 +61,29 @@ test('HTTP handlers: documents are public, choices require session and cannot im
     assert.equal((await call('/api/legal','GET',null)).status,200);
     assert.equal((await call('/api/legal/accept','POST',null,choice())).status,401);
     assert.equal((await call('/api/legal/accept','GET',{id:'owner'})).status,405);
-    assert.equal((await call('/api/legal/accept','POST',{id:'owner'},choice({userId:'other'}))).status,200);
-    assert.equal((await call('/api/legal/status','GET',{id:'other'})).data.accepted,false);
-    assert.equal((await call('/api/legal/accept','POST',{id:'owner'},choice({version:'old'}))).status,409);
+    const first={id:'owner'},second={id:'other'};
+    const current=await call('/api/legal/status','GET',first);
+    assert.equal(current.data.accountId,first.id);assert.equal(current.data.sequence,0);
+    const form=choice({accountId:first.id,expectedSequence:0,userId:second.id});
+    assert.equal((await call('/api/legal/accept','POST',first,choice())).data.error,'client_outdated');
+    for(const action of ['accept','preferences','withdraw']){
+      assert.equal((await call('/api/legal/'+action,'POST',second,form)).data.error,'account_changed');
+    }
+    assert.equal((await pool.query('select * from cm_legal_events')).rows.length,0);
+    const accepted=await call('/api/legal/accept','POST',first,form);
+    assert.equal(accepted.status,200);assert.equal(accepted.data.accountId,first.id);assert.equal(accepted.data.sequence,1);
+    const other=await call('/api/legal/status','GET',second);
+    assert.equal(other.data.accepted,false);assert.equal(other.data.accountId,second.id);
+    assert.equal((await call('/api/legal/accept','POST',first,{...form,version:'old'})).status,409);
+    const subscribed={...form,expectedSequence:1,personalData:true,advertising:true};
+    assert.equal((await call('/api/legal/preferences','POST',first,subscribed)).data.sequence,2);
+    const removed={accountId:first.id,expectedSequence:2};
+    assert.equal((await call('/api/legal/withdraw','POST',first,removed)).data.sequence,3);
+    assert.equal((await call('/api/legal/withdraw','POST',first,removed)).data.sequence,3);
+    const delayed=await call('/api/legal/preferences','POST',first,subscribed);
+    assert.equal(delayed.status,409);assert.equal(delayed.data.error,'choice_changed');
+    assert.equal(await canSendMarketing(pool,first.id),false);
+    assert.equal((await pool.query('select * from cm_legal_events')).rows.length,3);
   }finally{await db.close();}
 });
 test('startup rejects changed or missing public documents before accepting any choice',()=>{

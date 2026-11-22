@@ -96,10 +96,13 @@ function AppWorkspace(){
   if(sessionError)return <div role="alert" className="mx-auto max-w-sm space-y-3 p-6 text-sm"><p>Не удалось проверить вход. Проверьте соединение и попробуйте ещё раз.</p><button className="min-h-11 text-primary underline" onClick={()=>void restore()}>Повторить проверку</button></div>;
   if(isAuthenticated){
     if(loading)return <div role="status" className="p-6 text-sm text-muted-foreground">Загружаем документы…</div>;
-    if(error||!status)return <div role="alert" className="max-w-sm mx-auto p-6 space-y-4 text-sm"><p>{error||'Документы не загрузились.'}</p><button className="text-primary underline min-h-11" onClick={()=>void refresh()}>Повторить загрузку</button></div>;
+    if(!status||(error&&!status.accepted))return <div role="alert" className="max-w-sm mx-auto p-6 space-y-4 text-sm"><p>{error||'Документы не загрузились.'}</p><button className="text-primary underline min-h-11" onClick={()=>void refresh()}>Повторить загрузку</button></div>;
     if(!status.accepted)return <LegalEntry />;
   }
-  return <DataStoreProvider><ContextProvider><EditorialProvider><BackNavigationProvider><AppRoutes /><MaterialCard /></BackNavigationProvider></EditorialProvider></ContextProvider></DataStoreProvider>;
+  return <>
+    {isAuthenticated&&error&&<div role="status" className="px-4 py-2 text-sm bg-muted">Не удалось обновить статус документов. <button className="text-primary underline" onClick={()=>void refresh()}>Повторить</button></div>}
+    <DataStoreProvider><ContextProvider><EditorialProvider><BackNavigationProvider><AppRoutes /><MaterialCard /></BackNavigationProvider></EditorialProvider></ContextProvider></DataStoreProvider>
+  </>;
 }
 function LegalSession(){const {user}=useAuth();return <LegalProvider key={user?.id||'guest'}><AppWorkspace /></LegalProvider>;}
 const App = () => (

@@ -22,13 +22,34 @@ export function healthAlerts(state,clock=Date.now()){
 async function json(path){try{return JSON.parse(await readFile(path,'utf8'));}catch{return null;}}
 async function command(args){try{return (await run('systemctl',args,{timeout:5000,maxBuffer:4096})).stdout.trim();}catch{return '';}}
 async function responds(){try{const response=await fetch('http://127.0.0.1:3001/api/health',{signal:AbortSignal.timeout(4000)});return response.ok&&(await response.json()).ok===true;}catch{return false;}}
-export async function notifyHealth(alerts, reported, send) {
- const fresh=alerts.filter(code=>!reported.includes(code));
- const resolved=reported.filter(code=>!alerts.includes(code));
- if(!fresh.length&&!resolved.length)return reported;
- const lines=['Карта контента · Мониторинг сервиса',...fresh.map(code=>'Требует внимания: '+messages[code]),...resolved.map(code=>'Устранено: '+messages[code])];
- await send(lines.join('\n'));
- return alerts;
+// Keep a bounded summary per incident until Telegram acknowledges delivery.
+export function pendingHealthChanges(alerts, previous, at) {
+ const pending={...previous?.pendingHealth};
+ const observed=previous?.pendingHealth ? previous.alerts : previous?.reportedAlerts || [];
+ for (const code of Object.keys(messages)) {
+  const active=alerts.includes(code);
+  if (active===observed.includes(code)) continue;
+  const item=pending[code] || {raised:0,cleared:0,firstAt:at};
+  pending[code]={...item,raised:item.raised+Number(active),cleared:item.cleared+Number(!active),active,lastAt:at};
+ }
+ return pending;
+}
+export async function sendHealthChanges(pending, send) {
+ const lines=[];
+ for (const [code,item] of Object.entries(pending)) {
+  const at=new Date(item.lastAt).toLocaleString('ru-RU',{timeZone:'Europe/Kaliningrad'});
+  const status=item.active?'Требует внимания':'Устранено';
+  const repeats=item.raised && item.cleared ? ` (сбоев: ${item.raised}, восстановлений: ${item.cleared})` : '';
+  lines.push(`${status}: ${messages[code]}${repeats} · ${at}`);
+ }
+ if (!lines.length) return;
+ await send(['Карта контента · Мониторинг сервиса',...lines].join('\n'));
+}
+async function saveStatus(state) {
+ await mkdir(directory,{recursive:true,mode:0o700});
+ const temp=directory+'/status.json.tmp';
+ await writeFile(temp,JSON.stringify(state),{mode:0o600});
+ await rename(temp,directory+'/status.json');
 }
 async function main(){
  const [app,deploy,backupTimer,restoreTimer,backupResult,restoreResult,deployResult,appResponding,backup,restore,receipt,disk,previous]=await Promise.all([
@@ -39,15 +60,19 @@ async function main(){
  const state={at:new Date().toISOString(),appActive:app==='active',appResponding,deployTimer:deploy==='active',backupTimer:backupTimer==='active',restoreTimer:restoreTimer==='active',backupResult,restoreResult,deployResult,backup,restore,receipt,disk:{freeBytes:disk.bavail*disk.bsize,usedPercent:Math.round((1-disk.bavail/disk.blocks)*100)},notificationsConfigured:Boolean(noticeRecipient(process.env)&&process.env.TELEGRAM_BOT_TOKEN)};
  state.alerts=healthAlerts(state);state.messages=state.alerts.map(code=>messages[code]);
  state.reportedAlerts=previous?.reportedAlerts||[];
- if(state.notificationsConfigured){
+ state.pendingHealth=pendingHealthChanges(state.alerts,previous,state.at);
+ await saveStatus(state);
+ if(state.notificationsConfigured && Object.keys(state.pendingHealth).length){
   try{
-   state.reportedAlerts=await notifyHealth(state.alerts,state.reportedAlerts,async text=>{
+   await sendHealthChanges(state.pendingHealth,async text=>{
     const response=await fetch('https://api.telegram.org/bot'+process.env.TELEGRAM_BOT_TOKEN+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(8000),body:JSON.stringify({chat_id:noticeRecipient(process.env),text})});
     if(!response.ok || !(await response.json()).ok)throw Error('delivery_failed');
    });
+   state.pendingHealth={};
+   state.reportedAlerts=state.alerts;
+   await saveStatus(state);
   }catch{console.error('Health notification pending');}
  }
- await mkdir(directory,{recursive:true,mode:0o700});const temp=directory+'/status.json.tmp';await writeFile(temp,JSON.stringify(state),{mode:0o600});await rename(temp,directory+'/status.json');
  for(const code of state.alerts)if(!previous?.alerts?.includes(code))console.error(messages[code]);
  console.log(JSON.stringify({ok:state.alerts.length===0,alerts:state.alerts}));
 }

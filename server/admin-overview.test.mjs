@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ensureNoticeSchema,firstAuthorization,recordFault,readNotices,deliverNotice,noticeRecipient} from './admin-notices.mjs';
+import {ensureNoticeSchema,firstAuthorization,recordFault,readNotices,noticeQueueStatus,deliverNotice,noticeRecipient} from './admin-notices.mjs';
 import {ensureLegalSchema,saveLegalChoice,legalManifest} from './legal-consent.mjs';
-import {notifyHealth} from '../ops/health.mjs';
+import {pendingHealthChanges,sendHealthChanges} from '../ops/health.mjs';
 import { PGlite } from '@electric-sql/pglite';
 import { buildAdminOverview, readAdminOverview } from './admin-overview.mjs';
 import { summarizeWorkspace } from './workspace-summary.mjs';
@@ -108,6 +108,7 @@ test('first accepted login and fault groups reach only the configured owner and 
     const faults={kind:'api',path:'/api/auth/start?token=private-value',method:'POST',status:503,reason:'private-value'};
     await recordFault(pool,faults,600000);await recordFault(pool,faults,601000);
     let rows=await readNotices(pool);
+    assert.equal((await noticeQueueStatus(pool)).pending,2);
     assert.equal(rows.length,2);assert.equal(rows.find(r=>r.kind==='api').occurrences,2);
     assert.equal(rows.find(r=>r.kind==='authorized').inviter,'Друг');
     assert.ok(!JSON.stringify(rows).includes('private-value'));
@@ -119,14 +120,20 @@ test('first accepted login and fault groups reach only the configured owner and 
     assert.ok(sent.every(x=>x.chat_id==='11'&&x.reply_markup.inline_keyboard[0][0].web_app.url.startsWith('https://example.invalid/admin?event=')));
     assert.ok(sent.some(x=>x.text.includes('Telegram ID 123')));assert.ok(!JSON.stringify(sent).includes('private-value'));
     assert.ok((await readNotices(pool)).every(r=>r.delivered_at));
+    const state=await noticeQueueStatus(pool);assert.equal(state.pending,0);assert.ok(state.last_delivered_at);assert.equal(state.oldest_pending_at,null);
   } finally {await db.close();}
 });
 
-test('system monitoring sends one alert then a recovery and retries failed notifications',async()=>{
-  const texts=[];const send=async text=>{texts.push(text);};
-  const reported=await notifyHealth(['app_down'],[],send);
-  await notifyHealth(['app_down'],reported,send);
-  assert.deepEqual(await notifyHealth([],reported,send),[]);
-  assert.equal(texts.length,2);assert.match(texts[1],/Устранено/);
-  await assert.rejects(notifyHealth(['app_down'],[],async()=>{throw Error('delivery failed');}));
+test('system monitoring preserves an outage and recovery across downtime of its delivery channel',async()=>{
+  const at='2026-11-22T18:00:00Z',texts=[];
+  const outage={alerts:['app_down'],pendingHealth:pendingHealthChanges(['app_down'],null,at)};
+  await assert.rejects(sendHealthChanges(outage.pendingHealth,async()=>{throw Error('delivery failed');}));
+  assert.deepEqual(pendingHealthChanges(outage.alerts,outage,at),outage.pendingHealth);
+  const recovered=pendingHealthChanges([],JSON.parse(JSON.stringify(outage)),at);
+  assert.deepEqual([recovered.app_down.raised,recovered.app_down.cleared,recovered.app_down.active],[1,1,false]);
+  await sendHealthChanges(recovered,async text=>texts.push(text));
+  const pending=pendingHealthChanges([],{alerts:[],pendingHealth:{}},at);
+  await sendHealthChanges(pending,async text=>texts.push(text));
+  assert.equal(texts.length,1);assert.match(texts[0],/Устранено.*сбоев: 1, восстановлений: 1/);
+  assert.deepEqual(pendingHealthChanges(['app_down'],{alerts:['app_down'],reportedAlerts:['app_down']},at),{});
 });

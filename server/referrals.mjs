@@ -13,6 +13,8 @@ export async function ensureReferralSchema(pool) {
       new_user boolean not null default false,
       first_authorized_at timestamptz
     );
+    alter table cm_referral_accounts add column if not exists entry_captured_at timestamptz;
+    alter table cm_referral_accounts add column if not exists pending_inviter_id text references users(id) on delete set null;
     create table if not exists cm_referral_entries (
       telegram_id text primary key,
       code text not null,
@@ -45,35 +47,41 @@ export async function rememberReferralEntry(pool, telegramId, value) {
     where cm_referral_entries.created_at <= now()-interval '30 days'`, [String(telegramId), code]);
 }
 
-// The browser must redeem its confirmed login; a bot confirmation alone is insufficient.
-// Locking the new account and the unique invited_user_id make retries/concurrent logins safe.
-export async function completeReferralAuthorization(pool, userId, value, finish = async () => null) {
+// Freeze the first verified entry, including an organic one, when issuing the session.
+export async function startReferralSession(pool, userId, value, issueSession) {
   const client = await pool.connect();
   try {
     await client.query('begin');
     await ensureReferralAccount(client, userId);
-    const { rows: [account] } = await client.query('select * from cm_referral_accounts where user_id=$1 for update', [userId]);
-    if (account.first_authorized_at) { const session = await finish(client); await client.query('commit'); return { awarded: false, session }; }
-    const { rows: [entry] } = await client.query(`select e.code from cm_referral_entries e
-      join telegram_accounts t on t."telegramId"=e.telegram_id
-      where t."userId"=$1 and e.created_at>now()-interval '30 days' order by e.created_at limit 1`, [userId]);
-    const code = entry?.code || referralCode(value);
-    let awarded = false;
-    if (account.new_user && code) {
-      const result = await client.query(`insert into cm_like_transactions(id,user_id,invited_user_id,amount)
-        select $1,a.user_id,$2,$3 from cm_referral_accounts a where a.code=$4 and a.user_id<>$2
-        and not exists(select 1 from telegram_accounts t join telegram_accounts own
-          on t."telegramId"=own."telegramId" where t."userId"=$2 and own."userId"=a.user_id)
-        on conflict(invited_user_id) do nothing returning id`, ['referral:' + userId, userId, REFERRAL_REWARD, code]);
-      awarded = result.rowCount === 1;
-    }
-    await client.query('update cm_referral_accounts set first_authorized_at=now(),new_user=false where user_id=$1', [userId]);
-    await client.query('delete from cm_referral_entries where telegram_id in(select "telegramId" from telegram_accounts where "userId"=$1)', [userId]);
-    const session = await finish(client);
+    const captured = await client.query(`update cm_referral_accounts set entry_captured_at=now(),pending_inviter_id=(
+      select inviter.user_id from cm_referral_accounts inviter where inviter.user_id<>$1 and inviter.code=coalesce((
+        select entry.code from cm_referral_entries entry join telegram_accounts t on t."telegramId"=entry.telegram_id
+        where t."userId"=$1 and entry.created_at>now()-interval '30 days' order by entry.created_at limit 1
+      ),$2)) where user_id=$1 and new_user and first_authorized_at is null and entry_captured_at is null returning user_id`,
+      [userId, referralCode(value)]);
+    if (captured.rows.length) await client.query('delete from cm_referral_entries where telegram_id in(select "telegramId" from telegram_accounts where "userId"=$1)', [userId]);
+    const session = await issueSession(client);
     await client.query('commit');
-    return { awarded, amount: awarded ? REFERRAL_REWARD : 0, session };
+    return session;
   } catch (error) { await client.query('rollback'); throw error; }
   finally { client.release(); }
+}
+
+// The caller holds the first consent transaction, including the owner's notification.
+export async function finalizeReferral(client, userId) {
+  const {rows:[account]} = await client.query('select new_user, pending_inviter_id, first_authorized_at from cm_referral_accounts where user_id=$1 for update', [userId]);
+  if (!account || account.first_authorized_at) return false;
+  let awarded = false;
+  if (account.new_user && account.pending_inviter_id) {
+    const result = await client.query(`insert into cm_like_transactions(id,user_id,invited_user_id,amount)
+      select $1,$2,$3,$4 where $2::text<>$3::text and not exists(
+        select 1 from telegram_accounts t join telegram_accounts own on t."telegramId"=own."telegramId"
+        where t."userId"=$3 and own."userId"=$2)
+      on conflict(invited_user_id) do nothing returning id`, ['referral:'+userId, account.pending_inviter_id, userId, REFERRAL_REWARD]);
+    awarded = result.rows.length === 1;
+  }
+  await client.query('update cm_referral_accounts set first_authorized_at=now(),new_user=false,pending_inviter_id=null where user_id=$1', [userId]);
+  return awarded;
 }
 
 export async function referralSummary(pool, userId, appUrl) {

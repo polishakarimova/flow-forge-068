@@ -39,7 +39,7 @@ export async function legalState(pool,userId) {
 export function legalStatus(state,manifest=legalManifest) {
   const accepted=isLegalCurrent(state,manifest);
   return {...manifest, accepted, personalData:accepted&&state.personal_data===true, advertising:accepted&&state.advertising===true,
-    acceptedAt:state?.accepted_at||null, updatedAt:state?.updated_at||null};
+    acceptedAt:accepted?state.accepted_at:null, updatedAt:state?.updated_at||null,sequence:state?.sequence||0};
 }
 export async function requireLegal(pool,userId) {
   if(!isLegalCurrent(await legalState(pool,userId))) throw failure('Откройте Карту контента и подтвердите актуальные условия сервиса.',428);
@@ -52,7 +52,7 @@ export function validateLegalChoice(input,manifest=legalManifest) {
   return {terms:true,personalData:input.personalData,advertising:input.advertising};
 }
 
-export async function saveLegalChoice(pool,userId,input,{action='accept',manifest=legalManifest,onFirstAccept}={}) {
+export async function saveLegalChoice(pool,userId,input,{action='accept',manifest=legalManifest,onFirstAccept,expectedSequence}={}) {
   // Identity comes only from the verified session, never from the submitted form.
   const choice=action==='withdraw'?null:validateLegalChoice(input,manifest);
   const client=await pool.connect();
@@ -60,6 +60,9 @@ export async function saveLegalChoice(pool,userId,input,{action='accept',manifes
     await client.query('begin');
     await client.query('select pg_advisory_xact_lock(hashtext($1))',['legal:'+userId]);
     const previous=await legalState(client,userId);
+    const sequenceBefore=previous?.sequence||0;
+    const staleChoice=()=>Object.assign(failure('В другом окне уже сохранён новый выбор. Проверьте обновлённые отметки.',409),{code:'choice_changed'});
+    if(expectedSequence!==undefined&&expectedSequence>sequenceBefore)throw staleChoice();
     if(action==='withdraw'&&!previous){await client.query('commit');return legalStatus(null,manifest);}
     if(action==='preferences'&&!isLegalCurrent(previous,manifest)) throw failure('Сначала подтвердите актуальные условия сервиса.',428);
     const next=action==='withdraw'?{...previous,personal_data:false,advertising:false}:{
@@ -68,6 +71,7 @@ export async function saveLegalChoice(pool,userId,input,{action='accept',manifes
     if(previous&&['version','manifest_hash','terms','personal_data','advertising'].every(k=>previous[k]===next[k])) {
       await client.query('commit');return legalStatus(previous,manifest);
     }
+    if(expectedSequence!==undefined&&expectedSequence!==sequenceBefore)throw staleChoice();
     const at=new Date().toISOString(),sequence=(previous?.sequence||0)+1;
     const acceptedAt=action==='withdraw'||isLegalCurrent(previous,manifest)?previous.accepted_at:at;
     const documents=action==='withdraw'?(await client.query('select documents from cm_legal_events where user_id=$1 order by sequence desc limit 1',[userId])).rows[0]?.documents||[]:manifest.documents;
@@ -80,7 +84,7 @@ export async function saveLegalChoice(pool,userId,input,{action='accept',manifes
       advertising=excluded.advertising,accepted_at=excluded.accepted_at,updated_at=excluded.updated_at,sequence=excluded.sequence`,
       [userId,next.version,next.manifest_hash,next.terms,next.personal_data,next.advertising,acceptedAt,at,sequence]);
     if (!previous && action==='accept' && onFirstAccept) await onFirstAccept(client,userId);
-    await client.query('commit');return legalStatus({...next,accepted_at:acceptedAt,updated_at:at},manifest);
+    await client.query('commit');return legalStatus({...next,accepted_at:acceptedAt,updated_at:at,sequence},manifest);
   } catch(error) {await client.query('rollback');throw error;} finally {client.release();}
 }
 
@@ -102,11 +106,14 @@ export async function legalApi(req,res,{path,pool,send,readBody,getUser,onFirstA
   if(path==='/api/legal'&&req.method==='GET')return send(res,200,legalManifest);
   if(!['/api/legal/status','/api/legal/accept','/api/legal/preferences','/api/legal/withdraw'].includes(path))return send(res,404,{message:'Страница не найдена.'});
   const user=await getUser();if(!user)return send(res,401,{error:'unauthorized'});
-  if(path==='/api/legal/status')return req.method==='GET'?send(res,200,legalStatus(await legalState(pool,user.id))):send(res,405,{message:'Используйте GET.'});
+  if(path==='/api/legal/status')return req.method==='GET'?send(res,200,{...legalStatus(await legalState(pool,user.id)),accountId:user.id}):send(res,405,{message:'Используйте GET.'});
   if(req.method!=='POST')return send(res,405,{message:'Используйте POST.'});
   try {
     const action=path.split('/').at(-1);
     const input=await readBody(req);
-    return send(res,200,await saveLegalChoice(pool,user.id,input,{action,onFirstAccept}));
-  }catch(error){return send(res,error.status||503,{message:error.status?error.message:'Не удалось сохранить выбор. Попробуйте ещё раз.'});}
+    if(typeof input?.accountId!=='string'||!Number.isSafeInteger(input.expectedSequence)||input.expectedSequence<0)
+      return send(res,409,{error:'client_outdated',message:'Обновите страницу и проверьте свой выбор ещё раз.'});
+    if(input.accountId!==user.id)return send(res,409,{error:'account_changed',message:'Аккаунт изменился. Откройте форму для текущего аккаунта и проверьте свой выбор.'});
+    return send(res,200,{...await saveLegalChoice(pool,user.id,input,{action,onFirstAccept,expectedSequence:input.expectedSequence}),accountId:user.id});
+  }catch(error){return send(res,error.status||503,{...(error.code==='choice_changed'?{error:error.code}:{}),message:error.status?error.message:'Не удалось сохранить выбор. Попробуйте ещё раз.'});}
 }

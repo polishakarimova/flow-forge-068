@@ -6,7 +6,8 @@ import { databasePool, readEnv } from './db-config.mjs';
 import { prismaDatabaseUrl } from '../server/database-urls.mjs';
 import { ensureBaseSchema } from '../server/schema.mjs';
 import { saveTelegramAccount } from '../server/telegram-account.mjs';
-import { ensureReferralSchema, rememberReferralEntry, completeReferralAuthorization, referralSummary } from '../server/referrals.mjs';
+import { ensureReferralSchema, rememberReferralEntry, startReferralSession, finalizeReferral, referralSummary } from '../server/referrals.mjs';
+import { ensureLegalSchema, legalManifest, saveLegalChoice } from '../server/legal-consent.mjs';
 import { ensureSessionSchema, issueSession } from '../server/session-store.mjs';
 
 const env = readEnv(process.argv[2] || '/etc/kartakontenta/migration.env');
@@ -18,29 +19,32 @@ try {
     async connect() { const client = await pool.connect(); await client.query('set search_path to ' + schema + ',public'); return client; },
     async query(sql, args) { const client = await this.connect(); try { return await client.query(sql, args); } finally { client.release(); } },
   };
-  await ensureBaseSchema(scoped); await ensureReferralSchema(scoped); await ensureSessionSchema(scoped);
+  await ensureBaseSchema(scoped); await ensureReferralSchema(scoped); await ensureSessionSchema(scoped); await ensureLegalSchema(scoped);
+  const stage = (id,source) => startReferralSession(scoped,id,source,client=>issueSession(client,id,'s'.repeat(64)));
+  const choice={version:legalManifest.version,manifestHash:legalManifest.manifestHash,terms:true,personalData:false,advertising:false};
+  const accept=id=>saveLegalChoice(scoped,id,choice,{onFirstAccept:finalizeReferral});
   const url = new URL(prismaDatabaseUrl(env.DATABASE_URL, env.PGSSLROOTCERT)); url.searchParams.set('schema', schema);
   prisma = new PrismaClient({ datasources: { db: { url: url.toString() } } });
   const login = id => prisma.$transaction(tx => saveTelegramAccount(tx, { id, first_name: 'Fixture' }));
   const owner = await login(9000000001), friend = await login(9000000002);
   const summary = await referralSummary(scoped, owner.id, 'https://example.test');
   const code = new URL(summary.url).searchParams.get('ref');
-  const results = await Promise.all(Array.from({ length: 12 }, () => completeReferralAuthorization(scoped, friend.id, code)));
-  assert.equal(results.filter(r => r.awarded).length, 1, 'concurrent first authorizations award once');
+  await Promise.all(Array.from({length:12},()=>stage(friend.id,code)));
+  assert.equal((await referralSummary(scoped, owner.id, 'https://example.test')).balance,0,'session alone gives no reward');
+  await Promise.all(Array.from({length:12},()=>accept(friend.id)));
   assert.equal((await referralSummary(scoped, owner.id, 'https://example.test')).balance, 50);
   await login(9000000002);
-  assert.equal((await completeReferralAuthorization(scoped, friend.id, code)).awarded, false, 'repeat Telegram upsert cannot reset eligibility');
+  await stage(friend.id,code);await accept(friend.id);
   await rememberReferralEntry(scoped, '9000000003', code);
   assert.equal((await referralSummary(scoped, owner.id, 'https://example.test')).balance, 50, 'bot alone does not award');
   const third = await login(9000000003);
-  await assert.rejects(completeReferralAuthorization(scoped, third.id, '', client => issueSession(client,third.id,'')));
+  await assert.rejects(startReferralSession(scoped, third.id, '', client => issueSession(client,third.id,'')));
   assert.equal((await referralSummary(scoped, owner.id, 'https://example.test')).balance, 50, 'failed session rolls back');
-  const completed = await completeReferralAuthorization(scoped, third.id, '', client => issueSession(client,third.id,'s'.repeat(64)));
-  assert.ok(completed.session); assert.equal(completed.awarded, true);
+  assert.ok(await stage(third.id,''));await accept(third.id);
   await scoped.query("insert into users(id) values('legacy')");
   const legacy = await prisma.$transaction(tx => saveTelegramAccount(tx, { id: 9000000004, first_name: 'Legacy' }, 'legacy'));
-  assert.equal((await completeReferralAuthorization(scoped, legacy.id, code)).awarded, false);
-  assert.equal((await completeReferralAuthorization(scoped, owner.id, code)).awarded, false);
+  await stage(legacy.id,code);await accept(legacy.id);
+  await stage(owner.id,code);await accept(owner.id);
   assert.equal((await referralSummary(scoped, owner.id, 'https://example.test')).balance, 100);
   console.log(JSON.stringify({ ok: true, concurrentLogins: 12, awards: 2, rollback: true, legacy: true, repeatedIdentity: true, realAccountsChanged: false }));
 } finally {

@@ -105,7 +105,7 @@ export default function Welcome() {
         </button>
         {(message || entryError) && <p role="alert" className="entry-feedback">{message || entryError}</p>}
       </>}
-      <Link to="/legal" className="text-xs text-muted-foreground underline underline-offset-4 inline-flex items-center min-h-11">Документы сервиса</Link>
+      <Link to="/legal" state={{returnTo,reauthenticate}} className="text-xs text-muted-foreground underline underline-offset-4 inline-flex items-center min-h-11">Документы сервиса</Link>
     </main>
   </div>;
 }

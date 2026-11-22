@@ -6,7 +6,7 @@ import { extname, join, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { PrismaClient } from "@prisma/client";
-import { pollTelegramUpdates } from "./telegram-polling.mjs";
+import { createTelegramSetup, pollTelegramUpdates, processTelegramUpdate } from "./telegram-polling.mjs";
 import { saveTelegramAccount } from "./telegram-account.mjs";
 import { ensureThreadsSchema, beginThreadsConnect, finishThreadsConnect, threadsStatus, runThreadsScheduler } from "./threads-autopost.mjs";
 import { ensureRemoteSchema, handleRemoteRequest, remoteStatus } from './threads-remote.mjs';
@@ -19,11 +19,11 @@ import {ensureSessionSchema,issueSession,readSession,revokeSession,authorizeAdmi
 import {readContext,saveContext} from './context-state.mjs';
 import {ensureBaseSchema} from './schema.mjs';
 import {prismaDatabaseUrl} from './database-urls.mjs';
-import {ensureReferralSchema, referralCode, referralStart, rememberReferralEntry, completeReferralAuthorization, referralSummary} from './referrals.mjs';
+import {ensureReferralSchema, referralCode, referralStart, rememberReferralEntry, startReferralSession, finalizeReferral, referralSummary} from './referrals.mjs';
 import {readAdminOverview as readAdminMetrics} from './admin-overview.mjs';
 import {readUserDashboard} from './user-dashboard.mjs';
 import { ensureOwnerCommand,adminEntry,adminKeyboard,isPrivateAdmin} from './admin-bot.mjs';
-import {ensureNoticeSchema,firstAuthorization,recordFault,readNotices,deliverNotice,noticeRecipient} from './admin-notices.mjs';
+import {ensureNoticeSchema,firstAuthorization,recordFault,readNotices,noticeQueueStatus,deliverNotice,noticeRecipient} from './admin-notices.mjs';
 import {ensureLegalSchema, requireLegal, legalApi} from './legal-consent.mjs';
 
 const root = new URL("../", import.meta.url);
@@ -287,7 +287,13 @@ async function telegramApi(method, payload = {}) {
     signal: AbortSignal.timeout(method === "getUpdates" ? 40000 : 15000),
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok || data.ok === false) throw Object.assign(new Error(data.description || `telegram_${method}_failed`), {retryAfter:data.parameters?.retry_after});
+  if (!response.ok || data.ok !== true) {
+    throw Object.assign(new Error(`telegram_${method}_failed`), {
+      telegramMethod: method,
+      telegramStatus: data.error_code || response.status,
+      retryAfter: data.parameters?.retry_after
+    });
+  }
   return data.result;
 }
 
@@ -390,11 +396,19 @@ async function handleTelegramWebhook(req, res) {
     return send(res, 401, { error: "invalid_telegram_secret" });
   }
   const update = await body(req);
-  await handleTelegramUpdate(update);
+  try { await handleTelegramUpdate(update); }
+  catch (error) { await backgroundFault('telegram_webhook'); throw error; }
   return send(res, 200, { ok: true });
 }
 
-async function handleTelegramUpdate(update) {
+function handleTelegramUpdate(update) {
+  return processTelegramUpdate(update, handleChatUpdate, () => {
+    console.warn('Telegram could not deliver a reply to this chat');
+    void backgroundFault('telegram_updates');
+  });
+}
+
+async function handleChatUpdate(update) {
   const callback=update.callback_query,callbackMatch=String(callback?.data||'').match(/^cm_auth_(yes|no)_([a-f0-9]{40})$/);
   if(callback?.message?.chat?.type&&callback.message.chat.type!=='private')return;
   if(callbackMatch){
@@ -408,7 +422,10 @@ async function handleTelegramUpdate(update) {
     }
     const user=await upsertTelegramUser(callback.from);
     const saved=await prisma.telegramLoginRequest.updateMany({where:{id:login.id,status:'PENDING',telegramId:String(callback.from.id),expiresAt:{gt:new Date()}},data:{status:'CONFIRMED',userId:user.id,confirmedAt:new Date()}});
-    if(saved.count===1){await telegramApi('answerCallbackQuery',{callback_query_id:callback.id,text:'Вход подтверждён.'}).catch(()=>{});await sendTelegramLoginConfirmed(login.chatId).catch(()=>{});}
+    if (saved.count===1) {
+      await telegramApi('answerCallbackQuery',{callback_query_id:callback.id,text:'Вход подтверждён. Вернитесь во вкладку браузера.'}).catch(()=>{});
+      await sendTelegramLoginConfirmed(login.chatId).catch(()=>backgroundFault('telegram_confirmation'));
+    }
     return;
   }
   const message = update.message || update.edited_message;
@@ -425,7 +442,7 @@ async function handleTelegramUpdate(update) {
     const source = referralStart(text.match(/^\/start\s+(\S+)$/)?.[1]);
     if (source) {
       await rememberReferralEntry(pgPool, message.from?.id, source);
-      await telegramApi('sendMessage',{chat_id:chatId,text:'Вас пригласили в «Карту контента». Откройте приложение и войдите через Telegram. После первого входа нового пользователя пригласивший получит 50 лайков.',reply_markup:{inline_keyboard:[[{text:'Открыть карту',web_app:{url:APP_URL+'/?ref='+source}}]]}}).catch(()=>{});
+      await telegramApi('sendMessage',{chat_id:chatId,text:'Вас пригласили в «Карту контента». Откройте приложение и войдите через Telegram. После первого входа нового пользователя пригласивший получит 50 лайков.',reply_markup:{inline_keyboard:[[{text:'Открыть карту',web_app:{url:APP_URL+'/?ref='+source}}]]}});
       return;
     }
     const loginMatch = text.match(/^\/start\s+login_([a-f0-9]{40})/i);
@@ -437,7 +454,7 @@ async function handleTelegramUpdate(update) {
         await telegramApi("sendMessage", {
           chat_id: chatId,
           text: "Ссылка для входа устарела. Вернитесь на сайт и нажмите «Войти через Telegram» ещё раз.",
-        }).catch(console.error);
+        });
         return;
       }
       if(loginToken.status!=='PENDING')return;
@@ -447,15 +464,18 @@ async function handleTelegramUpdate(update) {
         data: { telegramId, chatId: String(chatId) },
       });
       if (!bound.count) return;
-      await telegramApi('sendMessage',{chat_id:chatId,text:'Подтвердить вход в «Карту контента»?\n\nЕсли вы не начинали вход на сайте, нажмите «Отменить».',reply_markup:{inline_keyboard:[[{text:'Подтвердить вход',callback_data:'cm_auth_yes_'+token},{text:'Отменить',callback_data:'cm_auth_no_'+token}]]}}).catch(()=>{});
+      await telegramApi('sendMessage',{chat_id:chatId,text:'Подтвердить вход в «Карту контента»?\n\nЕсли вы не начинали вход на сайте, нажмите «Отменить».',reply_markup:{inline_keyboard:[[{text:'Подтвердить вход',callback_data:'cm_auth_yes_'+token},{text:'Отменить',callback_data:'cm_auth_no_'+token}]]}});
       return;
     }
-    await sendTelegramStart(chatId, message).catch(console.error);
+    await sendTelegramStart(chatId, message);
   }
 }
 
 async function api(req, res, url) {
-  if(url.pathname==='/api/legal'||url.pathname.startsWith('/api/legal/'))return legalApi(req,res,{path:url.pathname,pool:pgPool,send,readBody:body,onFirstAccept:firstAuthorization,getUser:()=>getUserBySession(parseCookies(req)[cookieName])});
+  if(url.pathname==='/api/legal'||url.pathname.startsWith('/api/legal/'))return legalApi(req,res,{path:url.pathname,pool:pgPool,send,readBody:body,onFirstAccept:async(client,userId)=>{
+    await finalizeReferral(client,userId);
+    await firstAuthorization(client,userId);
+  },getUser:()=>getUserBySession(parseCookies(req)[cookieName])});
   if (url.pathname.startsWith('/api/agent/')) return agentApi(req,res,{path:url.pathname,pool:pgPool,send,requireUser,appUrl:APP_URL});
   if (url.pathname.startsWith('/api/internal/threads/')) {
     return handleRemoteRequest({ req, res, path: url.pathname, pool: pgPool, body, send, env: process.env });
@@ -522,7 +542,7 @@ async function api(req, res, url) {
       const telegramUser = validateTelegramInitData(String(input.initData || ""));
       const user = await upsertTelegramUser(telegramUser);
       const signedStart = new URLSearchParams(String(input.initData || '')).get('start_param');
-      const { session: token } = await completeReferralAuthorization(pgPool, user.id, referralStart(signedStart) || input.referralCode, client => issueSession(client,user.id,SESSION_SECRET));
+      const token = await startReferralSession(pgPool, user.id, referralStart(signedStart) || input.referralCode, client => issueSession(client,user.id,SESSION_SECRET));
       setSessionCookie(res, token);
       return send(res, 200, { user: publicUser(user) });
     } catch (error) {
@@ -562,15 +582,14 @@ async function api(req, res, url) {
     if (!loginToken.userId) return send(res, 202, { status: "pending" });
     const user = await getUserById(loginToken.userId);
     if (!user) return send(res, 404, { error: "telegram_user_not_found" });
-    // Token consumption, reward and session creation commit together.
+    // Token consumption, referral attribution and session creation commit together.
     let sessionToken;
     try {
-      const result = await completeReferralAuthorization(pgPool, user.id, loginToken.referralCode, async client => {
+      sessionToken = await startReferralSession(pgPool, user.id, loginToken.referralCode, async client => {
         const consumed = await client.query(`update telegram_login_requests set status='USED',"usedAt"=now() where id=$1 and status='CONFIRMED' and "usedAt" is null and "expiresAt">now() returning id`,[loginToken.id]);
         if(consumed.rowCount!==1)throw Object.assign(new Error('login_token_not_found'),{status:404});
         return issueSession(client,user.id,SESSION_SECRET);
       });
-      sessionToken = result.session;
     } catch(error) { if(error.status===404)return send(res,404,{error:'login_token_not_found',status:'missing'});throw error; }
     setSessionCookie(res, sessionToken);
     setBrowserCookie(res,'');
@@ -606,7 +625,8 @@ async function api(req, res, url) {
     if (!await requireAdmin(req,res,url)) return;
     const id=url.searchParams.get('event');
     if (id && !/^[a-f0-9-]{36}$/.test(id)) return send(res,400,{error:'invalid_event'});
-    return send(res,200,{configured:Boolean(noticeOwner),items:await readNotices(pgPool,id)});
+    const [items,delivery]=await Promise.all([readNotices(pgPool,id),noticeQueueStatus(pgPool)]);
+    return send(res,200,{configured:Boolean(noticeOwner),items,delivery});
   }
 
   if (path === "/api/admin/overview") {
@@ -718,7 +738,7 @@ async function api(req, res, url) {
   return send(res, 404, { error: "not_found" });
 }
 
-async function setupTelegramBot() {
+const setupTelegramBot = createTelegramSetup(async () => {
   if (!TELEGRAM_BOT_TOKEN) return;
   if (TELEGRAM_UPDATES_MODE === "polling") {
     await telegramApi("deleteWebhook", { drop_pending_updates: false });
@@ -738,8 +758,12 @@ async function setupTelegramBot() {
       text: "Открыть карту",
       web_app: { url: APP_URL },
     },
-  }).catch(() => null);
-}
+  });
+  await ensureOwnerCommand(telegramApi, noticeOwner);
+}, {onError: () => {
+  console.error('Telegram setup failed; retry scheduled');
+  void backgroundFault('telegram_setup');
+}});
 
 let telegramPollingStarted = false;
 if(process.env.KARTA_SCHEMA_MODE==='runtime'){
@@ -748,7 +772,7 @@ if(process.env.KARTA_SCHEMA_MODE==='runtime'){
 }else{
   await ensureBaseSchema(pgPool);await ensureThreadsSchema(pgPool);await ensureRemoteSchema(pgPool);await ensureAgentSchema(pgPool);await ensureSessionSchema(pgPool);await ensureReferralSchema(pgPool);await ensureLegalSchema(pgPool);await ensureNoticeSchema(pgPool);
 }
-setupTelegramBot().then(()=>ensureOwnerCommand(telegramApi,noticeOwner)).catch(()=>{console.error('Telegram setup failed');void backgroundFault('telegram_setup');});
+void setupTelegramBot().catch(() => {});
 if (noticeOwner && TELEGRAM_BOT_TOKEN) {
   let delivering = false, nextCleanup = 0;
   const tick = async () => {
