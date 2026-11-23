@@ -130,3 +130,11 @@ html[data-telegram-app] .ed-detail.ed-detail[role=dialog] {
   .ed-detail-footer { padding: 10px 12px; gap: 6px; }
   .ed-detail-footer button { font-size: 12px; }
 }
+
+.product-form-dialog .ed-detail-head h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.product-form-dialog .ed-detail-footer > button { min-height: 44px; font-size: 14px; }
+@media (max-width: 767px) {
+  .product-form-dialog .ed-detail-body :is(input, textarea, select) { font-size: 16px !important; }
+  .product-form-dialog .kk-compact-chip { min-height: 32px !important; padding-inline: 8px; font-size: 11px !important; font-weight: 500 !important; }
+  .product-form-dialog .kk-compact-icon { min-height: 24px !important; min-width: 24px; }
+}

@@ -12,8 +12,8 @@ export function ProductCard({ product, onOpen, productTypes }: ProductCardProps)
   const status = PRODUCT_STATUSES[product.status];
 
   return (
-    <div
-      className="card-elevated flex items-center gap-1.5 px-3 py-1.5 rounded-2xl cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)]"
+    <button type="button"
+      className="card-elevated w-full text-left flex items-center gap-1.5 px-3 py-1.5 rounded-2xl cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--primary)/0.04)]"
       onClick={() => onOpen(product)}
     >
       {/* Status dot — gray is static, others pulse */}
@@ -31,9 +31,9 @@ export function ProductCard({ product, onOpen, productTypes }: ProductCardProps)
       </span>
 
       {/* Product name — dark gray like funnel keywords */}
-      <div className="flex-1 min-w-0 text-[12px] md:text-[10px] font-normal truncate" style={{ color: "#374151" }}>
+      <span className="flex-1 min-w-0 text-[12px] md:text-[10px] font-normal truncate" style={{ color: "#374151" }}>
         {product.name}
-      </div>
+      </span>
 
       {/* Format badge */}
       {product.format && (
@@ -41,6 +41,6 @@ export function ProductCard({ product, onOpen, productTypes }: ProductCardProps)
           {product.format}
         </span>
       )}
-    </div>
+    </button>
   );
 }

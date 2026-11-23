@@ -1,3 +1,4 @@
+import { ProductFormDialog } from "./ProductFormDialog";
 import { useState } from "react";
 import type { ProductType } from "@/lib/productData";
 import { FormatSelector } from "./FormatSelector";
@@ -27,110 +28,90 @@ export function CreateProductModal({ onClose, onCreate, formats, onAddFormat, on
   const showNameError = submitAttempted && !name.trim();
   const showTypeError = submitAttempted && !typeId;
 
+  const dirty = Boolean(name || typeId || format || price || link || description);
   return (
-    <div
-      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center z-[1000] animate-in fade-in duration-200"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="bg-card rounded-t-[24px] sm:rounded-3xl w-full max-w-[500px] max-h-[calc(100svh-72px)] sm:max-h-[90vh] overflow-auto animate-in slide-in-from-bottom-3 duration-300" style={{ boxShadow: "0 24px 60px rgba(0,0,0,.15)" }}>
-        <div className="px-4 pt-4 sm:px-7 sm:pt-6">
-          <div className="flex justify-between items-center mb-3 sm:mb-5">
-            <h2 className="text-lg font-bold text-foreground">Новый продукт</h2>
-            <button
-              onClick={onClose}
-              className="bg-muted border-none rounded-lg w-8 h-8 sm:w-[30px] sm:h-[30px] cursor-pointer text-[14px] text-muted-foreground flex items-center justify-center hover:bg-muted/80 transition-all duration-200"
-            >
-              ✕
-            </button>
-          </div>
+    <ProductFormDialog title="Новый продукт" onClose={onClose} dirty={dirty} footer={
+      <button
+        onClick={() => {
+          setSubmitAttempted(true);
+          if (!canCreate) return;
+          onCreate({ name: name.trim(), typeId, format, price: price.trim(), currency: "₽", description: description.trim(), link: link.trim() });
+          onClose();
+        }}
+        className="w-full py-2.5 px-4 rounded-xl sm:rounded-2xl text-[14px] font-bold cursor-pointer transition-all duration-200 border-none"
+        style={{
+          background: canCreate ? "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" : "hsl(var(--muted))",
+          color: canCreate ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
+        }}
+      >
+        Создать продукт →
+      </button>
+    }>
+      {/* Name */}
+      <div className="mb-3 sm:mb-4">
+        <label htmlFor="new-product-name" className="block text-[12px] sm:text-[13px] font-semibold text-muted-foreground mb-1 sm:mb-1.5">Название продукта</label>
+        <input
+          id="new-product-name" value={name} aria-invalid={showNameError} aria-describedby={showNameError ? "new-product-name-error" : undefined}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Например: Наставничество 1 на 1"
+          className={`kk-compact-field w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] text-[14px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] ${
+            showNameError ? "border-primary bg-primary/5 shadow-[0_0_0_3px_hsl(var(--primary)/0.08)]" : "border-border"
+          }`}
+        />
+        {showNameError && <p id="new-product-name-error" role="alert" className="mt-1.5 text-[12px] font-medium text-primary">Добавьте название продукта.</p>}
+      </div>
 
-          {/* Name */}
-          <div className="mb-3 sm:mb-4">
-            <label className="block text-[12px] sm:text-[13px] font-semibold text-muted-foreground mb-1 sm:mb-1.5">Название продукта</label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Например: Наставничество 1 на 1"
-              className={`kk-compact-field w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] text-[14px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] ${
-                showNameError ? "border-primary bg-primary/5 shadow-[0_0_0_3px_hsl(var(--primary)/0.08)]" : "border-border"
-              }`}
-              autoFocus
-            />
-            {showNameError && <p className="mt-1.5 text-[12px] font-medium text-primary">Добавьте название продукта.</p>}
-          </div>
+      {/* Product type */}
+      <div className="mb-3 sm:mb-4">
+        <ProductTypeSelector
+          value={typeId}
+          productTypes={productTypes}
+          onChange={setTypeId}
+          onAddType={onAddProductType}
+          onDeleteType={onDeleteProductType}
+          showError={showTypeError}
+        />
+      </div>
 
-          {/* Product type */}
-          <div className="mb-3 sm:mb-4">
-            <ProductTypeSelector
-              value={typeId}
-              productTypes={productTypes}
-              onChange={setTypeId}
-              onAddType={onAddProductType}
-              onDeleteType={onDeleteProductType}
-              showError={showTypeError}
-            />
-          </div>
-
-          {/* Format + Price */}
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mb-3 sm:mb-4">
-            <div>
-              <label className="block text-[12px] sm:text-[13px] font-semibold text-muted-foreground mb-1 sm:mb-1.5">Формат</label>
-              <FormatSelector value={format} onChange={setFormat} formats={formats} onAddFormat={onAddFormat} onDeleteFormat={onDeleteFormat} />
-            </div>
-            <div>
-              <label className="block text-[12px] sm:text-[13px] font-semibold text-muted-foreground mb-1 sm:mb-1.5">Цена</label>
-              <input
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="2 990 ₽ или бесплатно"
-                className="kk-compact-field w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] border-border text-[13px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
-              />
-            </div>
-          </div>
-
-          {/* Link */}
-          <div className="mb-3 sm:mb-4">
-            <label className="block text-[12px] sm:text-[13px] font-semibold text-muted-foreground mb-1 sm:mb-1.5">Ссылка</label>
-            <input
-              value={link}
-              onChange={(e) => setLink(e.target.value)}
-              placeholder="https://..."
-              className="kk-compact-field w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] border-border text-[14px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
-            />
-          </div>
-
-          {/* Description */}
-          <div className="mb-4 sm:mb-5">
-            <label className="block text-[12px] sm:text-[13px] font-semibold text-muted-foreground mb-1 sm:mb-1.5">Содержание</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Что входит в продукт, для кого, результат..."
-              rows={3}
-              className="kk-compact-textarea w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] border-border text-[14px] outline-none resize-y leading-5 transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
-            />
-          </div>
+      {/* Format + Price */}
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mb-3 sm:mb-4">
+        <div>
+          <label className="block text-[12px] sm:text-[13px] font-semibold text-muted-foreground mb-1 sm:mb-1.5">Формат</label>
+          <FormatSelector value={format} onChange={setFormat} formats={formats} onAddFormat={onAddFormat} onDeleteFormat={onDeleteFormat} />
         </div>
-
-        <div className="px-4 py-3 sm:px-7 sm:py-4 border-t border-border">
-          <button
-            onClick={() => {
-              setSubmitAttempted(true);
-              if (!canCreate) return;
-              onCreate({ name: name.trim(), typeId, format, price: price.trim(), currency: "₽", description: description.trim(), link: link.trim() });
-              onClose();
-            }}
-            className="w-full py-2.5 px-4 rounded-xl sm:rounded-2xl text-[14px] font-bold cursor-pointer transition-all duration-200 border-none"
-            style={{
-              background: canCreate ? "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" : "hsl(var(--muted))",
-              color: canCreate ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
-            }}
-          >
-            Создать продукт →
-          </button>
+        <div>
+          <label htmlFor="new-product-price" className="block text-[12px] sm:text-[13px] font-semibold text-muted-foreground mb-1 sm:mb-1.5">Цена</label>
+          <input
+            id="new-product-price" value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            placeholder="2 990 ₽ или бесплатно"
+            className="kk-compact-field w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] border-border text-[13px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+          />
         </div>
       </div>
-    </div>
+
+      {/* Link */}
+      <div className="mb-3 sm:mb-4">
+        <label htmlFor="new-product-link" className="block text-[12px] sm:text-[13px] font-semibold text-muted-foreground mb-1 sm:mb-1.5">Ссылка</label>
+        <input
+          id="new-product-link" value={link}
+          onChange={(e) => setLink(e.target.value)}
+          placeholder="https://..."
+          className="kk-compact-field w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] border-border text-[14px] leading-5 outline-none transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+        />
+      </div>
+
+      {/* Description */}
+      <div className="mb-4 sm:mb-5">
+        <label htmlFor="new-product-description" className="block text-[12px] sm:text-[13px] font-semibold text-muted-foreground mb-1 sm:mb-1.5">Содержание</label>
+        <textarea
+          id="new-product-description" value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Что входит в продукт, для кого, результат..."
+          rows={3}
+          className="kk-compact-textarea w-full px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border-[1.5px] border-border text-[14px] outline-none resize-y leading-5 transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+        />
+      </div>
+    </ProductFormDialog>
   );
 }
-
