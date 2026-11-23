@@ -33,11 +33,11 @@ export function AdminNotices({eventId}:{eventId:string|null}) {
       </div>}
       {!items.length&&<p className="text-sm">{selected?'Событие не найдено.':'Новых авторизаций и технических ошибок пока нет.'}</p>}
       <ul className="divide-y">{items.map(n=><li key={n.id} className="space-y-1 py-3 text-sm">
-        <div className="font-medium">{n.title}</div><div>{n.name|| (n.kind==='worker'?'Фоновая задача':'Аккаунт не определён')}{n.telegram_id&&' · Telegram ID '+n.telegram_id}</div>
+        <div className="font-medium">{n.title}</div><div>{n.name|| (n.kind.startsWith('telegram_')?'Получение обновлений Telegram':n.kind==='worker'?'Фоновая задача':'Аккаунт не определён')}{n.telegram_id&&' · Telegram ID '+n.telegram_id}</div>
         {n.inviter&&<div>Пригласил(а) {n.inviter}</div>}
         {Boolean(n.source_line)&&<div>Модуль приложения, строка {n.source_line}</div>}
         {n.route&&<div className="break-words">{[n.method,n.route,n.status||'',n.reason].filter(Boolean).join(' · ')}</div>}
-        <div className="text-xs text-muted-foreground">{adminDate(n.created_at,true)} · {n.delivered_at?'Доставлено':'Ожидает отправки'}{n.occurrences>1&&' · Повторов: '+n.occurrences}</div>
+        <div className="text-xs text-muted-foreground">{adminDate(n.created_at,true)} · {n.delivered_at?'Доставлено':n.kind==='telegram_brief'?'Только в журнале':n.kind==='telegram_outage'?'Предупреждение при сбое дольше 5 минут':'Ожидает отправки'}{n.occurrences>1&&' · Повторов: '+n.occurrences}</div>
       </li>)}</ul></>}
   </section>;
 }
