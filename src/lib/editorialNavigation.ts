@@ -31,15 +31,20 @@ export function useCardNavigation() {
     else navigate(address(), { replace: true, state: location.state, preventScrollReset: true });
   }
 
-  return { link, open, close };
+  function productLink(id: number) {
+    return { to: '/products?product=' + id, state: { productParent: location.key }, preventScrollReset: true };
+  }
+
+  return { link, open, close, productLink };
 }
 
 type NativeBack = { show(): void; hide(): void; onClick(cb: () => void): void; offClick(cb: () => void): void };
 
-export function useTelegramCardBack(close: () => void) {
+export function useTelegramCardBack(close: () => void, active = true) {
   const latest = useRef(close);
   latest.current = close;
   useEffect(() => {
+    if (!active) return;
     const app = (window as Window & { Telegram?: { WebApp?: { BackButton?: NativeBack; isVersionAtLeast?: (v: string) => boolean } } }).Telegram?.WebApp;
     const back = app?.BackButton;
     if (!document.documentElement.hasAttribute('data-telegram-app') || !back || !app.isVersionAtLeast?.('6.1')) return;
@@ -47,5 +52,5 @@ export function useTelegramCardBack(close: () => void) {
     back.onClick(handler);
     back.show();
     return () => { back.offClick(handler); back.hide(); };
-  }, []);
+  }, [active]);
 }

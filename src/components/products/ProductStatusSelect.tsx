@@ -1,5 +1,4 @@
-import { useState, useRef, useEffect } from "react";
-import { Check, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { PRODUCT_STATUSES, PRODUCT_STATUS_ORDER, type ProductStatusKey } from "@/lib/productData";
 
 interface ProductStatusSelectProps {
@@ -8,56 +7,19 @@ interface ProductStatusSelectProps {
 }
 
 export function ProductStatusSelect({ value, onChange }: ProductStatusSelectProps) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const cur = PRODUCT_STATUSES[value];
-
+  const status = PRODUCT_STATUSES[value];
   return (
-    <div ref={ref} className="relative inline-block">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-2 py-1 rounded-lg border-none text-[11px] font-semibold cursor-pointer whitespace-nowrap transition-all duration-200 hover:shadow-sm"
-        style={{ background: cur.bg, color: cur.color }}
+    <div className="relative inline-flex items-center rounded-xl" style={{ background: status.bg }}>
+      <span aria-hidden="true" className="absolute left-3 h-2 w-2 rounded-full pointer-events-none" style={{ background: status.color }} />
+      <select
+        id="edit-product-status"
+        value={value}
+        onChange={event => onChange(event.target.value as ProductStatusKey)}
+        className="min-h-11 appearance-none rounded-xl bg-transparent pl-7 pr-8 text-sm font-medium text-foreground"
       >
-        <span className="w-1.5 h-1.5 rounded-full" style={{ background: cur.color }} />
-        {cur.label}
-        <ChevronDown className="ml-0.5 h-3 w-3 opacity-55" strokeWidth={1.6} />
-      </button>
-
-      {open && (
-        <div className="absolute top-[calc(100%+4px)] right-0 min-w-[140px] bg-card border border-border/60 rounded-xl z-[60] p-1 animate-in fade-in slide-in-from-top-2 duration-200 shadow-[0_12px_40px_rgba(0,0,0,.08),0_2px_8px_rgba(0,0,0,.04)]">
-          {PRODUCT_STATUS_ORDER.map((k) => {
-            const s = PRODUCT_STATUSES[k];
-            const active = value === k;
-            return (
-              <div
-                key={k}
-                onClick={() => { onChange(k); setOpen(false); }}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer transition-all duration-150"
-                style={{
-                  color: active ? s.color : "hsl(var(--muted-foreground))",
-                  background: active ? s.bg : "transparent",
-                }}
-                onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLElement).style.background = "hsl(var(--muted) / 0.5)"; }}
-                onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLElement).style.background = active ? s.bg : "transparent"; }}
-              >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.color }} />
-                {s.label}
-                {active && <Check className="ml-auto h-3 w-3" strokeWidth={1.8} />}
-              </div>
-            );
-          })}
-        </div>
-      )}
+        {PRODUCT_STATUS_ORDER.map(key => <option key={key} value={key}>{PRODUCT_STATUSES[key].label}</option>)}
+      </select>
+      <ChevronDown aria-hidden="true" className="absolute right-2 h-4 w-4 pointer-events-none text-muted-foreground" />
     </div>
   );
 }

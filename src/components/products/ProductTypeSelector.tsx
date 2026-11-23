@@ -67,6 +67,7 @@ export function ProductTypeSelector({ value, productTypes, onChange, onAddType, 
             <div key={t.id} className="relative">
               <button
                 type="button"
+                aria-pressed={selected}
                 onClick={() => {
                   if (editing) {
                     setPendingDeleteId(null);

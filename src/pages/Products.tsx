@@ -1,5 +1,5 @@
-import { useSearchParams } from "react-router-dom";
-import { useEffect, useState, useMemo } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -16,16 +16,31 @@ import { ProductTypeIcon } from "@/components/products/ProductTypeIcon";
 const Products = () => {
   const [params,setParams]=useSearchParams();
   const { products, addProduct, updateProduct, productTypes, addProductType, deleteProductType, formats, addFormat, deleteFormat } = useDataStore();
-  const [showCreate, setShowCreate] = useState(false);
-  const [editing, setEditingRaw] = useState<Product | null>(null);
-  const setEditing=(product:Product|null)=>{setEditingRaw(product);if(!product&&params.has('product')){const n=new URLSearchParams(params);n.delete('product');setParams(n,{replace:true});}};
-  useEffect(()=>{const id=Number(params.get('product'));if(id)setEditingRaw(products.find(p=>p.id===id)||null);},[params,products]);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const showCreate = params.get('action') === 'new-product';
+  const editing = products.find(product => String(product.id) === params.get('product'));
+
+  function openProduct(product?: Product) {
+    const next = new URLSearchParams(params);
+    if (product) next.set('product', String(product.id));
+    else next.set('action', 'new-product');
+    setParams(next, { state: { productParent: location.key }, preventScrollReset: true });
+  }
+
+  function closeProduct() {
+    if (location.state?.productParent) { navigate(-1); return; }
+    const next = new URLSearchParams(params);
+    next.delete('product');
+    if (showCreate) next.delete('action');
+    setParams(next, { replace: true, preventScrollReset: true });
+  }
   const [typeFilters, setTypeFilters] = useState<string[]>([]);
   const [formatFilters, setFormatFilters] = useState<string[]>([]);
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
 
   const filtered = useMemo(() => {
-    let arr = products;
+    let arr = [...products];
     if (typeFilters.length > 0) arr = arr.filter((p) => typeFilters.includes(p.typeId));
     if (formatFilters.length > 0) arr = arr.filter((p) => p.format && formatFilters.includes(p.format));
     if (statusFilters.length > 0) arr = arr.filter((p) => statusFilters.includes(p.status));
@@ -114,7 +129,8 @@ const Products = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => setShowCreate(true)}
+                  aria-label="Новый продукт"
+                  onClick={() => openProduct()}
                   className="inline-flex h-10 w-10 sm:h-auto sm:w-auto items-center justify-center sm:justify-start gap-1.5 px-0 sm:px-4 sm:py-2 rounded-[7px] bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary/90 transition-colors shadow-sm"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -169,7 +185,7 @@ const Products = () => {
                 <div className="text-[15px] font-semibold text-foreground mb-1">Создайте первый продукт</div>
                 <div className="text-[13px] text-muted-foreground mb-4 max-w-xs mx-auto">Лид-магнит, трипвайер, флагман — добавьте продукт, чтобы начать строить воронку</div>
                 <button
-                  onClick={() => setShowCreate(true)}
+                  onClick={() => openProduct()}
                   className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-[7px] hover:bg-primary/90 transition-colors border-none cursor-pointer"
                 >
                   + Создать продукт
@@ -185,7 +201,7 @@ const Products = () => {
                   </div>
                   <div className="flex flex-col gap-0.5 mb-0.5">
                     {g.items.map((p) => (
-                      <ProductCard key={p.id} product={p} onOpen={setEditing} productTypes={productTypes} />
+                      <ProductCard key={p.id} product={p} onOpen={openProduct} productTypes={productTypes} />
                     ))}
                   </div>
                 </div>
@@ -200,7 +216,7 @@ const Products = () => {
       {/* Modals */}
       {showCreate && (
         <CreateProductModal
-          onClose={() => setShowCreate(false)}
+          onClose={closeProduct}
           onCreate={handleCreate}
           formats={formats}
           onAddFormat={handleAddFormat}
@@ -212,8 +228,9 @@ const Products = () => {
       )}
       {editing && (
         <EditProductModal
+          key={editing.id}
           product={editing}
-          onClose={() => setEditing(null)}
+          onClose={closeProduct}
           onSave={handleSave}
           formats={formats}
           onAddFormat={handleAddFormat}

@@ -25,7 +25,7 @@ export function FunnelOverview({funnel}:{funnel:Funnel}){
  const row=(m:Material)=><Link className="ed-row" key={m.id} {...cards.link({material:m.id})}><span className="flex-1 min-w-0 break-words">{m.title}<small>{dateLabel(dated(m))} · {published(m)?'Опубликовано':dated(m)?'В плане':'Черновик'}</small></span><span>→</span></Link>;
  if(!data)return null;
  return <div className="px-3 md:px-5 pb-4">
-  <div className="ed-path" aria-label="Путь воронки"><Link to={'/dashboard?keyword='+encodeURIComponent(funnel.keyword)}>{funnel.keyword}</Link>{ids.map(id=>{const p=products.find(p=>p.id===id);return p?<span key={id} className="contents"><span aria-hidden="true">→</span><Link to={'/products?product='+id}>{p.name}</Link></span>:null;})}</div>
+  <div className="ed-path" aria-label="Путь воронки"><Link to={'/dashboard?keyword='+encodeURIComponent(funnel.keyword)}>{funnel.keyword}</Link>{ids.map(id=>{const p=products.find(p=>p.id===id);return p?<span key={id} className="contents"><span aria-hidden="true">→</span><Link {...cards.productLink(id)}>{p.name}</Link></span>:null;})}</div>
   <FunnelRoute funnel={funnel}/>
   <div className="ed-filters"><select aria-label="Период воронки" className="ed-input w-auto" value={period} onChange={e=>setPeriod(e.target.value)}><option value="all">Все недели</option><option value="week">Эта неделя</option></select><select aria-label="Контент воронки" className="ed-input w-auto" value={status} onChange={e=>setStatus(e.target.value)}><option value="all">Все материалы</option><option value="planned">В плане</option><option value="published">Опубликовано</option><option value="undated">Без даты</option></select></div>
   <p className="text-xs font-medium mb-2">Что ведёт в эту воронку · {entries.length}</p>

@@ -17,14 +17,14 @@ export function MaterialCard(){
  const [params]=useSearchParams();
  const cards=useCardNavigation();
  const id=Number(params.get('material')), slotId=params.get('slot')||'';
- const {data,command,busy,refresh}=useEditorial();
+ const {data,command,busy,refresh,error:loadError}=useEditorial();
  const topics=data?.main.topics||[],materials=topics.flatMap(t=>t.contentItems);
  const slot=data?.main.editorial?.slots.find(s=>slotId?s.id===slotId:s.variantIds.includes(id));
  const current=materials.find(m=>m.id===id) || (slot?materials.find(m=>m.id===(slot.selectedId||slot.recommendedId||slot.variantIds[0])):undefined);
  const topic=topics.find(t=>t.contentItems.some(m=>m.id===current?.id));
  const [draft,setDraft]=useState<Material|null>(null),[editing,setEditing]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [date,setDate]=useState(''),[adaptFormat,setAdaptFormat]=useState('stories'),[confirmClose,setConfirmClose]=useState(false);
- const open=Boolean(id || slotId), currentId=current?.id;
+ const open=params.has('material') || Boolean(slotId), currentId=current?.id;
  const base=useRef('');
  const recoveryKey=draftKey(user?.id||'', 'material',currentId||'');
  const [removed,setRemoved]=useState<StoryBlock[]|null>(null);
@@ -60,9 +60,9 @@ export function MaterialCard(){
  const publishedBlocks=new Set(publications.flatMap(p=>p.parts.filter(b=>b.published&&b.contentItemId===current?.id).map(b=>b.blockId)));
  const variants=slot?.variantIds.map(i=>materials.find(m=>m.id===i)).filter((m):m is Material=>Boolean(m))||[];
  return <Dialog open={open} onOpenChange={value=>{if(!value)close();}}><CardSurface ready={Boolean(current && draft)} overlayClassName="bg-black/20" className="ed-detail">
-  <div className="ed-detail-head"><span className="ed-badge"><FileText size={13}/>{current?formatLabel(current.platformId):'Материал'}</span><DialogTitle>{current?.title||'Загрузка материала…'}</DialogTitle><DialogDescription className="text-xs mt-1">{current?materialAction(data,current):'Общая карточка сценария'}</DialogDescription></div>
+  <div className="ed-detail-head"><span className="ed-badge"><FileText size={13}/>{current?formatLabel(current.platformId):'Материал'}</span><DialogTitle>{current?.title || (data ? 'Материал не найден' : loadError ? 'Не удалось загрузить материал' : 'Загрузка материала…')}</DialogTitle><DialogDescription className="text-xs mt-1">{current?materialAction(data,current):'Общая карточка сценария'}</DialogDescription></div>
   <div className="ed-detail-body" onClickCapture={e=>{if(dirty&&(e.target as HTMLElement).closest('a')&&!window.confirm('Несохранённый черновик останется на этом устройстве. Перейти?')){e.preventDefault();e.stopPropagation();}}}>
-   {!data?<p role="status">Загружаем…</p>:!current?<p>Материал не найден. <button className="text-primary" onClick={()=>void refresh()}>Обновить</button></p>:draft&&<>
+   {!data && !loadError?<p role="status">Загружаем…</p>:!current?<p role="status">{loadError || 'Проверь ссылку или обнови список.'} <button className="text-primary" onClick={()=>void refresh()}>Обновить</button></p>:draft&&<>
     {slot&&<div className="mb-4"><p className="ed-note">{slot.selectedId===current.id?'Выбран для этого дня':slot.recommendedId===current.id?'Рекомендуемый вариант':'Альтернативный вариант'} · {dateLabel(slot.date)}</p>{slot.recommendedId===current.id&&slot.reason&&<p className="ed-note mt-1">{slot.reason}</p>}
      {variants.length>1&&<details className="ed-details"><summary>Другие варианты — {variants.length-1}</summary>{variants.filter(m=>m.id!==current.id).map(m=><button className="ed-row" key={m.id} onClick={()=>choose(m.id,true)}><span>{m.title}<small>{m.id===slot.selectedId?'Выбран':m.id===slot.recommendedId?'Рекомендуем':'Альтернатива'}</small></span></button>)}</details>}
     </div>}
@@ -93,7 +93,7 @@ export function MaterialCard(){
      {current.blocks?.length?current.blocks.map((b,i)=><section className="ed-story" key={b.id}><h3>{i+1}. {b.label}</h3><p className="ed-copy">{b.text||'Текст ещё не написан'}</p>{(b.visual||b.motion)&&<details className="ed-details"><summary>Кадр и моушн</summary>{b.visual&&<p className="ed-copy">{b.visual}</p>}{b.motion&&<p className="ed-copy mt-2">{b.motion}</p>}</details>}</section>):<p className="ed-copy ed-script">{current.body||'Здесь будет сценарий. Начни с текста или подготовь его с агентом.'}</p>}
      {(current.visual||current.motion)&&<details className="ed-details"><summary>Что показать · графика</summary><p className="ed-copy">{current.visual}</p><p className="ed-copy mt-2">{current.motion}</p></details>}
      {current.resources&&<details className="ed-details"><summary>Материалы и ссылки</summary><ResourceText text={current.resources}/></details>}
-     <details className="ed-details"><summary>Куда ведёт</summary>{current.cta&&<p className="ed-copy">{current.cta}</p>}<div className="ed-path">{funnel&&<Link to={'/dashboard?funnel='+encodeURIComponent(funnel.id)}>{funnel.keyword} → воронка</Link>}{product&&<Link to={'/products?product='+product.id}>{product.name}</Link>}{!funnel&&!product&&<p className="ed-note">Продукт и воронка не выбраны.</p>}</div></details>
+     <details className="ed-details"><summary>Куда ведёт</summary>{current.cta&&<p className="ed-copy">{current.cta}</p>}<div className="ed-path">{funnel&&<Link to={'/dashboard?funnel='+encodeURIComponent(funnel.id)}>{funnel.keyword} → воронка</Link>}{product&&<Link {...cards.productLink(product.id)}>{product.name}</Link>}{!funnel&&!product&&<p className="ed-note">Продукт и воронка не выбраны.</p>}</div></details>
     </>}
     <details className="ed-details"><summary><CalendarDays className="inline mr-2" size={14}/>Дата и подготовка</summary>
      <label className="ed-label">День публикации<input type="date" className="ed-input" value={date} onChange={e=>setDate(e.target.value)}/></label>

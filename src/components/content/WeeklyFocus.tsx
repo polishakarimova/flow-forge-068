@@ -1,3 +1,4 @@
+import {useCardNavigation} from '@/lib/editorialNavigation';
 import {useState} from 'react';
 import {Link} from 'react-router-dom';
 import {Target,ChevronRight} from 'lucide-react';
@@ -6,6 +7,7 @@ import {weekStart,dateLabel, type Focus} from '@/lib/editorial';
 import {Button} from '@/components/ui/button';
 import {Dialog,DialogContent,DialogTitle,DialogDescription} from '@/components/ui/dialog';
 export function WeeklyFocus({date,compact=false,scope='day'}:{date:string;compact?:boolean;scope?:'day'|'week'}){
+ const cards=useCardNavigation();
  const {data,command,busy,error:workspaceError}=useEditorial();
  const key=weekStart(date),weeks=data?.main.editorial?.weeks || {};
  const focus=(scope==='day'?weeks['day:'+date]:undefined) || weeks[key];
@@ -15,7 +17,7 @@ export function WeeklyFocus({date,compact=false,scope='day'}:{date:string;compac
  if(workspaceError&&!data)return null;
  return <section className="ed-focus" aria-label="Фокус недели">
   <div className="flex gap-2 items-start"><Target size={17} className="text-primary mt-0.5 shrink-0"/><div className="min-w-0 flex-1"><span className="text-xs text-muted-foreground">{focus?.scope==='day'?'Фокус дня':'Фокус недели'}</span><p className="text-sm font-medium break-words">{focus?.goal || 'Выбери главное направление недели'}</p>
-   <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-primary">{product&&<Link to={'/products?product='+product.id}>{product.name}</Link>}{funnel&&<Link to={'/dashboard?funnel='+encodeURIComponent(funnel.id)}>{funnel.keyword} → воронка</Link>}</div></div>
+   <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-primary">{product&&<Link {...cards.productLink(product.id)}>{product.name}</Link>}{funnel&&<Link to={'/dashboard?funnel='+encodeURIComponent(funnel.id)}>{funnel.keyword} → воронка</Link>}</div></div>
    {<Button variant="ghost" size="sm" onClick={()=>{setDraft(focus || {goal:'',scope:'week'});setOpen(true);}}>Изменить</Button>}
   </div>{compact&&<Link to={'/content?week='+key} className="inline-flex items-center gap-1 text-xs text-primary mt-2 min-h-9">Открыть неделю<ChevronRight size={14}/></Link>}
   <Dialog open={open} onOpenChange={setOpen}><DialogContent className="ed-small-dialog"><DialogTitle>Фокус</DialogTitle><DialogDescription>Что продвигаем и к чему ведём контент.</DialogDescription>

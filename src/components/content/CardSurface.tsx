@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ComponentPropsWithoutRef } from 'react';
+import { useEffect, useRef, useState, type ComponentPropsWithoutRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { DialogContent } from '@/components/ui/dialog';
 
@@ -8,10 +8,10 @@ const positions = new Map<string, Position>();
 // Keep a returning reader at the same paragraph and disclosure within a card.
 export function CardSurface({ ready, ...props }: ComponentPropsWithoutRef<typeof DialogContent> & { ready: boolean }) {
   const { key } = useLocation();
-  const ref = useRef<HTMLDivElement>(null);
+  const [surface, setSurface] = useState<HTMLDivElement | null>(null);
   const opener = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    const el = ref.current, viewport = window.visualViewport;
+    const el = surface, viewport = window.visualViewport;
     if (!el || !viewport) return;
     const resize = () => {
       el.style.setProperty('--ed-window-height', viewport.height + 'px');
@@ -21,10 +21,10 @@ export function CardSurface({ ready, ...props }: ComponentPropsWithoutRef<typeof
     viewport.addEventListener('resize', resize);
     viewport.addEventListener('scroll', resize);
     return () => { viewport.removeEventListener('resize', resize); viewport.removeEventListener('scroll', resize); };
-  }, []);
+  }, [surface]);
 
   useEffect(() => {
-    const body = ref.current?.querySelector<HTMLElement>('.ed-detail-body');
+    const body = surface?.querySelector<HTMLElement>('.ed-detail-body');
     if (!body || !ready) return;
     const disclosures = () => Array.from(body.querySelectorAll('details'));
     const name = (el: HTMLDetailsElement) => el.querySelector('summary')?.textContent || '';
@@ -40,12 +40,12 @@ export function CardSurface({ ready, ...props }: ComponentPropsWithoutRef<typeof
     body.addEventListener('scroll', remember, { passive: true });
     body.addEventListener('toggle', remember, true);
     return () => { body.removeEventListener('scroll', remember); body.removeEventListener('toggle', remember, true); };
-  }, [key, ready]);
+  }, [surface, key, ready]);
 
-  return <DialogContent {...props} overlayClassName={'ed-card-overlay ' + (props.overlayClassName || '')} ref={ref} onOpenAutoFocus={event => {
+  return <DialogContent {...props} overlayClassName={'ed-card-overlay ' + (props.overlayClassName || '')} ref={setSurface} onOpenAutoFocus={event => {
     event.preventDefault();
     opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    ref.current?.focus({ preventScroll: true });
+    (event.currentTarget as HTMLElement | null)?.focus({ preventScroll: true });
   }} onCloseAutoFocus={event => {
     event.preventDefault();
     if (opener.current?.isConnected && !document.querySelector('.ed-detail[data-state="open"]')) {
