@@ -2,7 +2,10 @@ import {createHash, randomUUID} from 'node:crypto';
 
 const labels = {
   authorized: 'Новый пользователь авторизовался', api: 'Ошибка запроса', server: 'Ошибка сервера',
-  client: 'Ошибка приложения', worker: 'Ошибка фоновой задачи'
+  client: 'Ошибка приложения', worker: 'Ошибка фоновой задачи',
+  telegram_outage: 'Сбой связи с Telegram дольше 5 минут',
+  telegram_brief: 'Краткий сбой связи с Telegram',
+  telegram_recovery: 'Связь с Telegram восстановлена'
 };
 const pages = new Set(['home','profile','legal','admin','calendar','context','products','map','dashboard','ideas','funnels','agents','content','publications','stories','settings']);
 const services = new Set(['auth','legal','account','admin','agent','state','threads','telegram','internal','publications','context']);
@@ -31,8 +34,34 @@ export async function ensureNoticeSchema(pool) {
     created_at timestamptz not null default now(), last_at timestamptz not null default now(),
     next_at timestamptz not null default now(), attempts integer not null default 0, delivered_at timestamptz
   );
+  alter table cm_admin_notices add column if not exists recovered_at timestamptz;
+  alter table cm_admin_notices add column if not exists depends_on text;
+  create unique index if not exists cm_one_open_telegram_outage on cm_admin_notices(kind)
+    where kind='telegram_outage' and recovered_at is null;
   create index if not exists cm_admin_notices_due on cm_admin_notices(next_at) where delivered_at is null;
   create index if not exists cm_admin_notices_recent on cm_admin_notices(last_at desc);`);
+}
+
+const grace = "interval '5 minutes'";
+
+// A pending warning doubles as the persistent incident record. A successful
+// getUpdates closes it, including an empty batch after a process restart.
+export async function recordTelegramFailure(pool, code) {
+  const id = randomUUID();
+  await pool.query(`insert into cm_admin_notices(id,event_key,kind,route,reason,next_at)
+    values($1,$1,'telegram_outage','Telegram',$2,now()+${grace})
+    on conflict(kind) where kind='telegram_outage' and recovered_at is null do update
+      set reason=excluded.reason, occurrences=cm_admin_notices.occurrences+1, last_at=now()`, [id,code]);
+}
+
+export async function recordTelegramSuccess(pool) {
+  await pool.query(`with closed as (
+    update cm_admin_notices set recovered_at=now(),last_at=now(),
+      kind=case when now()<=created_at+${grace} then 'telegram_brief' else kind end
+      where kind='telegram_outage' and recovered_at is null returning id,kind,reason
+    ) insert into cm_admin_notices(id,event_key,kind,depends_on,route,reason)
+      select $1,'recovered:'||id,'telegram_recovery',id,'Telegram',reason from closed
+      where kind='telegram_outage'`, [randomUUID()]);
 }
 
 export async function firstAuthorization(client,userId) {
@@ -59,9 +88,11 @@ const details = `select n.id,n.kind,n.route,n.reason,n.method,n.status,n.source_
   left join lateral(select "telegramId",username from telegram_accounts where "userId"=n.user_id order by "createdAt",id limit 1) t on true
   left join cm_like_transactions reward on n.kind='authorized' and reward.invited_user_id=n.user_id
   left join users ref on ref.id=reward.user_id`;
+const pending = `delivered_at is null and kind<>'telegram_brief'
+  and (kind<>'telegram_outage' or now()>created_at+${grace})`;
 export async function noticeQueueStatus(pool) {
-  const {rows:[summary]}=await pool.query(`select count(*) filter (where delivered_at is null)::integer as pending,
-    min(created_at) filter (where delivered_at is null) as oldest_pending_at,
+  const {rows:[summary]}=await pool.query(`select count(*) filter (where ${pending})::integer as pending,
+    min(created_at) filter (where ${pending}) as oldest_pending_at,
     max(delivered_at) as last_delivered_at from cm_admin_notices`);
   return summary;
 }
@@ -71,6 +102,12 @@ export async function readNotices(pool,id=null) {
 }
 function display(value) { return String(value || '').replace(/[\p{C}\r\n]/gu,' ').trim().slice(0,80); }
 export function noticeText(item) {
+  if (item.kind.startsWith('telegram_')) {
+    const time = new Date(item.created_at).toLocaleString('ru-RU',{timeZone:'Europe/Kaliningrad'});
+    return ['Карта контента · '+labels[item.kind],
+      (item.kind==='telegram_recovery'?'Связь восстановлена':'Начало сбоя')+' — '+time+' (Калининград)',
+      'Последний код ошибки: '+item.reason].join('\n');
+  }
   const person = item.telegram_id ? [display(item.name)||'Пользователь',item.username?'@'+display(item.username):'', 'Telegram ID '+item.telegram_id].filter(Boolean).join(' · ') : item.kind==='worker'?'Фоновая задача':'Аккаунт не определён';
   return ['Карта контента · '+labels[item.kind],person,item.inviter?'Пригласил(а) '+display(item.inviter):'',
     [item.method,item.route,item.status||'',item.reason].filter(Boolean).join(' · '),
@@ -83,7 +120,8 @@ export async function deliverNotice(pool, recipient, appUrl, send) {
   if (!recipient) return false;
   // Claim a lease before doing network I/O so concurrent workers cannot send the same batch.
   const {rows:[claim]}=await pool.query(`update cm_admin_notices set next_at=now()+interval '2 minutes',attempts=attempts+1
-    where id=(select id from cm_admin_notices where delivered_at is null and next_at<=now()
+    where id=(select id from cm_admin_notices n where ${pending} and next_at<=now()
+      and not exists(select 1 from cm_admin_notices parent where parent.id=n.depends_on and parent.delivered_at is null)
     order by (kind='authorized') desc,next_at,created_at limit 1 for update skip locked) returning id,attempts`);
   if(!claim) return false;
   try {

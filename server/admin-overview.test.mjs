@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ensureNoticeSchema,firstAuthorization,recordFault,readNotices,noticeQueueStatus,deliverNotice,noticeRecipient} from './admin-notices.mjs';
+import {ensureNoticeSchema,firstAuthorization,recordFault,readNotices,noticeQueueStatus,deliverNotice,noticeRecipient,recordTelegramFailure,recordTelegramSuccess} from './admin-notices.mjs';
 import {ensureLegalSchema,saveLegalChoice,legalManifest} from './legal-consent.mjs';
 import {pendingHealthChanges,sendHealthChanges} from '../ops/health.mjs';
 import { PGlite } from '@electric-sql/pglite';
@@ -136,4 +136,56 @@ test('system monitoring preserves an outage and recovery across downtime of its 
   await sendHealthChanges(pending,async text=>texts.push(text));
   assert.equal(texts.length,1);assert.match(texts[0],/Устранено.*сбоев: 1, восстановлений: 1/);
   assert.deepEqual(pendingHealthChanges(['app_down'],{alerts:['app_down'],reportedAlerts:['app_down']},at),{});
+});
+
+test('Telegram incident survives restart, honors the strict threshold and delivers recovery after the warning', async () => {
+  const db = new PGlite();
+  const pool = {query: (sql,args) => args ? db.query(sql,args) : db.exec(sql).then(rows=>rows.at(-1))};
+  const sent = [];
+  const deliver = (send = async (_,payload) => sent.push(payload.text)) =>
+    deliverNotice(pool,'owner','https://example.invalid',send);
+  try {
+    await ensureNoticeSchema(pool);
+    await db.exec(`create table users(id text, "displayName" text);
+      create table telegram_accounts(id text,"userId" text,"telegramId" text,username text,"createdAt" timestamptz);
+      create table cm_like_transactions(user_id text,invited_user_id text);`);
+    // PostgreSQL now() is constant within this transaction, including the exact threshold.
+    await db.exec('begin');
+    await recordTelegramFailure(pool,'ECONNRESET');
+    await db.exec("update cm_admin_notices set created_at=now()-interval '5 minutes', next_at=now()");
+    assert.equal(await deliver(),false);
+    await recordTelegramSuccess(pool);
+    await db.exec('commit');
+    assert.equal(await deliver(),false);
+    assert.equal((await noticeQueueStatus(pool)).pending,0);
+    assert.equal((await readNotices(pool))[0].kind,'telegram_brief');
+
+    await recordTelegramFailure(pool,'TELEGRAM_502');
+    await recordTelegramFailure(pool,'ETIMEDOUT');
+    await db.exec("update cm_admin_notices set created_at=now()-interval '6 minutes',next_at=now() where kind='telegram_outage'");
+    await assert.rejects(deliver(async()=>{throw Error('offline');}));
+    // A fresh caller has no in-memory incident state.
+    await recordTelegramSuccess({query:pool.query});
+    await recordTelegramSuccess(pool);
+    assert.equal(await deliver(),false);
+    assert.equal((await noticeQueueStatus(pool)).pending,2);
+    await db.exec("update cm_admin_notices set next_at=now() where kind='telegram_outage'");
+    assert.equal(await deliver(),true);
+    assert.equal(await deliver(),true);
+    assert.equal(await deliver(),false);
+    assert.match(sent[0],/Сбой связи с Telegram дольше 5 минут/);
+    assert.match(sent[0],/ETIMEDOUT/);
+    assert.match(sent[1],/Связь с Telegram восстановлена/);
+    assert.equal((await readNotices(pool)).find(r=>r.kind==='telegram_outage').occurrences,2);
+
+    await recordTelegramFailure(pool,'TELEGRAM_429');
+    await db.exec("update cm_admin_notices set created_at=now()-interval '7 minutes',next_at=now() where recovered_at is null and kind='telegram_outage'");
+    assert.equal(await deliver(),true);
+    await recordTelegramFailure(pool,'TELEGRAM_429');
+    assert.equal(await deliver(),false);
+    await recordTelegramSuccess(pool);
+    assert.equal(await deliver(),true);
+    assert.equal(await deliver(),false);
+    assert.equal(sent.length,4);
+  } finally { await db.close(); }
 });

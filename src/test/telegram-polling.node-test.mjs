@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createTelegramSetup, pollTelegramUpdates, processTelegramUpdate } from '../../server/telegram-polling.mjs';
+import { createTelegramSetup, pollTelegramUpdates, processTelegramUpdate, telegramErrorCode } from '../../server/telegram-polling.mjs';
 
 test('polling advances offset only after successfully handling each update', async () => {
   const offsets = []; const handled = []; let failed = false; let stop = false;
@@ -76,4 +76,25 @@ test('polling respects Telegram retry_after before more outbound operations', as
     onError() {}, pause:async ms=>{calls.push(ms);}, shouldStop:()=>stop
   });
   assert.deepEqual(calls,[1,11000,1,2]);
+});
+
+test('only a successful poll restores connectivity, independent of chat handling', async () => {
+  const events = [];
+  let polls = 0;
+  await pollTelegramUpdates({
+    async api() {
+      polls++;
+      if (polls===1) throw Object.assign(new Error('private URL'),{cause:{code:'ECONNRESET'}});
+      return polls===2 ? [{update_id:1}] : [];
+    },
+    onPollSuccess: () => events.push('connected'),
+    async handleUpdate() { throw Error('local handler failure'); },
+    onError: (error,stage) => events.push([stage,telegramErrorCode(error)]),
+    shouldStop: () => polls===3, pause:async()=>{}
+  });
+  assert.deepEqual(events,[['getUpdates','ECONNRESET'],'connected',['handleUpdate','UNKNOWN'],'connected']);
+  assert.equal(telegramErrorCode({telegramStatus:429}),'TELEGRAM_429');
+  assert.equal(telegramErrorCode({cause:{errors:[{code:'ENETUNREACH'}]}}),'ENETUNREACH');
+  assert.equal(telegramErrorCode({name:'TimeoutError'}),'TIMEOUT');
+  assert.equal(telegramErrorCode({code:'PRIVATE',message:'secret'}),'UNKNOWN');
 });

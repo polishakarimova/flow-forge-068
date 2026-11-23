@@ -6,7 +6,7 @@ import { extname, join, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { PrismaClient } from "@prisma/client";
-import { createTelegramSetup, pollTelegramUpdates, processTelegramUpdate } from "./telegram-polling.mjs";
+import { createTelegramSetup, pollTelegramUpdates, processTelegramUpdate, telegramErrorCode } from "./telegram-polling.mjs";
 import { saveTelegramAccount } from "./telegram-account.mjs";
 import { ensureThreadsSchema, beginThreadsConnect, finishThreadsConnect, threadsStatus, runThreadsScheduler } from "./threads-autopost.mjs";
 import { ensureRemoteSchema, handleRemoteRequest, remoteStatus } from './threads-remote.mjs';
@@ -23,7 +23,7 @@ import {ensureReferralSchema, referralCode, referralStart, rememberReferralEntry
 import {readAdminOverview as readAdminMetrics} from './admin-overview.mjs';
 import {readUserDashboard} from './user-dashboard.mjs';
 import { ensureOwnerCommand,adminEntry,adminKeyboard,isPrivateAdmin} from './admin-bot.mjs';
-import {ensureNoticeSchema,firstAuthorization,recordFault,readNotices,noticeQueueStatus,deliverNotice,noticeRecipient} from './admin-notices.mjs';
+import {ensureNoticeSchema,firstAuthorization,recordFault,readNotices,noticeQueueStatus,deliverNotice,noticeRecipient,recordTelegramFailure,recordTelegramSuccess} from './admin-notices.mjs';
 import {ensureLegalSchema, requireLegal, legalApi} from './legal-consent.mjs';
 
 const root = new URL("../", import.meta.url);
@@ -86,6 +86,11 @@ function createPgPool() {
 const pgPool = createPgPool();
 const noticeOwner = noticeRecipient(process.env);
 const backgroundFault = reason => recordFault(pgPool,{kind:'worker',reason}).catch(()=>console.error('Cannot record background incident'));
+async function observeTelegramFailure(error) {
+  const code = telegramErrorCode(error);
+  console.error('Telegram update connection failed', code);
+  await recordTelegramFailure(pgPool, code).catch(() => console.error('Cannot record Telegram connection failure'));
+}
 const prisma = new PrismaClient();
 
 function uid(bytes = 16) {
@@ -286,12 +291,15 @@ async function telegramApi(method, payload = {}) {
     body: JSON.stringify(payload),
     signal: AbortSignal.timeout(method === "getUpdates" ? 40000 : 15000),
   });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok || data.ok !== true) {
+  const data = await response.json().catch(error => {
+    if (response.ok && !(error instanceof SyntaxError)) throw error;
+    return null;
+  });
+  if (!response.ok || data?.ok !== true || (method === "getUpdates" && !Array.isArray(data.result))) {
     throw Object.assign(new Error(`telegram_${method}_failed`), {
       telegramMethod: method,
-      telegramStatus: data.error_code || response.status,
-      retryAfter: data.parameters?.retry_after
+      telegramStatus: data?.error_code || response.status,
+      retryAfter: data?.parameters?.retry_after
     });
   }
   return data.result;
@@ -402,8 +410,8 @@ async function handleTelegramWebhook(req, res) {
 }
 
 function handleTelegramUpdate(update) {
-  return processTelegramUpdate(update, handleChatUpdate, () => {
-    console.warn('Telegram could not deliver a reply to this chat');
+  return processTelegramUpdate(update, handleChatUpdate, error => {
+    console.warn('Telegram could not deliver a reply to this chat', telegramErrorCode(error));
     void backgroundFault('telegram_updates');
   });
 }
@@ -745,7 +753,15 @@ const setupTelegramBot = createTelegramSetup(async () => {
     if (!telegramPollingStarted) {
       telegramPollingStarted = true;
       console.log("Telegram update delivery: polling");
-      void pollTelegramUpdates({ api: telegramApi, handleUpdate: handleTelegramUpdate, onError:()=>{console.error('Telegram polling failed');void backgroundFault('telegram_updates');} });
+      void pollTelegramUpdates({
+        api: telegramApi, handleUpdate: handleTelegramUpdate,
+        onPollSuccess: () => recordTelegramSuccess(pgPool).catch(() => console.error('Cannot record Telegram connection recovery')),
+        onError: async (error, stage) => {
+          if (stage === 'getUpdates') return observeTelegramFailure(error);
+          console.error('Telegram update processing failed', telegramErrorCode(error));
+          await backgroundFault('telegram_updates');
+        }
+      });
     }
   } else await telegramApi("setWebhook", {
     url: `${APP_URL}/api/telegram/webhook`,
@@ -760,8 +776,9 @@ const setupTelegramBot = createTelegramSetup(async () => {
     },
   });
   await ensureOwnerCommand(telegramApi, noticeOwner);
-}, {onError: () => {
-  console.error('Telegram setup failed; retry scheduled');
+}, {onError: error => {
+  if (TELEGRAM_UPDATES_MODE === 'polling' && !telegramPollingStarted) return observeTelegramFailure(error);
+  console.error('Telegram setup failed; retry scheduled', telegramErrorCode(error));
   void backgroundFault('telegram_setup');
 }});
 
@@ -780,7 +797,7 @@ if (noticeOwner && TELEGRAM_BOT_TOKEN) {
     delivering = true;
     try {
       if (Date.now() >= nextCleanup) {
-        await pgPool.query("delete from cm_admin_notices where last_at<now()-interval '90 days'");
+        await pgPool.query("delete from cm_admin_notices where last_at<now()-interval '90 days' and (kind not in ('telegram_outage','telegram_recovery') or (delivered_at is not null and (kind='telegram_recovery' or recovered_at is not null)))");
         nextCleanup=Date.now()+86400000;
       }
       for (let sent=0;sent<3;sent++) {
